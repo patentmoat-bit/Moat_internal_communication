@@ -32,7 +32,7 @@ export async function middleware(request: NextRequest) {
   
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'nonce-${nonce}' ${isDev ? "'unsafe-eval' 'unsafe-inline' " : ""}https://*.vercel-scripts.com https://*.vercel-insights.com https://vercel.live https://*.vercel.live https://*.supabase.co https://login.microsoftonline.com;
+    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.vercel-scripts.com https://*.vercel-insights.com https://vercel.live https://*.vercel.live https://*.supabase.co https://login.microsoftonline.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' data: https://fonts.gstatic.com;
     img-src 'self' data: blob: https://*.supabase.co https://patents.google.com https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.githubusercontent.com https://*.vercel.com;

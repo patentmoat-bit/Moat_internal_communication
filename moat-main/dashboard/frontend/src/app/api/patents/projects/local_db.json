@@ -1,0 +1,42 @@
+[
+  {
+    "id": "1",
+    "title": "Distributed Neural Model Compression System",
+    "description": "A system for compressing large language model weights dynamically based on client hardware constraints prior to transmission.",
+    "status": "published",
+    "filing_region": "US",
+    "created_by": null,
+    "created_at": "2026-01-10T12:00:00.000Z",
+    "updated_at": "2026-06-22T12:02:23.035Z"
+  },
+  {
+    "id": "2",
+    "title": "Decentralized Zero-Knowledge Data Verification Vault",
+    "description": "Multi-party computation engine utilizing zero-knowledge proofs to authenticate document signatures without exposing payload content.",
+    "status": "filed",
+    "filing_region": "PCT",
+    "created_by": null,
+    "created_at": "2026-02-15T15:30:00.000Z",
+    "updated_at": "2026-02-15T15:30:00.000Z"
+  },
+  {
+    "id": "3",
+    "title": "Adaptive Real-Time Spatial Translation Engine",
+    "description": "A wearable device and processing engine designed to translate visual scenes into natural language audio cues for visually impaired users.",
+    "status": "published",
+    "filing_region": "IND",
+    "created_by": null,
+    "created_at": "2026-03-22T09:15:00.000Z",
+    "updated_at": "2026-03-22T09:15:00.000Z"
+  },
+  {
+    "id": "4",
+    "title": "Automated Claim-Drafting Generative Model",
+    "description": "AI-assisted drafting system compiling patent claims based on a structured description of invention specifications and technical claims.",
+    "status": "published",
+    "filing_region": "US",
+    "created_by": null,
+    "created_at": "2026-04-05T10:00:00.000Z",
+    "updated_at": "2026-04-05T10:00:00.000Z"
+  }
+]

@@ -1,0 +1,264 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* PFS Light: Premium Ivory & Gold Theme */
+    --background: 45 25% 96%;         /* Warm, sophisticated ivory background */
+    --foreground: 45 40% 12%;         /* Deep, rich espresso text */
+    --card: 45 15% 99%;               /* Clean, ultra-warm white for cards */
+    --card-foreground: 45 40% 12%;
+    --popover: 45 15% 99%;
+    --popover-foreground: 45 40% 12%;
+    --border: 45 25% 88%;             /* Very subtle warm border */
+    --input: 45 25% 88%;
+    --primary: 43 58% 54%;            /* Brand gold */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 45 25% 92%;          /* Slightly darker ivory for secondary surfaces */
+    --secondary-foreground: 45 40% 20%;
+    --muted: 45 20% 92%;
+    --muted-foreground: 45 15% 45%;   /* Warm medium-grey */
+    --accent: 43 58% 54%;             /* Gold accent */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --ring: 43 58% 54%;
+    --radius: 0.75rem;
+
+    --sidebar-background: 45 20% 94%; /* Gentle contrast against main bg */
+    --sidebar-foreground: 45 40% 15%;
+    --sidebar-accent: 45 25% 88%;
+    --sidebar-accent-foreground: 45 40% 15%;
+
+    --color-background-primary: hsl(var(--background));
+    --color-background-secondary: hsl(var(--muted));
+    --color-border-secondary: hsl(var(--border));
+    --color-background-tertiary: hsl(var(--secondary));
+    --color-border-tertiary: hsl(var(--border));
+    --color-text-primary: hsl(var(--foreground));
+    --color-text-secondary: hsl(var(--muted-foreground));
+    --color-text-tertiary: hsl(var(--muted-foreground) / 0.8);
+
+    /* PFS mission category colors - tuned for the warm light mode */
+    --pfs-green: 150 55% 40%;
+    --pfs-blue: 204 65% 48%;
+    --pfs-orange: 31 75% 50%;
+    --pfs-purple: 270 45% 58%;
+    --pfs-red: 0 60% 55%;
+    --pfs-teal: 176 65% 38%;
+    --pfs-cyan: 43 58% 54%;
+    --pfs-cyan-foreground: 0 0% 100%;
+
+    /* Recharts tooltip — light mode */
+    --tooltip-bg: #fdfaf5;
+    --tooltip-border: #e8e3d3;
+    --tooltip-text: #2d2a22;
+  }
+
+  .dark {
+    /* PFS: Deep dark olive / gold — matches the reference image */
+    --background: 60 30% 5%;          /* #131309 - very dark olive black */
+    --foreground: 48 35% 86%;         /* #e8dfc8 - warm cream text */
+    --card: 60 25% 8%;                /* #1a1a0e - slightly lighter card surface */
+    --card-foreground: 48 35% 86%;
+    --popover: 60 28% 7%;
+    --popover-foreground: 48 35% 86%;
+    --border: 55 20% 14%;             /* #2a2a16 - warm dark border */
+    --input: 55 20% 14%;
+    --primary: 43 58% 54%;            /* #c9a84c - brand gold */
+    --primary-foreground: 60 30% 5%;
+    --secondary: 58 18% 13%;
+    --secondary-foreground: 48 30% 75%;
+    --muted: 58 18% 11%;
+    --muted-foreground: 48 15% 48%;   /* #7a7460 - muted warm tan */
+    --accent: 43 58% 54%;             /* gold accent */
+    --accent-foreground: 60 30% 5%;
+    --destructive: 0 63% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --ring: 43 58% 54%;
+    --radius: 0.5rem;
+
+    --sidebar-background: 60 30% 3%;  /* #0e0e07 - deepest dark */
+    --sidebar-foreground: 48 25% 68%;
+    --sidebar-accent: 43 58% 15%;
+    --sidebar-accent-foreground: 43 58% 75%;
+
+    --color-background-primary: hsl(var(--background));
+    --color-background-secondary: hsl(var(--muted));
+    --color-border-secondary: hsl(var(--border));
+    --color-background-tertiary: hsl(var(--secondary));
+    --color-border-tertiary: hsl(var(--border));
+    --color-text-primary: hsl(var(--foreground));
+    --color-text-secondary: hsl(var(--muted-foreground));
+    --color-text-tertiary: hsl(var(--muted-foreground) / 0.8);
+
+    /* PFS mission category colors */
+    --pfs-green: 142 71% 52%;
+    --pfs-blue: 210 90% 65%;
+    --pfs-orange: 30 95% 58%;
+    --pfs-purple: 272 68% 72%;
+    --pfs-red: 0 72% 65%;
+    --pfs-teal: 174 72% 56%;
+    --pfs-cyan: 43 58% 54%;
+    --pfs-cyan-foreground: 60 30% 5%;
+
+    /* Recharts tooltip — dark mode */
+    --tooltip-bg: #0f172a;
+    --tooltip-border: #1e293b;
+    --tooltip-text: #e2e8f0;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-[hsl(var(--border))];
+  }
+
+  body {
+    @apply bg-[hsl(var(--background))] text-[hsl(var(--foreground))];
+    font-family: 'Inter', sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Scrollbar styling — thin gold tint */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: hsl(43 40% 28%); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(43 58% 54%); }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+  /* PFS glass card */
+  .glass-card {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: var(--radius);
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03);
+  }
+
+  /* Gold gradient text */
+  .gradient-text {
+    background: linear-gradient(135deg, #c9a84c, #e8c97a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Gold glow effect */
+  .glow-gold {
+    box-shadow: 0 0 20px rgba(201, 168, 76, 0.18), 0 0 40px rgba(201, 168, 76, 0.06);
+  }
+
+  /* Legacy alias kept for backward compatibility */
+  .glow-purple {
+    box-shadow: 0 0 20px rgba(201, 168, 76, 0.15), 0 0 40px rgba(201, 168, 76, 0.05);
+  }
+
+  /* Gold gradient border */
+  .gradient-border {
+    position: relative;
+  }
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(201,168,76,0.5), rgba(232,201,122,0.2));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  /* PFS separator line — gold */
+  .pfs-separator {
+    height: 1px;
+    background: linear-gradient(90deg, #c9a84c 0%, transparent 100%);
+  }
+
+  /* PFS mission card category colors */
+  .pfs-novelty     { color: hsl(var(--pfs-green)); }
+  .pfs-prior-art   { color: hsl(var(--pfs-blue)); }
+  .pfs-fto         { color: hsl(var(--pfs-orange)); }
+  .pfs-patent      { color: hsl(var(--pfs-purple)); }
+  .pfs-invalidity  { color: hsl(var(--pfs-red)); }
+  .pfs-landscape   { color: hsl(var(--pfs-teal)); }
+
+  .pfs-page {
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  .pfs-panel {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    color: hsl(var(--card-foreground));
+  }
+
+  .pfs-panel-soft {
+    background: color-mix(in oklab, hsl(var(--card)) 84%, hsl(var(--muted)) 16%);
+    border: 1px solid hsl(var(--border));
+    color: hsl(var(--card-foreground));
+  }
+
+  .pfs-subpanel {
+    background: color-mix(in oklab, hsl(var(--muted)) 74%, transparent);
+    border: 1px solid hsl(var(--border));
+  }
+
+  .pfs-field {
+    background: hsl(var(--background));
+    border: 1px solid hsl(var(--input));
+    color: hsl(var(--foreground));
+  }
+
+  .pfs-field::placeholder {
+    color: hsl(var(--muted-foreground));
+  }
+
+  .pfs-heading {
+    color: hsl(var(--foreground));
+  }
+
+  .pfs-muted {
+    color: hsl(var(--muted-foreground));
+  }
+
+  .pfs-cyan {
+    color: hsl(var(--pfs-cyan));
+  }
+
+  .pfs-cyan-surface {
+    background: hsl(var(--pfs-cyan) / 0.1);
+    border-color: hsl(var(--pfs-cyan) / 0.24);
+  }
+
+  .pfs-cyan-button {
+    background: hsl(var(--pfs-cyan));
+    color: hsl(var(--pfs-cyan-foreground));
+  }
+
+  .pfs-cyan-button:hover {
+    background: hsl(var(--pfs-cyan) / 0.86);
+  }
+
+  /* Claims styling */
+  .patent-claims-container .claim { margin-left: 1rem; margin-bottom: 1rem; position: relative; }
+  .patent-claims-container .claim .claim { margin-left: 2rem; }
+  .patent-claims-container .claim-text { margin-bottom: 0.5rem; }
+  .patent-desc-container p,
+  .patent-desc-container .description-paragraph,
+  .patent-desc-container [itemprop="description"] { margin-bottom: 1.25rem; display: block; }
+}

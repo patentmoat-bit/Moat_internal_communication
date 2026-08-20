@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="#1a1a2e"/>
+  <rect x="50" y="50" width="700" height="500" rx="8" fill="#16213e" stroke="#4fc3f7" stroke-width="1.5"/>
+  <!-- Search index visualization -->
+  <rect x="80" y="80" width="300" height="200" rx="6" fill="#0d0d14" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="230" y="105" text-anchor="middle" fill="#4fc3f7" font-family="monospace" font-size="11" font-weight="bold">Integrated Search Index</text>
+  <line x1="100" y1="115" x2="360" y2="115" stroke="#333" stroke-width="1"/>
+  <!-- Index entries -->
+  <rect x="100" y="125" width="260" height="22" rx="3" fill="#1a1a2e" stroke="#2e9bcf" stroke-width="0.5"/>
+  <text x="110" y="140" fill="#2e9bcf" font-family="monospace" font-size="9">doc:001  →  convergence framework</text>
+  <rect x="100" y="152" width="260" height="22" rx="3" fill="#1a1a2e" stroke="#2e9bcf" stroke-width="0.5"/>
+  <text x="110" y="167" fill="#2e9bcf" font-family="monospace" font-size="9">doc:002  →  data indexing pipeline</text>
+  <rect x="100" y="179" width="260" height="22" rx="3" fill="#1a1a2e" stroke="#2e9bcf" stroke-width="0.5"/>
+  <text x="110" y="194" fill="#2e9bcf" font-family="monospace" font-size="9">doc:003  →  unified query API</text>
+  <rect x="100" y="206" width="260" height="22" rx="3" fill="#1a1a2e" stroke="#2e9bcf" stroke-width="0.5"/>
+  <text x="110" y="221" fill="#666" font-family="monospace" font-size="9">...</text>
+  <rect x="100" y="233" width="260" height="22" rx="3" fill="#1a1a2e" stroke="#2e9bcf" stroke-width="0.5"/>
+  <text x="110" y="248" fill="#2e9bcf" font-family="monospace" font-size="9">doc:247  →  cross-source search</text>
+  <!-- Query side -->
+  <rect x="480" y="80" width="240" height="100" rx="6" fill="#0d0d14" stroke="#2e9bcf" stroke-width="1.5"/>
+  <text x="600" y="110" text-anchor="middle" fill="#2e9bcf" font-family="monospace" font-size="11">Query Execution</text>
+  <text x="600" y="135" text-anchor="middle" fill="#666" font-family="monospace" font-size="9">SELECT * FROM index</text>
+  <text x="600" y="152" text-anchor="middle" fill="#666" font-family="monospace" font-size="9">WHERE MATCH('convergence')</text>
+  <text x="600" y="169" text-anchor="middle" fill="#666" font-family="monospace" font-size="9">RANK BY relevance</text>
+  <!-- Arrow between -->
+  <defs>
+    <marker id="arrow3" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#4fc3f7"/>
+    </marker>
+  </defs>
+  <line x1="380" y1="160" x2="480" y2="140" stroke="#4fc3f7" stroke-width="1.5" marker-end="url(#arrow3)"/>
+  <!-- Results -->
+  <rect x="480" y="210" width="240" height="140" rx="6" fill="#0d0d14" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="600" y="235" text-anchor="middle" fill="#4fc3f7" font-family="monospace" font-size="11">Ranked Results</text>
+  <line x1="500" y1="245" x2="700" y2="245" stroke="#333" stroke-width="1"/>
+  <rect x="495" y="252" width="210" height="20" rx="3" fill="#1a1a2e" stroke="#4fc3f7" stroke-width="0.5"/>
+  <text x="505" y="266" fill="#4fc3f7" font-family="monospace" font-size="8">1. doc:001  -  Score: 0.95</text>
+  <rect x="495" y="277" width="210" height="20" rx="3" fill="#1a1a2e" stroke="#2e9bcf" stroke-width="0.5"/>
+  <text x="505" y="291" fill="#2e9bcf" font-family="monospace" font-size="8">2. doc:003  -  Score: 0.82</text>
+  <rect x="495" y="302" width="210" height="20" rx="3" fill="#1a1a2e" stroke="#2e9bcf" stroke-width="0.5"/>
+  <text x="505" y="316" fill="#2e9bcf" font-family="monospace" font-size="8">3. doc:015  -  Score: 0.74</text>
+  <rect x="495" y="327" width="210" height="18" rx="3" fill="#1a1a2e" stroke="#333" stroke-width="0.5"/>
+  <text x="505" y="340" fill="#666" font-family="monospace" font-size="8">4. doc:247  -  Score: 0.61</text>
+  <!-- Label -->
+  <text x="400" y="470" text-anchor="middle" fill="#666" font-family="monospace" font-size="10">FIG. 3 - Integrated Search Index &amp; Query Execution</text>
+</svg>

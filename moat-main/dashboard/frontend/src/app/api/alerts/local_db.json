@@ -1,0 +1,355 @@
+{
+  "notifications": [
+    {
+      "id": "test-badge",
+      "title": "Badge Test",
+      "description": "Testing the unread badge",
+      "type": "workflow",
+      "priority": "high",
+      "receiver": "CEO",
+      "is_read": false,
+      "created_at": "2026-08-13T13:02:11.981Z"
+    },
+    {
+      "id": "a4364f5a-3f2e-4149-9098-7947ea118c0e",
+      "title": "Document Status Updated: CEO Approved",
+      "description": "mkrishnan changed the document status from CEO Approved to CEO Approved.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "d781368f-b267-489c-a691-b548cfcee6d3",
+      "metadata": {
+        "event_type": "CEO_APPROVED",
+        "resource_id": "587b5c93-87b1-4ea5-9d82-1877667dc2a5",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test_sampleproject",
+        "old_status": "CEO Approved",
+        "new_status": "CEO Approved"
+      },
+      "is_read": false,
+      "created_at": "2026-08-13T12:53:38.067Z"
+    },
+    {
+      "id": "ef922702-2f3c-46c9-ab0a-0987dc1d2f88",
+      "title": "Document Status Updated: CEO Approved",
+      "description": "mkrishnan changed the document status from CEO Approval Pending to CEO Approved.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "d781368f-b267-489c-a691-b548cfcee6d3",
+      "metadata": {
+        "event_type": "CEO_APPROVED",
+        "resource_id": "587b5c93-87b1-4ea5-9d82-1877667dc2a5",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test_sampleproject",
+        "old_status": "CEO Approval Pending",
+        "new_status": "CEO Approved"
+      },
+      "is_read": false,
+      "created_at": "2026-08-13T12:53:35.397Z"
+    },
+    {
+      "id": "7d496472-4849-460b-abdf-21738e0a7609",
+      "title": "Document Status Updated: CEO Approval Pending",
+      "description": "Romila changed the document status from Waiting for Patent Analyst Review to CEO Approval Pending.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "77bc2ffd-4825-4e4e-9f8a-e9bcd4f5914b",
+      "metadata": {
+        "event_type": "REPORT_SUBMITTED",
+        "resource_id": "587b5c93-87b1-4ea5-9d82-1877667dc2a5",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test_sampleproject",
+        "old_status": "Waiting for Patent Analyst Review",
+        "new_status": "CEO Approval Pending"
+      },
+      "is_read": false,
+      "created_at": "2026-08-13T12:49:29.995Z"
+    },
+    {
+      "id": "a13af834-1974-4794-b433-ddb1a82dd758",
+      "title": "Document Status Updated: Waiting for Patent Analyst Review",
+      "description": "raji changed the document status from Waiting for Patent Analyst Review to Waiting for Patent Analyst Review.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "c9968ff4-758b-4356-a8cc-4b2041f50445",
+      "metadata": {
+        "event_type": "STATUS_UPDATED",
+        "resource_id": "587b5c93-87b1-4ea5-9d82-1877667dc2a5",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test_sampleproject",
+        "old_status": "Waiting for Patent Analyst Review",
+        "new_status": "Waiting for Patent Analyst Review"
+      },
+      "is_read": false,
+      "created_at": "2026-08-13T12:43:42.191Z"
+    },
+    {
+      "id": "962afa07-0134-4f60-af67-7d0a1155f0c5",
+      "title": "New Document Version Uploaded",
+      "description": "raji uploaded a new version: A method for detecting zero-day exploits - Novelty Search Report (1)(1).docx.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "c9968ff4-758b-4356-a8cc-4b2041f50445",
+      "metadata": {
+        "event_type": "DOCUMENT_UPLOADED",
+        "resource_id": "587b5c93-87b1-4ea5-9d82-1877667dc2a5",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test_sampleproject"
+      },
+      "is_read": false,
+      "created_at": "2026-08-13T12:43:34.886Z"
+    },
+    {
+      "id": "c8571bfd-9117-4bd7-9041-ca61bb1798b0",
+      "title": "Document Status Updated: Waiting for Patent Analyst Review",
+      "description": "raji changed the document status from Design In Progress to Waiting for Patent Analyst Review.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "c9968ff4-758b-4356-a8cc-4b2041f50445",
+      "metadata": {
+        "event_type": "STATUS_UPDATED",
+        "resource_id": "587b5c93-87b1-4ea5-9d82-1877667dc2a5",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test_sampleproject",
+        "old_status": "Design In Progress",
+        "new_status": "Waiting for Patent Analyst Review"
+      },
+      "is_read": false,
+      "created_at": "2026-08-13T12:42:47.173Z"
+    },
+    {
+      "id": "0e291919-edae-45de-b1a9-1084684d63e0",
+      "title": "New Document Version Uploaded",
+      "description": "raji uploaded a new version: A method for detecting zero-day exploits - Novelty Search Report (1)(1).docx.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "c9968ff4-758b-4356-a8cc-4b2041f50445",
+      "metadata": {
+        "event_type": "DOCUMENT_UPLOADED",
+        "resource_id": "587b5c93-87b1-4ea5-9d82-1877667dc2a5",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test_sampleproject"
+      },
+      "is_read": false,
+      "created_at": "2026-08-13T12:42:40.469Z"
+    },
+    {
+      "id": "bcd892f6-9d03-4560-bc63-953f1092f826",
+      "title": "New Document Comment",
+      "description": "raji added a comment: \"hlo\"",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "c9968ff4-758b-4356-a8cc-4b2041f50445",
+      "metadata": {
+        "event_type": "COMMENT_ADDED",
+        "resource_id": "587b5c93-87b1-4ea5-9d82-1877667dc2a5",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test_sampleproject"
+      },
+      "is_read": false,
+      "created_at": "2026-08-13T12:42:19.378Z"
+    },
+    {
+      "id": "34642080-d380-47c4-978b-8f9da60bf3da",
+      "title": "Document Status Updated: Design In Progress",
+      "description": "raji changed the document status from Design In Progress to Design In Progress.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "c9968ff4-758b-4356-a8cc-4b2041f50445",
+      "metadata": {
+        "event_type": "STATUS_UPDATED",
+        "resource_id": "587b5c93-87b1-4ea5-9d82-1877667dc2a5",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test_sampleproject",
+        "old_status": "Design In Progress",
+        "new_status": "Design In Progress"
+      },
+      "is_read": false,
+      "created_at": "2026-08-13T12:42:06.732Z"
+    },
+    {
+      "id": "1893ca11-72f6-4914-b8d1-51c406112b71",
+      "title": "Document Status Updated: Design In Progress",
+      "description": "raji changed the document status from Pending Design Review to Design In Progress.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "c9968ff4-758b-4356-a8cc-4b2041f50445",
+      "metadata": {
+        "event_type": "STATUS_UPDATED",
+        "resource_id": "587b5c93-87b1-4ea5-9d82-1877667dc2a5",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test_sampleproject",
+        "old_status": "Pending Design Review",
+        "new_status": "Design In Progress"
+      },
+      "is_read": false,
+      "created_at": "2026-08-13T12:42:02.272Z"
+    },
+    {
+      "id": "956940f5-baf7-4292-a062-1634d275fa39",
+      "title": "Document Status Updated: Pending Design Review",
+      "description": "Romila changed the document status from Uploaded by Patent Analyst to Pending Design Review.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "77bc2ffd-4825-4e4e-9f8a-e9bcd4f5914b",
+      "metadata": {
+        "event_type": "DESIGN_REQUESTED",
+        "resource_id": "587b5c93-87b1-4ea5-9d82-1877667dc2a5",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test_sampleproject",
+        "old_status": "Uploaded by Patent Analyst",
+        "new_status": "Pending Design Review"
+      },
+      "is_read": false,
+      "created_at": "2026-08-13T12:15:38.893Z"
+    },
+    {
+      "id": "b3ddce44-b5b6-44c2-bd42-af28bc2a3596",
+      "title": "Document Status Updated: Uploaded by Patent Analyst",
+      "description": "Romila changed the document status from Draft Created to Uploaded by Patent Analyst.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "77bc2ffd-4825-4e4e-9f8a-e9bcd4f5914b",
+      "metadata": {
+        "event_type": "DOCUMENT_UPLOADED",
+        "resource_id": "587b5c93-87b1-4ea5-9d82-1877667dc2a5",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test_sampleproject",
+        "old_status": "Draft Created",
+        "new_status": "Uploaded by Patent Analyst"
+      },
+      "is_read": false,
+      "created_at": "2026-08-13T12:15:30.037Z"
+    },
+    {
+      "id": "6ce28e4c-c324-4260-8be4-c558b106d76b",
+      "title": "New Document Version Uploaded",
+      "description": "Romila uploaded a new version: A method for detecting zero-day exploits - Novelty Search Report (1).docx.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "77bc2ffd-4825-4e4e-9f8a-e9bcd4f5914b",
+      "metadata": {
+        "event_type": "DOCUMENT_UPLOADED",
+        "resource_id": "587b5c93-87b1-4ea5-9d82-1877667dc2a5",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test_sampleproject"
+      },
+      "is_read": false,
+      "created_at": "2026-08-13T12:15:17.689Z"
+    },
+    {
+      "id": "ab249144-5347-4ab2-a6e4-ec4b24224846",
+      "title": "New Document Draft Created",
+      "description": "Romila created a new document draft: test_sampleproject.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "77bc2ffd-4825-4e4e-9f8a-e9bcd4f5914b",
+      "metadata": {
+        "event_type": "DOCUMENT_UPLOADED",
+        "resource_id": "587b5c93-87b1-4ea5-9d82-1877667dc2a5",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test_sampleproject"
+      },
+      "is_read": false,
+      "created_at": "2026-08-13T12:14:29.019Z"
+    },
+    {
+      "id": "be120fb4-708e-4d0e-99b3-e45e6f656506",
+      "title": "New Project Created",
+      "description": "Project \"test_sample project\" has been created.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "d781368f-b267-489c-a691-b548cfcee6d3",
+      "metadata": {
+        "event_type": "PROJECT_CREATED",
+        "resource_id": "489bace3-be3f-42fc-b352-119fbda5c911",
+        "resource_type": "invention",
+        "action_url": "/dashboard/inventions/489bace3-be3f-42fc-b352-119fbda5c911",
+        "title": "test_sample project"
+      },
+      "is_read": false,
+      "created_at": "2026-08-13T12:05:37.863Z"
+    },
+    {
+      "id": "39ce6b15-4776-4157-b7f5-8a4cc9b475df",
+      "title": "New Project Created",
+      "description": "Project \"test\" has been created.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "d781368f-b267-489c-a691-b548cfcee6d3",
+      "metadata": {
+        "event_type": "PROJECT_CREATED",
+        "resource_id": "f8e44ce4-2784-4bf1-974f-e390c892b262",
+        "resource_type": "invention",
+        "action_url": "/dashboard/inventions/f8e44ce4-2784-4bf1-974f-e390c892b262",
+        "title": "test"
+      },
+      "is_read": false,
+      "created_at": "2026-08-13T11:52:20.404Z"
+    },
+    {
+      "id": "d18f2e0a-1f29-48da-b9eb-3a96eb26424d",
+      "title": "Workflow Update",
+      "description": "CEO approved the project",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "d781368f-b267-489c-a691-b548cfcee6d3",
+      "metadata": {
+        "event_type": "CEO_APPROVED",
+        "resource_id": "a2f1c702-3133-47d7-87fc-aff238e1a9c5",
+        "resource_type": "invention"
+      },
+      "is_read": false,
+      "created_at": "2026-08-13T11:25:38.625Z"
+    },
+    {
+      "id": "9d9af297-2cd0-4083-b8d7-93cffabca344",
+      "title": "New Project Created",
+      "description": "Project \"sampleproject\" has been created.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "d781368f-b267-489c-a691-b548cfcee6d3",
+      "metadata": {
+        "event_type": "PROJECT_CREATED",
+        "resource_id": "a2f1c702-3133-47d7-87fc-aff238e1a9c5",
+        "resource_type": "invention",
+        "action_url": "/dashboard/inventions/a2f1c702-3133-47d7-87fc-aff238e1a9c5",
+        "title": "sampleproject"
+      },
+      "is_read": false,
+      "created_at": "2026-08-13T11:03:29.126Z"
+    },
+    {
+      "id": "091dfbf3-34c8-4774-afc8-8141e08aad60",
+      "title": "Document Status Updated: CEO Approved",
+      "description": "Mukesh changed the document status from CEO Approval Pending to CEO Approved.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "d781368f-b267-489c-a691-b548cfcee6d3",
+      "metadata": {
+        "event_type": "CEO_APPROVED",
+        "resource_id": "51b44145-488b-41fe-ac3b-770996c7b954",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "cybersecurtiuy",
+        "old_status": "CEO Approval Pending",
+        "new_status": "CEO Approved"
+      },
+      "is_read": false,
+      "created_at": "2026-08-13T09:05:05.426Z"
+    }
+  ]
+}

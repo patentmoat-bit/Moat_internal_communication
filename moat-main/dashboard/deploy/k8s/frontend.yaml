@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: patent-frontend
+  namespace: patent-platform
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: patent-frontend
+  template:
+    metadata:
+      labels:
+        app: patent-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: patent-platform/frontend:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NEXT_PUBLIC_API_URL
+              value: "https://api.patent-platform.example.com"
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: patent-frontend
+  namespace: patent-platform
+spec:
+  selector:
+    app: patent-frontend
+  ports:
+    - port: 80
+      targetPort: 3000
+  type: ClusterIP

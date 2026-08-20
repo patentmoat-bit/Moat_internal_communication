@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: patent-backend
+  namespace: patent-platform
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: patent-backend
+  template:
+    metadata:
+      labels:
+        app: patent-backend
+    spec:
+      containers:
+        - name: backend
+          image: patent-platform/backend:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: patent-secrets
+                  key: database-url
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: patent-secrets
+                  key: secret-key
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: patent-secrets
+                  key: openai-api-key
+            - name: ELASTICSEARCH_HOST
+              value: "http://elasticsearch:9200"
+            - name: REDIS_HOST
+              value: "redis:6379"
+            - name: WEAVIATE_HOST
+              value: "weaviate:8080"
+            - name: NEO4J_URI
+              value: "bolt://neo4j:7687"
+            - name: NEO4J_USER
+              value: "neo4j"
+            - name: NEO4J_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: patent-secrets
+                  key: neo4j-password
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: patent-backend
+  namespace: patent-platform
+spec:
+  selector:
+    app: patent-backend
+  ports:
+    - port: 8000
+      targetPort: 8000
+  type: ClusterIP

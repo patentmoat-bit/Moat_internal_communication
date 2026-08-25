@@ -49,7 +49,7 @@ const supabase = createClient();
 export const ceoPatentService = {
   // ── Projects (Inventions) ──────────────────────────────────────────────────
   async getProjects(): Promise<DBInvention[]> {
-    const res = await fetch("/api/ceo/projects");
+    const res = await fetch("/api/ceo/projects", { cache: "no-store" });
     if (!res.ok) {
       const data = await res.json();
       throw new Error(data.error || "Failed to fetch projects");
@@ -83,7 +83,7 @@ export const ceoPatentService = {
 
   // ── Alerts ──────────────────────────────────────────────────────────────────
   async getAlerts(): Promise<DBAlert[]> {
-    const res = await fetch("/api/ceo/alerts");
+    const res = await fetch("/api/ceo/alerts", { cache: "no-store" });
     if (!res.ok) {
       const data = await res.json();
       throw new Error(data.error || "Failed to fetch alerts");
@@ -101,7 +101,7 @@ export const ceoPatentService = {
 
   // ── Notifications (Activity Logs) ──────────────────────────────────────────
   async getNotifications(): Promise<DBActivityLog[]> {
-    const res = await fetch("/api/ceo/notifications");
+    const res = await fetch("/api/ceo/notifications", { cache: "no-store" });
     if (!res.ok) {
       const data = await res.json();
       throw new Error(data.error || "Failed to fetch notifications");

@@ -7,7 +7,6 @@ import { useAuthStore } from "@/stores/authStore";
 import { createClient } from "@/lib/supabase/client";
 import { getRoleWorkspace } from "@/lib/roleIntelligence";
 import { Loader2, ArrowRight, Mail, Lock, Eye, EyeOff, Shield, ChevronRight } from "lucide-react";
-import { QRCodeSVG } from 'qrcode.react';
 
 function getSafeRedirect(value: string | null) {
   if (!value || !value.startsWith("/") || value.startsWith("//")) return null;
@@ -18,7 +17,7 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = getSafeRedirect(searchParams.get("redirect"));
-  const { loginWithCredentials, isAuthenticated, user, mfaChallengeRequired, mfaEnrolled, otpauthUrl, verifyMfa } = useAuthStore();
+  const { loginWithCredentials, isAuthenticated, user, mfaChallengeRequired, mfaEnrolled, qrCodeSvg, verifyMfa } = useAuthStore();
 
   const [email, setEmail]           = useState(searchParams.get("email") || "");
   const [password, setPassword]     = useState("");
@@ -90,9 +89,9 @@ function LoginContent() {
             <div className="flex flex-col items-center justify-center p-4 bg-white/5 rounded-xl border border-white/10 mb-4">
               <p className="text-xs text-slate-300 font-medium mb-3 text-center">Scan this QR code with Microsoft Authenticator</p>
               <div className="bg-white p-2 rounded-lg flex items-center justify-center min-w-[136px] min-h-[136px]">
-                {/* Using QRCodeSVG for reliable client-side rendering */}
-                {otpauthUrl ? (
-                  <QRCodeSVG value={otpauthUrl} size={120} />
+                {/* Using backend-generated SVG for secure rendering without leaking TOTP secret */}
+                {qrCodeSvg ? (
+                  <div dangerouslySetInnerHTML={{ __html: qrCodeSvg }} />
                 ) : (
                   <div className="w-[120px] h-[120px] flex items-center justify-center">
                     <Loader2 className="h-6 w-6 animate-spin text-slate-300" />

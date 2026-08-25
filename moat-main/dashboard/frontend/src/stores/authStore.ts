@@ -33,7 +33,7 @@ interface AuthState {
   mfaChallengeRequired: boolean;
   mfaEnrolled: boolean;
   mfaFactorId: string | null;
-  otpauthUrl: string | null;
+  qrCodeSvg: string | null;
 
   // Actions
   setUser: (user: User | null) => void;
@@ -62,7 +62,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   mfaChallengeRequired: false,
   mfaEnrolled: false,
   mfaFactorId: null,
-  otpauthUrl: null,
+  qrCodeSvg: null,
 
   setUser: (user) => set({ user, isAuthenticated: !!user }),
   
@@ -87,7 +87,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           mfaChallengeRequired: true, 
           mfaEnrolled: data.mfa_enrolled,
           mfaFactorId: data.factor_id, 
-          otpauthUrl: data.otpauth_url || null,
+          qrCodeSvg: data.qr_code_svg || null,
           isLoading: false 
         });
         return {} as User; // Return empty/mock user until MFA completes

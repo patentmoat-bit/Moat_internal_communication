@@ -65,20 +65,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             The definitive platform to monitor competitors, uncover vital prior art, and forge an impenetrable moat around your technology.
           </p>
 
-          {/* Premium Glass Metrics */}
-          <div className="mt-12 grid grid-cols-3 gap-4">
-            {[
-              { value: "10M+", label: "Patents Indexed" },
-              { value: "99.9%", label: "Search Accuracy" },
-              { value: "Live", label: "Global Sync" },
-            ].map(s => (
-              <div key={s.label} className="flex flex-col justify-center p-4 rounded-2xl bg-white/[0.03] border border-white/[0.05] backdrop-blur-sm relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#c9a84c]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <p className="text-2xl font-black text-white relative z-10">{s.value}</p>
-                <p className="text-[10px] text-white/50 font-bold uppercase tracking-wider mt-1 relative z-10">{s.label}</p>
-              </div>
-            ))}
-          </div>
+
         </div>
 
       </div>
@@ -86,10 +73,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       {/* Right Panel — Interactive Form Area */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-12 relative bg-[#090906] shadow-[-20px_0_50px_rgba(0,0,0,0.5)] z-20">
         
-        {/* Pinochle Logo (Top Right) */}
-        <div className="absolute top-8 right-8 lg:top-12 lg:right-12 z-30">
-          <img src="/images/pinochle-logo.png" alt="Pinochle Logo" className="h-10 sm:h-12 object-contain opacity-90 hover:opacity-100 transition-opacity" />
-        </div>
+
 
         {/* Subtle background glow behind the form */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#c9a84c]/5 blur-[100px] rounded-full pointer-events-none" />

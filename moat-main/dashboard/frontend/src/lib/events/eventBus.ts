@@ -19,6 +19,9 @@ export type EventType =
   // Drafting Phase
   | "DRAFT_STARTED"
   | "DOCUMENT_UPLOADED"
+  | "DOCUMENT_SHARED_ANALYST"
+  | "DOCUMENT_SHARED_DRAFTER"
+  | "DOCUMENT_SHARED_DESIGNER"
   // Design Phase
   | "DESIGN_REQUESTED"
   | "DESIGN_STARTED"

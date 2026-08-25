@@ -3,11 +3,18 @@
 import { useState, useEffect, useCallback, use } from "react";
 import Link from "next/link";
 import {
-  ArrowLeft, CheckCircle2, Activity, Search, Target, User, BarChart2, Calendar, FileDown, Layers, FileText, Check, X, Clock
+  ArrowLeft, CheckCircle2, Activity, Search, Target, User, BarChart2, Calendar, FileDown, Layers, FileText, Check, X, Clock,
+  Upload, Download, Share2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const STATUS_STAGES = [
   "NEW",
@@ -270,10 +277,14 @@ export default function CeoProjectWorkspacePage({ params }: { params: Promise<{ 
           </div>
         )}
 
-        {['documents', 'activity'].includes(activeTab) && (
+        {activeTab === 'documents' && (
+          <DocumentsWorkspacePanel projectId={project.id} triggerEvent={triggerEvent} publishing={publishing} projectTitle={project.title} />
+        )}
+
+        {activeTab === 'activity' && (
           <div className="flex flex-col items-center justify-center py-32 text-center border border-dashed border-border/40 rounded-xl bg-muted/5">
             <Activity className="h-12 w-12 text-muted-foreground/30 mb-4" />
-            <h3 className="text-lg font-medium text-foreground mb-1 capitalize">{activeTab} Workspace</h3>
+            <h3 className="text-lg font-medium text-foreground mb-1 capitalize">Activity Workspace</h3>
             <p className="text-sm text-muted-foreground">This module will be populated as the workflow progresses.</p>
           </div>
         )}
@@ -372,6 +383,132 @@ function ProjectSearchesPanel({ projectId }: { projectId: string }) {
           </CardContent>
         </Card>
       ))}
+    </div>
+  );
+}
+
+// Sub-component for Documents Workspace
+function DocumentsWorkspacePanel({ projectId, triggerEvent, publishing, projectTitle }: { projectId: string, triggerEvent: any, publishing: boolean, projectTitle: string }) {
+  // A mock list of documents for demo purposes
+  const [mockDocuments, setMockDocuments] = useState([
+    { id: '1', name: 'Prior_Art_Search_Results.pdf', type: 'PDF', size: '2.4 MB', uploadedAt: new Date().toISOString() },
+    { id: '2', name: 'Invention_Disclosure_Form.docx', type: 'Word', size: '1.1 MB', uploadedAt: new Date().toISOString() },
+  ]);
+
+  const handleImport = () => {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.onchange = (e: any) => {
+      const file = e.target.files[0];
+      if (file) {
+        setMockDocuments(prev => [{
+          id: Math.random().toString(),
+          name: file.name,
+          type: file.name.split('.').pop().toUpperCase() || 'Unknown',
+          size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+          uploadedAt: new Date().toISOString()
+        }, ...prev]);
+        triggerEvent("DOCUMENT_UPLOADED", `New document ${file.name} was imported for ${projectTitle}`);
+      }
+    };
+    fileInput.click();
+  };
+
+  const handleExportAll = () => {
+    // Generate a simple text file with the list of documents
+    const content = mockDocuments.map(d => `${d.name} (${d.size}) - ${d.type}`).join('\n');
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${projectTitle.replace(/\s+/g, '_')}_documents_export.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold tracking-tight">Project Documents</h2>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="gap-2" onClick={handleImport}>
+            <Upload className="h-4 w-4" /> Import Document
+          </Button>
+          <Button variant="outline" size="sm" className="gap-2" onClick={handleExportAll}>
+            <Download className="h-4 w-4" /> Export All
+          </Button>
+        </div>
+      </div>
+      
+      <div className="grid gap-4">
+        {mockDocuments.map(doc => (
+          <Card key={doc.id} className="bg-card border-border/40">
+            <CardContent className="p-4 flex flex-col md:flex-row gap-4 justify-between items-center">
+              <div className="flex items-center gap-4">
+                <div className="p-2 bg-[#c9a84c]/10 rounded-lg">
+                  <FileText className="h-6 w-6 text-[#c9a84c]" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-sm">{doc.name}</h3>
+                  <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                    <span>{doc.type}</span>
+                    <span>•</span>
+                    <span>{doc.size}</span>
+                    <span>•</span>
+                    <span>{new Date(doc.uploadedAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 hover:text-[#c9a84c] hover:bg-[#c9a84c]/10"
+                  onClick={() => {
+                    const blob = new Blob(['Mock file content for ' + doc.name], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = doc.name;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-[#c9a84c] hover:bg-[#c9a84c]/10">
+                      <Share2 className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem 
+                      disabled={publishing}
+                      onClick={() => triggerEvent("DOCUMENT_SHARED_ANALYST", `CEO shared ${doc.name} with Patent Analyst for ${projectTitle}`)}
+                    >
+                      Share with Patent Analyst
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      disabled={publishing}
+                      onClick={() => triggerEvent("DOCUMENT_SHARED_DRAFTER", `CEO shared ${doc.name} with Patent Drafter for ${projectTitle}`)}
+                    >
+                      Share with Patent Drafter
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      disabled={publishing}
+                      onClick={() => triggerEvent("DOCUMENT_SHARED_DESIGNER", `CEO shared ${doc.name} with Design Team for ${projectTitle}`)}
+                    >
+                      Share with Design Team
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

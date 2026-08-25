@@ -53,6 +53,14 @@ export default function PatentAnalystWorkspacePage() {
       }
     };
     fetchStats();
+
+    const unsubscribe = ceoPatentService.subscribeToDashboardChanges(() => {
+      fetchStats();
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const unifiedStats = useMemo(() => {
@@ -135,6 +143,17 @@ export default function PatentAnalystWorkspacePage() {
     });
     return { total: copyrights.length, registered, pending, inReview };
   }, [copyrights]);
+
+  const upcomingDeadlines = useMemo(() => {
+    const all = [
+      ...projects.filter(p => p.due_date && !p.status?.toLowerCase().includes("completed") && !p.status?.toLowerCase().includes("granted")).map(p => ({ title: p.title, type: "Patent", dueDate: new Date(p.due_date).getTime(), status: p.status, href: `/dashboard/research/moat/${p.id}` })),
+      ...trademarks.filter(t => t.due_date && !t.status?.toLowerCase().includes("registered") && !t.status?.toLowerCase().includes("completed")).map(t => ({ title: t.brand_name || t.name, type: "Trademark", dueDate: new Date(t.due_date).getTime(), status: t.status, href: `/dashboard/trademark/${t.id}` })),
+      ...copyrights.filter(c => c.due_date && !c.status?.toLowerCase().includes("registered") && !c.status?.toLowerCase().includes("completed")).map(c => ({ title: c.title, type: "Copyright", dueDate: new Date(c.due_date).getTime(), status: c.status, href: `/dashboard/copyright/${c.id}` }))
+    ];
+    
+    // Sort ascending by due date (closest first)
+    return all.sort((a, b) => a.dueDate - b.dueDate).slice(0, 3);
+  }, [projects, trademarks, copyrights]);
 
   const summaryCards = useMemo(() => {
     if (loading) {
@@ -523,20 +542,25 @@ export default function PatentAnalystWorkspacePage() {
               </a>
             </div>
             <div className="space-y-4 flex-1 overflow-y-auto pr-2">
-              {alerts.length === 0 && <p className="text-xs text-muted-foreground italic">No upcoming deadlines.</p>}
-              {alerts.filter((a: any) => a.metadata?.due_date || a.priority.toLowerCase() === 'high' || a.priority.toLowerCase() === 'critical').slice(0, 3).map((d: any, i) => {
-                const date = new Date(d.metadata?.due_date || new Date(d.created_at).getTime() + 86400000 * 3); // mock due date if not present
+              {upcomingDeadlines.length === 0 && <p className="text-xs text-muted-foreground italic">No upcoming deadlines.</p>}
+              {upcomingDeadlines.map((d, i) => {
+                const date = new Date(d.dueDate);
+                const isOverdue = date.getTime() < Date.now();
                 return (
                   <div key={i} className="flex items-start gap-4">
                     <div className="flex flex-col items-center justify-center w-10 shrink-0">
-                      <span className="text-[9px] font-bold text-rose-500 uppercase">{date.toLocaleString('default', { month: 'short' })}</span>
+                      <span className={`text-[9px] font-bold uppercase ${isOverdue ? 'text-rose-500' : 'text-amber-600'}`}>{date.toLocaleString('default', { month: 'short' })}</span>
                       <span className="text-lg font-black text-foreground leading-tight">{date.getDate()}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-foreground truncate" title={d.title}>{d.title}</p>
-                      <p className="text-[11px] text-muted-foreground truncate">{d.metadata?.project_title || d.metadata?.resource_id || "Action Required"}</p>
+                      <a href={d.href} className="text-xs font-bold text-foreground truncate block hover:underline" title={d.title}>{d.title}</a>
+                      <p className="text-[11px] text-muted-foreground truncate">{d.type} • {d.status || "Action Required"}</p>
                     </div>
-                    <span className="text-[10px] font-bold text-rose-500 shrink-0 pt-0.5">{d.priority.charAt(0).toUpperCase() + d.priority.slice(1)}</span>
+                    {isOverdue ? (
+                      <span className="text-[10px] font-bold text-rose-500 shrink-0 pt-0.5">Overdue</span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-amber-600 shrink-0 pt-0.5">Upcoming</span>
+                    )}
                   </div>
                 );
               })}

@@ -72,28 +72,28 @@ export const GET = withSessionValidation(async (req: NextRequest, sessionUser: a
     // We don't have real workflows/documents tables handy without querying them.
     let safePatents: any[] = [];
     try {
-      const { data: patents, error: patentsError } = await supabase.from("inventions").select("id, status, title").limit(100);
+      const { data: patents, error: patentsError } = await supabase.from("patent_documents").select("id, status, title").limit(100);
       if (!patentsError) {
          safePatents = patents || [];
       }
     } catch (e) {
-      console.warn("Could not fetch inventions:", e);
+      console.warn("Could not fetch patent documents:", e);
     }
-    const activeWorkflows = safePatents.filter((p: any) => p.status !== "Filed" && p.status !== "Completed" && p.status !== "Rejected").length;
-    const pendingReviews = safePatents.filter((p: any) => p.status?.includes("Review")).length;
-    const pendingApprovals = safePatents.filter((p: any) => p.status?.includes("CEO")).length;
+    const activeWorkflows = safePatents.filter((p: any) => p.status !== "Completed" && p.status !== "Archived" && p.status !== "Rejected").length;
+    const pendingReviews = safePatents.filter((p: any) => p.status?.toLowerCase().includes("review")).length;
+    const pendingApprovals = safePatents.filter((p: any) => p.status?.toLowerCase().includes("ceo") && p.status?.toLowerCase().includes("pending")).length;
     
     // Patent Workflow stages
     const workflowStages = {
-        Research: safePatents.filter((p: any) => p.status?.toLowerCase().includes("research")).length,
-        Drafting: safePatents.filter((p: any) => p.status?.toLowerCase().includes("drafting")).length,
-        DesignReview: safePatents.filter((p: any) => p.status?.toLowerCase().includes("design")).length,
-        PatentAnalystReview: safePatents.filter((p: any) => p.status?.toLowerCase().includes("analyst")).length,
-        CEOReview: safePatents.filter((p: any) => p.status?.toLowerCase().includes("ceo") && p.status?.toLowerCase().includes("review")).length,
-        Revision: safePatents.filter((p: any) => p.status?.toLowerCase().includes("revision")).length,
-        Approved: safePatents.filter((p: any) => p.status?.toLowerCase().includes("approved") && !p.status?.toLowerCase().includes("pending")).length,
-        Filing: safePatents.filter((p: any) => p.status?.toLowerCase().includes("filing")).length,
-        Filed: safePatents.filter((p: any) => p.status?.toLowerCase() === "filed").length,
+        Research: safePatents.filter((p: any) => p.status === "Draft" || p.status === "Draft Created").length,
+        Drafting: safePatents.filter((p: any) => p.status === "Uploaded by Patent Analyst" || p.status === "Waiting for Drafter Review").length,
+        DesignReview: safePatents.filter((p: any) => p.status === "Pending Design Review" || p.status === "Under Design Review" || p.status === "Design In Progress" || p.status === "Changes Requested" || p.status === "Returned to Designing Team" || p.status === "Revised Document Uploaded").length,
+        PatentAnalystReview: safePatents.filter((p: any) => p.status === "Waiting for Patent Analyst Review" || p.status === "Verification Pending" || p.status === "Patent Analyst Approved").length,
+        CEOReview: safePatents.filter((p: any) => p.status === "CEO Approval Pending" || p.status === "Sent for CEO Approval").length,
+        Revision: safePatents.filter((p: any) => p.status === "Revision Requested by CEO").length,
+        Approved: safePatents.filter((p: any) => p.status === "CEO Approved" || p.status === "Approved").length,
+        Filing: safePatents.filter((p: any) => p.status === "Filing").length,
+        Filed: safePatents.filter((p: any) => p.status === "Completed" || p.status === "Filed").length,
     };
 
     let backupStatus = "Backup status unavailable";

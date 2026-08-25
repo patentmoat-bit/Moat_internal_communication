@@ -258,7 +258,7 @@ export class EnterpriseAuthenticationService {
     }
 
     const enrollment = await this.userService.getMfaEnrollment(user.id);
-    let otpauthUrl = undefined;
+    let qrCodeSvg = undefined;
     if (!enrollment.isEnrolled) {
       await this.auditLogService.logEvent({
         userId: user.id,
@@ -273,15 +273,15 @@ export class EnterpriseAuthenticationService {
       if (!enrollment.encryptedSecret) {
         // Generate and store new secret without enabling MFA
         const { secret, uri } = await this.mfaEnrollmentService.initializeEnrollment(user.id, cleanEmail);
-        otpauthUrl = uri;
+        const QRCode = require('qrcode');
+        qrCodeSvg = await QRCode.toString(uri, { type: 'svg', width: 120, margin: 1, color: { dark: '#000000', light: '#ffffff' } });
       } else {
         // Reuse existing unconfirmed secret
         const secret = EncryptionService.decrypt(enrollment.encryptedSecret);
         if (secret) {
-          const twofactor = require("node-2fa");
-          const tempSecret = twofactor.generateSecret({ name: "MOAT", account: cleanEmail });
-          // we only need the uri builder, unfortunately node-2fa's generateSecret doesn't accept a preexisting secret.
-          otpauthUrl = `otpauth://totp/MOAT:${encodeURIComponent(cleanEmail)}?secret=${secret}&issuer=MOAT`;
+          const QRCode = require('qrcode');
+          const uri = `otpauth://totp/MOAT:${encodeURIComponent(cleanEmail)}?secret=${secret}&issuer=MOAT`;
+          qrCodeSvg = await QRCode.toString(uri, { type: 'svg', width: 120, margin: 1, color: { dark: '#000000', light: '#ffffff' } });
         }
       }
     }
@@ -291,7 +291,7 @@ export class EnterpriseAuthenticationService {
       mfa_required: true,
       mfa_enrolled: enrollment.isEnrolled,
       factor_id: user.id,
-      otpauth_url: otpauthUrl,
+      qr_code_svg: qrCodeSvg,
       message: "MFA challenge required.",
     };
   }

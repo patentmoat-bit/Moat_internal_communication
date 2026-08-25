@@ -250,6 +250,39 @@ const ROUTING_RULES: EmailRoutingRule[] = [
     subject: "Payment Completed — {{project_title}}",
     templateId: "payment_completed",
   },
+
+  // 18. DOCUMENT_SHARED_ANALYST — CEO shares document to Patent Analyst
+  {
+    eventType: "DOCUMENT_SHARED_ANALYST",
+    toRoles: ["Patent Analyst"],
+    ccRoles: ["CEO", "Admin"],
+    toProjectFields: ["assigned_to"],
+    ccProjectFields: [],
+    subject: "Document Shared — {{project_title}}",
+    templateId: "document_shared_analyst",
+  },
+
+  // 19. DOCUMENT_SHARED_DRAFTER — CEO shares document to Patent Drafter
+  {
+    eventType: "DOCUMENT_SHARED_DRAFTER",
+    toRoles: ["Patent Drafter"],
+    ccRoles: ["CEO", "Admin"],
+    toProjectFields: ["assigned_to"], // Usually drafters use assigned_to or drafter_id, let's keep assigned_to for now or empty if no specific field
+    ccProjectFields: [],
+    subject: "Document Shared — {{project_title}}",
+    templateId: "document_shared_drafter",
+  },
+
+  // 20. DOCUMENT_SHARED_DESIGNER — CEO shares document to Design Team
+  {
+    eventType: "DOCUMENT_SHARED_DESIGNER",
+    toRoles: ["Design Team"],
+    ccRoles: ["CEO", "Admin"],
+    toProjectFields: ["designer_id"],
+    ccProjectFields: [],
+    subject: "Document Shared — {{project_title}}",
+    templateId: "document_shared_designer",
+  },
 ];
 
 import { createAdminClient } from "@/lib/supabase/admin";

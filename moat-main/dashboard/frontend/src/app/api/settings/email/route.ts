@@ -44,6 +44,8 @@ export async function GET(req: NextRequest) {
     if (error && error.message.includes("does not exist") || error?.message.includes("schema cache") || !data) {
       const localData = readFallbackFile();
       if (localData) {
+        // Mask the secret for the UI
+        localData.clientSecret = "********_SECURED_IN_ENV_********";
         return NextResponse.json({ data: localData });
       }
 
@@ -71,11 +73,17 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const supabase = createAdminClient();
 
+    // If the UI sends the mask back, keep it secure by not overwriting it in the DB/file
+    // (Instead, rely on the backend falling back to process.env.MS_GRAPH_CLIENT_SECRET)
+    const finalSecret = body.clientSecret === "********_SECURED_IN_ENV_********" 
+      ? "********_SECURED_IN_ENV_********" 
+      : body.clientSecret;
+
     const configData = {
       provider: body.provider,
       tenantId: body.tenantId,
       clientId: body.clientId,
-      clientSecret: body.clientSecret,
+      clientSecret: finalSecret,
       fromName: body.fromName,
       fromEmail: body.fromEmail,
     };

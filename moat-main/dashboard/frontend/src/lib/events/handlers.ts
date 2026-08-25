@@ -51,6 +51,12 @@ async function getEmailConfig(): Promise<EmailConfig | null> {
     if (fs.existsSync(EMAIL_CONFIG_PATH)) {
       const raw = fs.readFileSync(EMAIL_CONFIG_PATH, "utf-8");
       const parsed = JSON.parse(raw);
+      
+      // Secure fallback: inject from environment if available
+      if (process.env.MS_GRAPH_CLIENT_SECRET) {
+        parsed.clientSecret = process.env.MS_GRAPH_CLIENT_SECRET;
+      }
+      
       if (parsed.clientId && parsed.clientSecret && parsed.tenantId) {
         return parsed as EmailConfig;
       }
@@ -244,13 +250,16 @@ export const handleNotification = async (event: EventPayload) => {
 
       // 2. Add individual UUIDs for each user in that role
       const roleVariants = getRoleVariants(roleName);
+      
+      // Phase 20 Schema: Join with roles table
       for (const variant of roleVariants) {
         const { data: users } = await supabase
           .from("users")
-          .select("uuid, id")
-          .eq("role", variant);
+          .select("uuid, id, roles!inner(role_name)")
+          .eq("roles.role_name", variant);
+          
         if (users) {
-          users.forEach((u: { uuid?: string, id: string }) => {
+          users.forEach((u: any) => {
             if (u.uuid) userIds.add(u.uuid);
             else userIds.add(u.id); // Legacy fallback
           });
@@ -441,8 +450,8 @@ export const handleEmailDispatch = async (event: EventPayload) => {
     const htmlBody = generateEmailTemplate(
       heading,
       body,
-      event.actionUrl,
-      "Open in Dashboard",
+      undefined,
+      undefined,
       emailTableMetadata
     );
 

@@ -36,22 +36,23 @@ export async function resolveRecipients(
   // Helper: Get all emails for a given role name
   const getEmailsByRole = async (roleName: string): Promise<string[]> => {
     // Dynamic RBAC mapping: Map routing rule role names to possible DB role values
-
-    // Map routing rule role names to possible DB role values
     const roleVariants = getRoleVariants(roleName);
 
     const emails: string[] = [];
+    
+    // Phase 20 Schema: Join with roles table
     for (const variant of roleVariants) {
       const { data } = await supabase
         .from("users")
-        .select("email")
-        .eq("role", variant);
+        .select("email, roles!inner(role_name)")
+        .eq("roles.role_name", variant);
 
       if (data) {
-        emails.push(...data.map((u: { email: string }) => u.email));
+        emails.push(...data.map((u: any) => u.email));
       }
     }
-    return emails;
+    
+    return Array.from(new Set(emails));
   };
 
   // TO recipients from roles
@@ -139,10 +140,11 @@ export async function getUserRole(supabase: ReturnType<typeof createAdminClient>
 
   const { data } = await supabase
     .from("users")
-    .select("role")
+    .select("role, roles(role_name)")
     .eq("id", userId)
     .single();
-  return data?.role ?? null;
+    
+  return (data as any)?.roles?.role_name ?? (data as any)?.role ?? null;
 }
 
 /**

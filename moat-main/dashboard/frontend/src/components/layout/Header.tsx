@@ -241,14 +241,15 @@ export function Header({ user, onMenuToggle }: HeaderProps) {
             <div className="flex flex-col gap-0.5">
               <p className="text-xs font-bold text-foreground">{user?.name}</p>
               <p className="text-[10px] text-muted-foreground font-medium">{user?.email}</p>
+              <p className="text-[10px] text-primary font-bold uppercase mt-1">{user?.role}</p>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-xs">
+          <DropdownMenuItem className="text-xs cursor-pointer" onClick={() => router.push("/dashboard/settings")}>
             <User className="mr-2 h-3.5 w-3.5" /> Profile Settings
           </DropdownMenuItem>
-          <DropdownMenuItem className="text-xs">
-            <Settings className="mr-2 h-3.5 w-3.5" /> Workspace Config
+          <DropdownMenuItem className="text-xs cursor-pointer" onClick={() => router.push("/dashboard/notifications")}>
+            <Bell className="mr-2 h-3.5 w-3.5" /> Notifications
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem

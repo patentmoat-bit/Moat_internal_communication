@@ -97,6 +97,18 @@ export function getEventEmailContent(
       heading: `${pType} Project Updated`,
       body: `The ${lowerPType} project "${projectTitle}" has been updated with new information.\n\nPlease review the project details.`,
     },
+    DOCUMENT_SHARED_ANALYST: {
+      heading: `${pType} Document Shared with Patent Analyst`,
+      body: `A document related to the ${lowerPType} project "${projectTitle}" has been shared with you by the CEO.\n\nPlease review the document in your workspace.`,
+    },
+    DOCUMENT_SHARED_DRAFTER: {
+      heading: `${pType} Document Shared with Patent Drafter`,
+      body: `A document related to the ${lowerPType} project "${projectTitle}" has been shared with you by the CEO.\n\nPlease review the document in your workspace and proceed with drafting work as necessary.`,
+    },
+    DOCUMENT_SHARED_DESIGNER: {
+      heading: `${pType} Document Shared with Design Team`,
+      body: `A document related to the ${lowerPType} project "${projectTitle}" has been shared with you by the CEO.\n\nPlease review the document in your workspace and proceed with design work as necessary.`,
+    },
   };
 
   return templates[eventType] || {

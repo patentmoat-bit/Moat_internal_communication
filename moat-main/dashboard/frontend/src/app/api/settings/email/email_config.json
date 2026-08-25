@@ -2,7 +2,7 @@
   "provider": "Microsoft Graph (Office 365)",
   "tenantId": "005b5237-b81a-4886-bab3-9b45e5bb1489",
   "clientId": "cdb716bd-9e3f-40ce-8149-e46ecb57360a",
-  "clientSecret": "********_MASKED_BY_AI_********",
+  "clientSecret": "********_SECURED_IN_ENV_********",
   "fromName": "MOAT Alerts",
   "fromEmail": "info@rezilyens.com"
 }

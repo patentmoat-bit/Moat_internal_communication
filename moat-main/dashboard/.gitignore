@@ -1,6 +1,7 @@
 # dependencies
 frontend/node_modules
 backend/venv/
+backend/.venv/
 
 # build output
 frontend/.next/
@@ -17,6 +18,8 @@ __pycache__/
 .env
 .env.local
 .env.*.local
+backend/.env.patent_sources
+!backend/.env.patent_sources.example
 
 # IDE
 .idea/

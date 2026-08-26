@@ -17,7 +17,11 @@ const nextConfig: NextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-          { key: "Content-Security-Policy", value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://gaanedxlwtjftqxhncfw.supabase.co; connect-src 'self' https://gaanedxlwtjftqxhncfw.supabase.co http://localhost:8000 wss://gaanedxlwtjftqxhncfw.supabase.co; font-src 'self' data:;" }
+          // NOTE: Content-Security-Policy is intentionally NOT set here. It is generated
+          // per-request in src/middleware.ts (which embeds a fresh nonce into script-src).
+          // Defining a second, static CSP here previously used 'unsafe-eval' 'unsafe-inline'
+          // for script-src, which contradicted the nonce-based policy in middleware.ts and
+          // defeated its protection. Keep CSP defined in exactly one place (middleware.ts).
         ],
       },
     ];

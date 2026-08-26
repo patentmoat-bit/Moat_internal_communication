@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { 
+import {
   Code2, Eye, Send, AlertTriangle, UserPlus, KeyRound, Laptop, ShieldAlert,
   Users, UserMinus, UserCheck, Shield, ChevronDown, ChevronRight, FileText,
   Upload, CheckCircle, Activity, FileSearch, Scale, Presentation, MessageSquare,
   FileBarChart, BarChart3, Database, FileOutput, ArrowRight, Plus, Copy, Power, HelpCircle, ToggleLeft, ToggleRight
 } from "lucide-react";
+import DOMPurify from "dompurify";
 import { cn } from "@/lib/utils";
 
 type CategoryName = "User Management" | "Patent Workflow" | "Tracker Module" | "Upload Center" | "Feedback Module" | "Report Automation";
@@ -398,9 +399,17 @@ export default function EmailTemplatesPage() {
                 />
               ) : (
                 <div className="absolute inset-0 overflow-y-auto p-8 bg-muted/30 custom-scrollbar flex justify-center">
-                  <div 
+                  <div
                     className="w-full max-w-[600px] shadow-sm rounded-xl overflow-hidden bg-white"
-                    dangerouslySetInnerHTML={{ __html: activeTemplate.html.replace(/{{([^}]+)}}/g, '<span style="background-color: #fef08a; padding: 0 4px; border-radius: 4px; color: #854d0e; font-family: monospace; font-size: 0.9em;">$1</span>') }} 
+                    dangerouslySetInnerHTML={{
+                      // This is an email-template preview: content can include rich
+                      // formatting (tables, headings, inline styles), so sanitize with
+                      // DOMPurify's default safe-HTML allowlist rather than a narrow
+                      // tag list, while still stripping <script>, event handlers, etc.
+                      __html: DOMPurify.sanitize(
+                        activeTemplate.html.replace(/{{([^}]+)}}/g, '<span style="background-color: #fef08a; padding: 0 4px; border-radius: 4px; color: #854d0e; font-family: monospace; font-size: 0.9em;">$1</span>')
+                      ),
+                    }}
                   />
                 </div>
               )}

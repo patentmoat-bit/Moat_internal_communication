@@ -44,6 +44,11 @@ export async function GET(req: NextRequest) {
     if (error && error.message.includes("does not exist") || error?.message.includes("schema cache") || !data) {
       const localData = readFallbackFile();
       if (localData) {
+        // Env vars (if set) are the effective source of truth over the
+        // committed placeholder file — mirror the resolution used when
+        // actually sending mail (see src/lib/events/handlers.ts).
+        if (process.env.AZURE_TENANT_ID) localData.tenantId = process.env.AZURE_TENANT_ID;
+        if (process.env.AZURE_CLIENT_ID) localData.clientId = process.env.AZURE_CLIENT_ID;
         // Mask the secret for the UI
         localData.clientSecret = "********_SECURED_IN_ENV_********";
         return NextResponse.json({ data: localData });
@@ -53,8 +58,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         data: {
           provider: "Microsoft Graph (Office 365)",
-          tenantId: "",
-          clientId: "",
+          tenantId: process.env.AZURE_TENANT_ID || "",
+          clientId: process.env.AZURE_CLIENT_ID || "",
           clientSecret: "",
           fromName: "MOAT Alerts",
           fromEmail: "noreply@moatplatform.io",

@@ -16,6 +16,9 @@ spec:
       containers:
         - name: worker
           image: patent-platform/worker:latest
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
           env:
             - name: DATABASE_URL
               valueFrom:

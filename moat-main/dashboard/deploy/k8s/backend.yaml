@@ -16,6 +16,9 @@ spec:
       containers:
         - name: backend
           image: patent-platform/backend:latest
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
           ports:
             - containerPort: 8000
           env:

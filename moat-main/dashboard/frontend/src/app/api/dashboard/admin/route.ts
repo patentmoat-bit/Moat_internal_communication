@@ -1,11 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { AccessReviewService } from "@/lib/security/access/AccessReviewService";
+import { withSessionValidation } from "@/lib/security";
 import { GlobalExceptionHandler } from "@/lib/errors";
 
-export async function GET(req: NextRequest) {
+export const GET = withSessionValidation(async (req: NextRequest, sessionUser: any) => {
   try {
     const supabase = createAdminClient();
+
+    // Fresh role from the DB, not the JWT claim — a demoted admin's existing
+    // token can still say "admin" until it expires.
+    const { data: userRecord } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", sessionUser.sub)
+      .single();
+    const normalizedRole = (userRecord?.role || sessionUser.role)?.toLowerCase();
+    if (!normalizedRole || !["admin", "super admin", "system admin"].includes(normalizedRole)) {
+      return NextResponse.json({ error: "Unauthorized access" }, { status: 403 });
+    }
+
     const now = new Date();
 
     // 1. Fetch Users
@@ -246,4 +260,4 @@ export async function GET(req: NextRequest) {
     console.error("Admin Dashboard API Error:", err);
     return await GlobalExceptionHandler.handle(err);
   }
-}
+});

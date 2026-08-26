@@ -20,19 +20,18 @@ const AUTH_PATHS = ["/login", "/register", "/auth/login", "/auth/signup"];
 const getSecretKey = () => {
   const secret = process.env.JWT_SECRET_KEY;
   if (!secret || secret.length === 0) {
-    return new TextEncoder().encode("moat-super-secret-jwt-key-change-me-in-prod-12345");
+    throw new Error("Missing required environment variable: JWT_SECRET_KEY");
   }
   return new TextEncoder().encode(secret);
 };
 
 export async function middleware(request: NextRequest) {
-  console.log("MIDDLEWARE RUNNING FOR:", request.nextUrl.pathname);
   const nonce = btoa(crypto.randomUUID());
   const isDev = process.env.NODE_ENV === "development";
-  
+
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.vercel-scripts.com https://*.vercel-insights.com https://vercel.live https://*.vercel.live https://*.supabase.co https://login.microsoftonline.com;
+    script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""} https://*.vercel-scripts.com https://*.vercel-insights.com https://vercel.live https://*.vercel.live https://*.supabase.co https://login.microsoftonline.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' data: https://fonts.gstatic.com;
     img-src 'self' data: blob: https://*.supabase.co https://patents.google.com https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.githubusercontent.com https://*.vercel.com;
@@ -111,7 +110,7 @@ async function handleAuth(request: NextRequest, requestHeaders: Headers) {
         const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
         
         if (supabaseUrl && serviceRoleKey) {
-          let queryParams = `jwt_token=eq.${token}`;
+          let queryParams: string;
           try {
             const encoder = new TextEncoder();
             const dataBuffer = encoder.encode(token);
@@ -120,40 +119,47 @@ async function handleAuth(request: NextRequest, requestHeaders: Headers) {
             const tokenHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
             queryParams = `or=(jwt_token.eq.${tokenHash},jwt_token.eq.${token})`;
           } catch (e) {
-            // fallback if edge crypto fails
+            // Hashing failed: fail closed rather than sending the raw token in a URL.
+            sessionValid = false;
+            queryParams = "";
           }
 
-          const res = await fetch(`${supabaseUrl}/rest/v1/user_sessions?${queryParams}&select=status,logout_time,login_time,last_activity_at`, {
-            headers: {
-              'apikey': serviceRoleKey,
-              'Authorization': `Bearer ${serviceRoleKey}`
-            },
-            cache: 'no-store'
-          });
-          
-          if (res.ok) {
-            const data = await res.json();
-            if (data && data.length > 0) {
-              const session = data[0];
-              if (session.status !== 'Inactive' && !session.logout_time) {
-                const nowTime = new Date();
-                const loginTime = new Date(session.login_time);
-                const lastActivityTime = session.last_activity_at ? new Date(session.last_activity_at) : loginTime;
-                
-                const ABSOLUTE_LIFETIME_MS = 8 * 60 * 60 * 1000;
-                const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
-                
-                if (nowTime.getTime() - loginTime.getTime() > ABSOLUTE_LIFETIME_MS) {
-                  sessionValid = false;
-                } else if (nowTime.getTime() - lastActivityTime.getTime() > INACTIVITY_TIMEOUT_MS) {
-                  sessionValid = false;
+          if (queryParams) {
+            const res = await fetch(`${supabaseUrl}/rest/v1/user_sessions?${queryParams}&select=status,logout_time,login_time,last_activity_at`, {
+              headers: {
+                'apikey': serviceRoleKey,
+                'Authorization': `Bearer ${serviceRoleKey}`
+              },
+              cache: 'no-store'
+            });
+
+            if (res.ok) {
+              const data = await res.json();
+              if (data && data.length > 0) {
+                const session = data[0];
+                if (session.status !== 'Inactive' && !session.logout_time) {
+                  const nowTime = new Date();
+                  const loginTime = new Date(session.login_time);
+                  const lastActivityTime = session.last_activity_at ? new Date(session.last_activity_at) : loginTime;
+
+                  const ABSOLUTE_LIFETIME_MS = 8 * 60 * 60 * 1000;
+                  const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
+
+                  if (nowTime.getTime() - loginTime.getTime() > ABSOLUTE_LIFETIME_MS) {
+                    sessionValid = false;
+                  } else if (nowTime.getTime() - lastActivityTime.getTime() > INACTIVITY_TIMEOUT_MS) {
+                    sessionValid = false;
+                  }
+                } else {
+                  sessionValid = false; // session is marked inactive in DB
                 }
               } else {
-                sessionValid = false; // session is marked inactive in DB
+                // No matching session row for this jti: treat as revoked (fail closed).
+                sessionValid = false;
               }
             } else {
-              // If we expected a DB session but none found, we might want to fail it.
-              // For safety during migrations, we'll keep it true unless we strictly enforce it.
+              // Could not verify session state against the DB: fail closed.
+              sessionValid = false;
             }
           }
         }

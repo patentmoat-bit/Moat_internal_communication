@@ -37,8 +37,10 @@ class ForgotPasswordRequest(BaseModel):
 
 
 class ForgotPasswordResponse(BaseModel):
+    # Intentionally contains no token: the reset link/token is delivered only via the
+    # email-sending path, never in the API response, to avoid leaking it to any client
+    # (and the generic message avoids leaking whether the email is registered).
     message: str
-    reset_token: str | None = None
 
 
 class ResetPasswordRequest(BaseModel):

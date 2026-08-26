@@ -10,7 +10,11 @@ import { AuthorizationMiddleware } from "@/lib/security/authorization";
 import { EventBus } from "@/lib/events/eventBus";
 
 const supabaseAdminUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  // Server-only module: never silently downgrade to the public anon key.
+  throw new Error("Missing required environment variable: SUPABASE_SERVICE_ROLE_KEY");
+}
+const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabaseAdmin = createClient(supabaseAdminUrl, supabaseAdminKey);
 
 const service = new DocumentsService();

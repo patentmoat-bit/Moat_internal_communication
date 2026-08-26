@@ -32,7 +32,7 @@ interface AuthState {
   isLoading: boolean;
   mfaChallengeRequired: boolean;
   mfaEnrolled: boolean;
-  mfaFactorId: string | null;
+  mfaChallengeToken: string | null;
   qrCodeSvg: string | null;
 
   // Actions
@@ -61,12 +61,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoading: false,
   mfaChallengeRequired: false,
   mfaEnrolled: false,
-  mfaFactorId: null,
+  mfaChallengeToken: null,
   qrCodeSvg: null,
 
   setUser: (user) => set({ user, isAuthenticated: !!user }),
   
-  setMfaChallenge: (required, factorId) => set({ mfaChallengeRequired: required, mfaFactorId: factorId || null }),
+  setMfaChallenge: (required, factorId) => set({ mfaChallengeRequired: required, mfaChallengeToken: factorId || null }),
 
   // ── Login ──────────────────────────────────────────────────────────────────
   loginWithCredentials: async (email, password) => {
@@ -86,7 +86,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ 
           mfaChallengeRequired: true, 
           mfaEnrolled: data.mfa_enrolled,
-          mfaFactorId: data.factor_id, 
+          mfaChallengeToken: data.challenge_token,
           qrCodeSvg: data.qr_code_svg || null,
           isLoading: false 
         });
@@ -105,20 +105,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   verifyMfa: async (code: string) => {
     set({ isLoading: true });
     try {
-      const { mfaFactorId } = get();
-      if (!mfaFactorId) throw new Error("No MFA factor ID found");
+      const { mfaChallengeToken } = get();
+      if (!mfaChallengeToken) throw new Error("No MFA factor ID found");
       
       const res = await fetch("/api/auth/mfa/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ factorId: mfaFactorId, code }),
+        body: JSON.stringify({ challengeToken: mfaChallengeToken, code }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail ?? "MFA verification failed.");
 
       const user = normalizeUser(data.user);
-      set({ user, isAuthenticated: true, mfaChallengeRequired: false, mfaFactorId: null, otpauthUrl: null, isLoading: false });
+      set({ user, isAuthenticated: true, mfaChallengeRequired: false, mfaChallengeToken: null, otpauthUrl: null, isLoading: false });
       return user;
     } catch (err) {
       set({ isLoading: false });

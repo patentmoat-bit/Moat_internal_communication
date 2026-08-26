@@ -3,8 +3,7 @@ import { SignJWT, jwtVerify } from "jose";
 const getSecretKey = () => {
   const secret = process.env.JWT_SECRET_KEY;
   if (!secret || secret.length === 0) {
-    // For development fallback. In production, this should throw an error.
-    return new TextEncoder().encode("moat-super-secret-jwt-key-change-me-in-prod-12345");
+    throw new Error("Missing required environment variable: JWT_SECRET_KEY");
   }
   return new TextEncoder().encode(secret);
 };

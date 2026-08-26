@@ -6,7 +6,7 @@ import { useState } from "react";
 import { AppProvider } from "@/lib/store";
 import { ToastProvider } from "@/components/shared/Toast";
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({ children, nonce }: { children: React.ReactNode; nonce?: string }) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -26,6 +26,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         defaultTheme="dark"
         enableSystem={false}
         disableTransitionOnChange
+        nonce={nonce}
       >
         <AppProvider>
           <ToastProvider>

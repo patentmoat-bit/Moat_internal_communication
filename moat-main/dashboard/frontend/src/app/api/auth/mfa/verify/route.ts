@@ -7,10 +7,10 @@ import { GlobalExceptionHandler } from "@/lib/errors";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { factorId, code } = body;
+    const { challengeToken, code } = body;
 
-    if (!factorId || !code) {
-      return createAuthResponse({ success: false, error: "Factor ID and code are required.", detail: "Factor ID and code are required." }, 400);
+    if (!challengeToken || !code) {
+      return createAuthResponse({ success: false, error: "Challenge token and code are required.", detail: "Challenge token and code are required." }, 400);
     }
 
     const supabase = createAdminClient();
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     const userAgent = request.headers.get("user-agent") || "Unknown";
     const ipAddress = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "Unknown";
 
-    const user = await authService.verifyMfaChallenge(factorId, code, ipAddress, userAgent);
+    const user = await authService.verifyMfaChallenge(challengeToken, code, ipAddress, userAgent);
 
     try {
       const cookieStore = await cookies();

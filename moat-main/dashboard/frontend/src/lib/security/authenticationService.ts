@@ -1,5 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
+import { SignJWT, jwtVerify } from "jose";
 import { IPReputationService } from "./ipReputationService";
 import { RateLimitingService } from "./rateLimitingService";
 import { LockoutService } from "./lockoutService";
@@ -30,6 +31,40 @@ export class EnterpriseAuthenticationService {
     this.sessionService = new SessionService(supabase);
     this.userService = new UserService(supabase);
     this.mfaEnrollmentService = new MFAEnrollmentService(this.userService);
+  }
+
+  private getMfaChallengeSecret(): Uint8Array {
+    const secret = process.env.JWT_SECRET_KEY;
+    if (!secret || secret.length === 0) {
+      throw new Error("Missing required environment variable: JWT_SECRET_KEY");
+    }
+    return new TextEncoder().encode(secret);
+  }
+
+  /**
+   * A signed, short-lived token binding an MFA challenge to the user who
+   * just passed the password check. Prevents /api/auth/mfa/verify from
+   * being callable with an arbitrary client-supplied user id.
+   */
+  private async signMfaChallengeToken(userId: string): Promise<string> {
+    return new SignJWT({ purpose: "mfa_challenge" })
+      .setProtectedHeader({ alg: "HS256" })
+      .setSubject(userId)
+      .setIssuedAt()
+      .setExpirationTime("5m")
+      .sign(this.getMfaChallengeSecret());
+  }
+
+  private async verifyMfaChallengeToken(token: string): Promise<string> {
+    try {
+      const { payload } = await jwtVerify(token, this.getMfaChallengeSecret());
+      if (payload.purpose !== "mfa_challenge" || typeof payload.sub !== "string") {
+        throw new Error("Invalid challenge token");
+      }
+      return payload.sub;
+    } catch {
+      throw { status: 401, message: "MFA challenge expired or invalid. Please sign in again.", error: "MFA challenge expired or invalid. Please sign in again." };
+    }
   }
 
   async authenticateLogin(email: string, password: string, ip: string, userAgent: string, captchaToken?: string) {
@@ -258,8 +293,13 @@ export class EnterpriseAuthenticationService {
     }
 
     const enrollment = await this.userService.getMfaEnrollment(user.id);
+    // A user is only truly enrolled once a secret actually exists — the
+    // `mfa_enabled` flag can be true with no secret ever generated (e.g.
+    // bad/incomplete seed data), which previously skipped QR generation
+    // entirely and left the account impossible to verify.
+    const isFullyEnrolled = enrollment.isEnrolled && !!enrollment.encryptedSecret;
     let qrCodeSvg = undefined;
-    if (!enrollment.isEnrolled) {
+    if (!isFullyEnrolled) {
       await this.auditLogService.logEvent({
         userId: user.id,
         email: cleanEmail,
@@ -289,8 +329,8 @@ export class EnterpriseAuthenticationService {
     return {
       requiresMFA: true,
       mfa_required: true,
-      mfa_enrolled: enrollment.isEnrolled,
-      factor_id: user.id,
+      mfa_enrolled: isFullyEnrolled,
+      challenge_token: await this.signMfaChallengeToken(user.id),
       qr_code_svg: qrCodeSvg,
       message: "MFA challenge required.",
     };
@@ -566,7 +606,13 @@ export class EnterpriseAuthenticationService {
     return { success: true, message: "Password reset successfully. Please log in with your new credentials." };
   }
 
-  async verifyMfaChallenge(factorId: string, code: string, ip: string, userAgent: string) {
+  async verifyMfaChallenge(challengeToken: string, code: string, ip: string, userAgent: string) {
+    // factorId is derived from a signed, short-lived token issued at the end
+    // of a successful password check — it is never trusted from raw client
+    // input, so this endpoint can't be used to attempt MFA codes against an
+    // arbitrary user id obtained some other way.
+    const factorId = await this.verifyMfaChallengeToken(challengeToken);
+
     const mfaLock = await this.lockoutService.checkMfaLockout(factorId);
     if (mfaLock.isLocked) {
       await this.auditLogService.logEvent({

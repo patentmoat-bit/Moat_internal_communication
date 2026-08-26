@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { ArrowLeft, FileText, Search, Combine, Loader2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import DOMPurify from "dompurify";
 import { getGooglePatentDetails } from "@/lib/googlePatents";
 import { getPatentDetailsFromBigQuery } from "@/lib/bigquery";
 
@@ -162,7 +163,14 @@ export function PatentDetailPanel({ patent, onClose, highlightScheme, highlightT
     });
     highlighted = highlighted.replace(/\[\/HIGHLIGHT\]/g, '</mark>');
 
-    return highlighted;
+    // Sanitize before injecting via dangerouslySetInnerHTML — the text above
+    // may originate from patent source data or user-controlled highlight
+    // terms/schemes, so only the tags/attrs the highlighting actually needs
+    // are allowed through.
+    return DOMPurify.sanitize(highlighted, {
+      ALLOWED_TAGS: ["mark", "span", "br"],
+      ALLOWED_ATTR: ["class", "style"],
+    });
   };
 
   // Safe fallbacks for data

@@ -51,12 +51,20 @@ async function getEmailConfig(): Promise<EmailConfig | null> {
     if (fs.existsSync(EMAIL_CONFIG_PATH)) {
       const raw = fs.readFileSync(EMAIL_CONFIG_PATH, "utf-8");
       const parsed = JSON.parse(raw);
-      
-      // Secure fallback: inject from environment if available
+
+      // Secure fallback: inject from environment if available. The committed
+      // config file only holds non-secret placeholders; real tenant/client
+      // identifiers and the client secret are supplied via env vars.
+      if (process.env.AZURE_TENANT_ID) {
+        parsed.tenantId = process.env.AZURE_TENANT_ID;
+      }
+      if (process.env.AZURE_CLIENT_ID) {
+        parsed.clientId = process.env.AZURE_CLIENT_ID;
+      }
       if (process.env.MS_GRAPH_CLIENT_SECRET) {
         parsed.clientSecret = process.env.MS_GRAPH_CLIENT_SECRET;
       }
-      
+
       if (parsed.clientId && parsed.clientSecret && parsed.tenantId) {
         return parsed as EmailConfig;
       }

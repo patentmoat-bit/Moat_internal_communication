@@ -16,6 +16,9 @@ spec:
       containers:
         - name: frontend
           image: patent-platform/frontend:latest
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
           ports:
             - containerPort: 3000
           env:

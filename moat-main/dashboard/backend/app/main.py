@@ -4,9 +4,13 @@ from elasticsearch import AsyncElasticsearch
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import settings
 from app.core.exceptions import AppException, app_exception_handler
+from app.core.limiter import limiter
 from app.core.logging import setup_logging, logger
 from app.core.middleware import LoggingMiddleware, ErrorHandlingMiddleware
 from app.core.cache import cache
@@ -112,10 +116,14 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
 )
 
+# ── Rate limiting ─────────────────────────────────────────
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 # ── Middleware ────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -123,6 +131,7 @@ app.add_middleware(
 app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
 app.add_middleware(LoggingMiddleware)
 app.add_middleware(ErrorHandlingMiddleware)
+app.add_middleware(SlowAPIMiddleware)
 
 app.add_exception_handler(AppException, app_exception_handler)
 

@@ -23,4 +23,10 @@ RUN pip install --no-cache-dir /wheels/*
 
 COPY . .
 
+RUN adduser --system --uid 1001 --group appuser \
+    && mkdir -p /app/logs /app/reports \
+    && chown -R appuser:appuser /app
+
+USER appuser
+
 CMD ["celery", "-A", "app.ingestion.workers.celery_app", "worker", "--loglevel=info", "--concurrency=4", "-Q", "ingestion,indexing,default"]

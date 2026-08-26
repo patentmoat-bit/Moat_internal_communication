@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Playfair_Display, IBM_Plex_Mono, Inter } from "next/font/google";
+import { headers } from "next/headers";
 import "./globals.css";
 import { Providers } from "./providers";
 
@@ -12,15 +13,21 @@ export const metadata: Metadata = {
   description: "AI-powered patent search and analysis platform",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Reading the CSP nonce here (set by middleware.ts on the `x-nonce` request
+  // header) opts this render into Next.js's nonce propagation, which applies
+  // it to the framework's own inline/hydration <script> tags so they satisfy
+  // the 'nonce-<value>' script-src directive in middleware.ts.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${playfair.variable} ${ibmPlexMono.variable} font-sans antialiased`}>
-        <Providers>{children}</Providers>
+        <Providers nonce={nonce}>{children}</Providers>
       </body>
     </html>
   );

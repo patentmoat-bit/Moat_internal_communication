@@ -1,5 +1,9 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import model_validator
 from pathlib import Path
+
+
+_INSECURE_DEFAULT_SECRET_KEY = "your-secret-key-here"
 
 
 class Settings(BaseSettings):
@@ -14,11 +18,19 @@ class Settings(BaseSettings):
     ELASTICSEARCH_HOST: str = "http://localhost:9200"
     REDIS_URL: str = "redis://localhost:6379"
 
+    # ── Environment ─────────────────────────────────────────
+    ENVIRONMENT: str = "development"
+
     # ── Auth ──────────────────────────────────────────────
-    SECRET_KEY: str = "your-secret-key-here"
+    SECRET_KEY: str = _INSECURE_DEFAULT_SECRET_KEY
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    # ── CORS / Frontend ─────────────────────────────────────
+    # Comma-separated list of allowed origins, e.g. "https://app.example.com,https://admin.example.com"
+    CORS_ORIGINS: str = "http://localhost:3000"
+    FRONTEND_URL: str = "http://localhost:3000"
 
     # ── Weaviate ──────────────────────────────────────────
     WEAVIATE_HOST: str = "localhost"
@@ -75,6 +87,22 @@ class Settings(BaseSettings):
     @property
     def weaviate_grpc_url(self) -> str:
         return f"{self.WEAVIATE_HOST}:{self.WEAVIATE_GRPC_PORT}"
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+
+    # ── Validation ────────────────────────────────────────
+    @model_validator(mode="after")
+    def _check_secret_key(self) -> "Settings":
+        is_dev_like = self.ENVIRONMENT.lower() in ("development", "test", "testing", "dev")
+        if self.SECRET_KEY == _INSECURE_DEFAULT_SECRET_KEY and not is_dev_like:
+            raise RuntimeError(
+                "SECRET_KEY is unset or using the insecure default value. "
+                "Set a strong SECRET_KEY via environment variable before running "
+                "outside development/test (ENVIRONMENT=development to bypass locally)."
+            )
+        return self
 
 
 settings = Settings()

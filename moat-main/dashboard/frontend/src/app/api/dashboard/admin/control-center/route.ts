@@ -9,17 +9,17 @@ export const GET = withSessionValidation(async (req: NextRequest, sessionUser: a
   try {
     const supabase = createAdminClient();
     
-    // Always fetch fresh role from database to ensure high security
+    // Always fetch fresh role from database to ensure high security — the
+    // JWT's role claim can be stale (e.g. a demoted admin's existing token
+    // still says "admin" until it expires), so it is only a fallback for
+    // when the DB lookup itself fails, never a preferred value.
     const { data: userRecord } = await supabase
       .from("users")
       .select("role")
       .eq("id", sessionUser.sub)
       .single();
-      
-    // Allow JWT role to override if they are an admin testing the system
-    const realRole = (sessionUser.role?.toLowerCase() === 'admin' || sessionUser.role?.toLowerCase() === 'super admin') 
-      ? sessionUser.role 
-      : (userRecord?.role || sessionUser.role);
+
+    const realRole = userRecord?.role || sessionUser.role;
 
     const normalizedRole = realRole?.toLowerCase();
     if (!normalizedRole || (normalizedRole !== "admin" && normalizedRole !== "super admin" && normalizedRole !== "system admin")) {

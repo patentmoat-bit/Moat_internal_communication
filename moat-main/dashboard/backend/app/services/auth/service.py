@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logging import logger
 from app.core.security import (
     hash_password,
     verify_password,
@@ -116,15 +117,23 @@ class AuthService:
         return user
 
     async def forgot_password(self, email: str) -> ForgotPasswordResponse:
+        # Generic response regardless of outcome: avoids leaking whether the email
+        # is registered (user enumeration) and never carries the reset token.
+        message = "If an account exists, password reset instructions have been sent."
         user = await self.user_repo.get_by_email(email)
-        message = "If an account exists, password reset instructions have been generated."
         if not user or not user.is_active:
             return ForgotPasswordResponse(message=message)
 
         token = create_password_reset_token({"sub": user.id, "email": user.email})
-        # Development-friendly: return token so the frontend can build a reset link.
-        # In production this should be emailed and omitted from the API response.
-        return ForgotPasswordResponse(message=message, reset_token=token)
+        await self._send_password_reset_email(user.email, token)
+        return ForgotPasswordResponse(message=message)
+
+    async def _send_password_reset_email(self, email: str, token: str) -> None:
+        # TODO: wire up a real transactional email provider (SES/SendGrid/etc).
+        # No email-sending infrastructure exists in this codebase yet, so for now
+        # this only logs server-side. Critically, the token is NEVER returned in
+        # the API response — it only ever reaches the user through this path.
+        logger.info(f"Password reset requested for {email}; reset token generated (delivery pending email integration).")
 
     async def reset_password(self, data: ResetPasswordRequest) -> dict:
         payload = decode_token(data.token)

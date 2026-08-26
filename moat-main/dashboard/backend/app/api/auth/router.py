@@ -5,6 +5,7 @@ from authlib.integrations.starlette_client import OAuth
 
 from app.config import settings
 from app.api.deps import get_db, get_current_user
+from app.core.limiter import limiter
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth import ForgotPasswordRequest, ForgotPasswordResponse, LoginRequest, SignupRequest, TokenResponse, AuthTokenResponse, RefreshTokenRequest, ResetPasswordRequest
@@ -32,14 +33,16 @@ oauth.register(
 
 
 @router.post("/login", response_model=AuthTokenResponse)
-async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)) -> AuthTokenResponse:
+@limiter.limit("5/minute")
+async def login(request: Request, data: LoginRequest, db: AsyncSession = Depends(get_db)) -> AuthTokenResponse:
     user_repo = UserRepository(db)
     auth_service = AuthService(user_repo, db)
     return await auth_service.login(data)
 
 
 @router.post("/signup", response_model=AuthTokenResponse)
-async def signup(data: SignupRequest, db: AsyncSession = Depends(get_db)) -> AuthTokenResponse:
+@limiter.limit("5/minute")
+async def signup(request: Request, data: SignupRequest, db: AsyncSession = Depends(get_db)) -> AuthTokenResponse:
     user_repo = UserRepository(db)
     auth_service = AuthService(user_repo, db)
     return await auth_service.signup(data)
@@ -55,7 +58,8 @@ async def refresh(
 
 
 @router.post("/forgot-password", response_model=ForgotPasswordResponse)
-async def forgot_password(data: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)) -> ForgotPasswordResponse:
+@limiter.limit("5/minute")
+async def forgot_password(request: Request, data: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)) -> ForgotPasswordResponse:
     user_repo = UserRepository(db)
     auth_service = AuthService(user_repo, db)
     return await auth_service.forgot_password(data.email)
@@ -107,7 +111,14 @@ async def oauth_callback(provider: str, request: Request, db: AsyncSession = Dep
     auth_service = AuthService(user_repo, db)
     auth_response = await auth_service.process_oauth_callback(email=email, name=name, provider=provider)
     
-    # In a real app, you would redirect to frontend with tokens in URL hash or HttpOnly cookies.
-    # For now, redirecting to Next.js callback page with access token in query param.
-    frontend_url = f"http://localhost:3000/auth/callback?access_token={auth_response.access_token}&refresh_token={auth_response.refresh_token}"
+    # SECURITY NOTE: tokens are passed via redirect URL query params, which can leak through
+    # browser history, referrer headers, and server logs. This should be replaced with a
+    # short-lived one-time code exchanged for tokens via POST, or with the tokens set as
+    # httpOnly cookies directly on this response (no such cookie-setting helper currently
+    # exists in app/core/security.py). Configurability of the frontend base URL is fixed here;
+    # the token-in-URL exposure itself is left as a follow-up.
+    frontend_url = (
+        f"{settings.FRONTEND_URL}/auth/callback"
+        f"?access_token={auth_response.access_token}&refresh_token={auth_response.refresh_token}"
+    )
     return RedirectResponse(url=frontend_url)

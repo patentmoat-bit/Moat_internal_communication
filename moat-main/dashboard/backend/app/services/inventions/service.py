@@ -1,3 +1,4 @@
+import re
 from io import BytesIO
 
 from fastapi import UploadFile
@@ -10,6 +11,27 @@ from app.models.user import User, UserRole
 from app.repositories.invention_repository import InventionRepository
 from app.schemas.invention import InventionCreate, InventionUpdate
 from app.services.inventions.analysis import InventionAIAnalysisService
+
+
+_SAFE_FILENAME_CHARS = re.compile(r"[^A-Za-z0-9._-]+")
+
+
+def _sanitize_filename(filename: str) -> str:
+    """Sanitize a client-supplied filename for safe use in a storage path.
+
+    Strips directory components (path separators, "..") and restricts the
+    remaining characters to a safe charset (alphanumeric, dash, underscore, dot)
+    to prevent path traversal / injection via storage_url.
+    """
+    name = (filename or "upload").strip()
+    # Drop any directory components — only the base filename is kept.
+    name = name.replace("\\", "/").rsplit("/", 1)[-1]
+    # Collapse ".." sequences that could still be used for traversal.
+    name = name.replace("..", "_")
+    # Restrict to a safe charset.
+    name = _SAFE_FILENAME_CHARS.sub("_", name)
+    name = name.strip("._") or "upload"
+    return name[:255]
 
 
 class InventionService:
@@ -113,13 +135,15 @@ class InventionService:
     async def upload_document(self, invention_id: str, file: UploadFile, file_type: InventionDocumentType, user: User) -> dict:
         invention = await self._get_owned(invention_id, user)
         content = await file.read()
-        extracted = self._extract_text(content, file.filename or "upload", file.content_type or "", file_type)
+        original_filename = file.filename or "upload"
+        safe_filename = _sanitize_filename(original_filename)
+        extracted = self._extract_text(content, original_filename, file.content_type or "", file_type)
         document = InventionDocument(
             invention_id=invention.id,
-            file_name=file.filename or "upload",
+            file_name=original_filename,
             file_type=file_type,
             content_type=file.content_type,
-            storage_url=f"/uploads/inventions/{invention.id}/{file.filename or 'upload'}",
+            storage_url=f"/uploads/inventions/{invention.id}/{safe_filename}",
             extracted_text=extracted,
             uploaded_by=user.id,
         )

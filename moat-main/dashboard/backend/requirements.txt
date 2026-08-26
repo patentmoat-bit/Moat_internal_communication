@@ -3,7 +3,10 @@ uvicorn[standard]==0.32.0
 sqlalchemy==2.0.36
 asyncpg==0.30.0
 alembic==1.14.0
-python-jose[cryptography]==3.3.0
+# Bumped from 3.3.0 to address known CVEs (algorithm-confusion / JWT bomb issues) in older releases.
+# python-jose is still actively used for jwt.encode/decode/JWTError in app/core/security.py;
+# migrating to PyJWT is a larger change (different exception types / API) and out of scope for this pass.
+python-jose[cryptography]==3.5.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.12
 pydantic==2.10.0
@@ -32,6 +35,7 @@ neo4j==5.27.0
 reportlab==4.2.5
 openpyxl==3.1.5
 authlib==1.3.1
+slowapi==0.1.9
 pytest==8.1.1
 pytest-asyncio==0.23.6
 # Patent data infrastructure additions

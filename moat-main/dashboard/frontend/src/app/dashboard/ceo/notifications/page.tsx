@@ -10,13 +10,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 import { ceoPatentService, DBActivityLog } from "@/services/ceoPatentService";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-const supabaseBrowser = supabaseUrl ? createClient(supabaseUrl, supabaseKey) : null;
+const supabaseBrowser = createClient();
 
 type ModuleType = "All" | "Patent" | "Trademark" | "System";
 

@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { EnterpriseAuthenticationService } from "@/lib/security";
+import { requireAdmin } from "@/lib/security/requireAdmin";
 
+// No auth check previously — exposed security audit logs/metrics to any
+// authenticated user. Admin-only now.
 export async function GET(request: NextRequest) {
   try {
+    const admin = await requireAdmin(request);
+    if (admin instanceof NextResponse) return admin;
+
     const { searchParams } = new URL(request.url);
     const user = searchParams.get("user") || undefined;
     const ip = searchParams.get("ip") || undefined;

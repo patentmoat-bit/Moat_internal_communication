@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GlobalExceptionHandler } from "@/lib/errors";
+import { requireAdmin } from "@/lib/security/requireAdmin";
 
+// None of the four methods had an auth check — any authenticated user could
+// read or rewrite org-wide notification routing rules. Admin-only now.
 export async function GET(req: NextRequest) {
   try {
+    const admin = await requireAdmin(req);
+    if (admin instanceof NextResponse) return admin;
+
     const supabase = createAdminClient();
     
     const { data, error } = await supabase
@@ -32,6 +38,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const admin = await requireAdmin(req);
+    if (admin instanceof NextResponse) return admin;
+
     const body = await req.json();
     const supabase = createAdminClient();
 
@@ -118,6 +127,9 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
+    const admin = await requireAdmin(req);
+    if (admin instanceof NextResponse) return admin;
+
     const body = await req.json();
     const supabase = createAdminClient();
 
@@ -211,6 +223,9 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const admin = await requireAdmin(req);
+    if (admin instanceof NextResponse) return admin;
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 

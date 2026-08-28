@@ -2,29 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { GlobalExceptionHandler } from "@/lib/errors";
 import { cookies } from "next/headers";
+import { verifyToken } from "@/lib/jwt";
 
 async function verifyAdminAccess() {
   const cookieStore = await cookies();
   const token = cookieStore.get("custom_access_token")?.value;
   if (!token) return null;
-  
-  try {
-    const { jwtVerify } = await import("jose");
-    const getSecretKey = () => {
-      const secret = process.env.JWT_SECRET_KEY;
-      if (!secret || secret.length === 0) {
-        return new TextEncoder().encode("moat-super-secret-jwt-key-change-me-in-prod-12345");
-      }
-      return new TextEncoder().encode(secret);
-    };
-    const { payload } = await jwtVerify(token, getSecretKey());
-    if (payload.role !== "Admin" && payload.role !== "super_admin" && payload.role !== "Super Admin") {
-      return null;
-    }
-    return payload;
-  } catch (e) {
+
+  const payload = await verifyToken(token);
+  if (!payload) return null;
+  if (payload.role !== "Admin" && payload.role !== "super_admin" && payload.role !== "Super Admin") {
     return null;
   }
+  return payload;
 }
 
 export async function GET(request: NextRequest) {

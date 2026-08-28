@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Required for the Docker build in Dockerfile, which copies .next/standalone —
+  // that directory only exists when this is set. Self-hosting off Vercel (e.g.
+  // Render) needs this; Vercel itself ignores it and deploys normally either way.
+  output: "standalone",
   typescript: {
     ignoreBuildErrors: true,
   },

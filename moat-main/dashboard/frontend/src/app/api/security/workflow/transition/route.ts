@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { AuthorizationMiddleware } from "@/lib/security/authorization/AuthorizationMiddleware";
 import { WorkflowValidationService } from "@/lib/security/authorization/WorkflowValidationService";
 import { AuthorizationNotificationService } from "@/lib/security/authorization/AuthorizationNotificationService";
+import { verifyToken } from "@/lib/jwt";
 import { cookies } from "next/headers";
 import { GlobalExceptionHandler } from "@/lib/errors";
 
@@ -15,16 +16,22 @@ import { GlobalExceptionHandler } from "@/lib/errors";
  */
 export async function POST(req: NextRequest) {
   try {
+    // Identity is derived ONLY from the verified token — see security/authorize/route.ts
+    // for why the previous x-test-user-* header override was a direct RBAC bypass.
     const cookieStore = await cookies();
     const token = cookieStore.get("custom_access_token")?.value || req.headers.get("authorization")?.replace("Bearer ", "");
 
-    let userId = "anonymous";
-    let userRole = "viewer";
-    let isActive = true;
+    if (!token) {
+      return NextResponse.json({ success: false, message: "Unauthorized.", violationType: "UNAUTHENTICATED" }, { status: 401 });
+    }
+    const decoded: any = await verifyToken(token);
+    if (!decoded?.sub) {
+      return NextResponse.json({ success: false, message: "Unauthorized.", violationType: "UNAUTHENTICATED" }, { status: 401 });
+    }
 
-    if (req.headers.get("x-test-user-id")) userId = req.headers.get("x-test-user-id")!;
-    if (req.headers.get("x-test-user-role")) userRole = req.headers.get("x-test-user-role")!;
-    if (req.headers.get("x-test-user-active")) isActive = req.headers.get("x-test-user-active") === "true";
+    const userId = decoded.sub;
+    const userRole = decoded.role || "viewer";
+    const isActive = true;
 
     const body = await req.json().catch(() => ({}));
     const { objectId, targetStage, currentStage, projectId, comment } = body;

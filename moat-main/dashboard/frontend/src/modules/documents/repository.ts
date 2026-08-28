@@ -57,7 +57,14 @@ export class DocumentsRepository {
       const { PermissionService } = require("@/lib/security/authorization/PermissionService");
       const normalizedRole = PermissionService.normalizeRole(role);
 
-      if (normalizedRole !== "CEO" && normalizedRole !== "Admin" && normalizedRole !== "super_admin" && normalizedRole !== "Design Team") {
+      // Design Team and Patent Drafter are both downstream workflow
+      // participants documents get routed TO (e.g. status "Waiting for
+      // Drafter Review") rather than participants who necessarily created
+      // the document themselves — Design Team was already exempted from the
+      // ownership filter below, but Patent Drafter wasn't, so a drafter
+      // could never see a document routed to them unless they happened to
+      // have created it or already had it in an "authorized project".
+      if (normalizedRole !== "CEO" && normalizedRole !== "Admin" && normalizedRole !== "super_admin" && normalizedRole !== "Design Team" && normalizedRole !== "Patent Drafter") {
         const { ProjectAccessService } = require("@/lib/security/authorization/ProjectAccessService");
         const authorizedProjects = ProjectAccessService.getAuthorizedProjects(userId, role);
         const projectIds = authorizedProjects.map((p: any) => p.id);
@@ -94,7 +101,14 @@ export class DocumentsRepository {
       const normalizedRole = PermissionService.normalizeRole(role);
       
       let localData = db.documents;
-      if (normalizedRole !== "CEO" && normalizedRole !== "Admin" && normalizedRole !== "super_admin" && normalizedRole !== "Design Team") {
+      // Design Team and Patent Drafter are both downstream workflow
+      // participants documents get routed TO (e.g. status "Waiting for
+      // Drafter Review") rather than participants who necessarily created
+      // the document themselves — Design Team was already exempted from the
+      // ownership filter below, but Patent Drafter wasn't, so a drafter
+      // could never see a document routed to them unless they happened to
+      // have created it or already had it in an "authorized project".
+      if (normalizedRole !== "CEO" && normalizedRole !== "Admin" && normalizedRole !== "super_admin" && normalizedRole !== "Design Team" && normalizedRole !== "Patent Drafter") {
         const { ProjectAccessService } = require("@/lib/security/authorization/ProjectAccessService");
         const authorizedProjects = ProjectAccessService.getAuthorizedProjects(userId, role);
         const projectIds = authorizedProjects.map((p: any) => p.id);
@@ -119,7 +133,14 @@ export class DocumentsRepository {
       const { PermissionService } = require("@/lib/security/authorization/PermissionService");
       const normalizedRole = PermissionService.normalizeRole(role);
 
-      if (normalizedRole !== "CEO" && normalizedRole !== "Admin" && normalizedRole !== "super_admin" && normalizedRole !== "Design Team") {
+      // Design Team and Patent Drafter are both downstream workflow
+      // participants documents get routed TO (e.g. status "Waiting for
+      // Drafter Review") rather than participants who necessarily created
+      // the document themselves — Design Team was already exempted from the
+      // ownership filter below, but Patent Drafter wasn't, so a drafter
+      // could never see a document routed to them unless they happened to
+      // have created it or already had it in an "authorized project".
+      if (normalizedRole !== "CEO" && normalizedRole !== "Admin" && normalizedRole !== "super_admin" && normalizedRole !== "Design Team" && normalizedRole !== "Patent Drafter") {
         const { ProjectAccessService } = require("@/lib/security/authorization/ProjectAccessService");
         const authorizedProjects = ProjectAccessService.getAuthorizedProjects(userId, role);
         const projectIds = authorizedProjects.map((p: any) => p.id);
@@ -143,7 +164,14 @@ export class DocumentsRepository {
       const { PermissionService } = require("@/lib/security/authorization/PermissionService");
       const normalizedRole = PermissionService.normalizeRole(role);
 
-      if (normalizedRole !== "CEO" && normalizedRole !== "Admin" && normalizedRole !== "super_admin" && normalizedRole !== "Design Team") {
+      // Design Team and Patent Drafter are both downstream workflow
+      // participants documents get routed TO (e.g. status "Waiting for
+      // Drafter Review") rather than participants who necessarily created
+      // the document themselves — Design Team was already exempted from the
+      // ownership filter below, but Patent Drafter wasn't, so a drafter
+      // could never see a document routed to them unless they happened to
+      // have created it or already had it in an "authorized project".
+      if (normalizedRole !== "CEO" && normalizedRole !== "Admin" && normalizedRole !== "super_admin" && normalizedRole !== "Design Team" && normalizedRole !== "Patent Drafter") {
         const { ProjectAccessService } = require("@/lib/security/authorization/ProjectAccessService");
         const authorizedProjects = ProjectAccessService.getAuthorizedProjects(userId, role);
         const projectIds = authorizedProjects.map((p: any) => p.id);
@@ -193,36 +221,60 @@ export class DocumentsRepository {
 
   async logStatusTransition(documentId: string, previousStatus: string, newStatus: string, userId: string, notes?: string) {
     const historyData = { document_id: documentId, previous_status: previousStatus, new_status: newStatus, changed_by: userId, notes, id: uuidv4() };
+
+    // The history insert and the actual status update are the two writes that
+    // MUST succeed — everything below this point is best-effort notification
+    // side-effects. Previously all of this shared one try/catch, so a failure
+    // in a side-effect (e.g. the "design_notifications" table, which never
+    // existed) silently redirected the whole operation into a local JSON file
+    // instead — meaning the caller (and the analyst) saw "success" while
+    // patent_documents.status may never have actually changed in the real
+    // database, and nothing that reads from Supabase directly (like the
+    // Designer Dashboard) would ever see the update.
+    const historyRes = await this.supabase.from("workflow_status_history").insert(historyData);
+    const updateRes = await this.supabase.from("patent_documents").update({ status: newStatus }).eq("id", documentId);
+
+    if (historyRes.error || updateRes.error) {
+      console.warn("[DocumentsRepository] Supabase status update failed, using local DB fallback:", historyRes.error?.message || updateRes.error?.message);
+      const db = getLocalDB();
+      db.history.unshift({ ...historyData, created_at: new Date().toISOString() });
+      const doc = db.documents.find(d => d.id === documentId);
+      if (doc) doc.status = newStatus;
+      saveLocalDB(db);
+      // Surface the failure — the caller (and ultimately the UI) should know
+      // this didn't land in the real database, not report a silent success.
+      throw new Error(historyRes.error?.message || updateRes.error?.message || "Failed to persist status transition.");
+    }
+
+    // Best-effort notification side-effects — none of these should be able to
+    // affect whether the status transition above is reported as successful.
     try {
-      await this.supabase.from("workflow_status_history").insert(historyData);
-      await this.supabase.from("patent_documents").update({ status: newStatus }).eq("id", documentId);
-      
-      // Auto-trigger notifications
       if (newStatus === "Waiting for Patent Analyst Review") {
         const { WorkflowEmailService } = require("@/lib/workflow/WorkflowEmailService");
         WorkflowEmailService.sendEmail(
-          "Patent Analyst", 
-          `[MOAT Review Required] New Design File Uploaded`, 
+          "Patent Analyst",
+          `[MOAT Review Required] New Design File Uploaded`,
           `The design team has uploaded a new revision for document ${documentId}. Please review it in the Analyst Workspace.`
         );
       } else if (newStatus === "Waiting for Drafter Review") {
         const { WorkflowEmailService } = require("@/lib/workflow/WorkflowEmailService");
         WorkflowEmailService.sendEmail(
-          "Patent Drafter", 
-          `[MOAT Review Required] New Design File Uploaded`, 
+          "Patent Drafter",
+          `[MOAT Review Required] New Design File Uploaded`,
           `The design team has uploaded a new revision for document ${documentId}. Please review it in the Drafter Workspace.`
         );
       }
 
       if (newStatus === "Pending Design Review" || newStatus === "Changes Requested") {
-        await this.supabase.from("design_notifications").insert({
-          user_id: userId, // Assuming triggered by analyst, but alerts designer
+        await this.supabase.from("notifications").insert({
+          receiver: "Design Team",
+          created_by: userId,
           title: "Design Action Required",
-          message: `Document status changed to ${newStatus}`,
-          type: "action_required"
+          description: `Document status changed to ${newStatus}`,
+          type: "action_required",
         });
       }
-      
+
       if (["CEO Approved", "CEO Rejected", "Revision Requested by CEO"].includes(newStatus)) {
         await this.supabase.from("activity_logs").insert({
           id: uuidv4(),
@@ -237,13 +289,8 @@ export class DocumentsRepository {
           }
         });
       }
-    } catch (err: any) {
-      console.warn("[DocumentsRepository] Supabase failed, using local DB:", err.message);
-      const db = getLocalDB();
-      db.history.unshift({ ...historyData, created_at: new Date().toISOString() });
-      const doc = db.documents.find(d => d.id === documentId);
-      if (doc) doc.status = newStatus;
-      saveLocalDB(db);
+    } catch (notifyErr: any) {
+      console.warn("[DocumentsRepository] Status transition succeeded but a notification side-effect failed:", notifyErr.message);
     }
   }
 

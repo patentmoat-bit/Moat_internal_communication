@@ -3,6 +3,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import fs from "fs";
 import path from "path";
 import { GlobalExceptionHandler } from "@/lib/errors";
+import { requireAdmin } from "@/lib/security/requireAdmin";
+
+const SECRET_MASK = "********_SECURED_IN_ENV_********";
 
 const CONFIG_DOC_NAME = "SYSTEM_EMAIL_CONFIG";
 const FALLBACK_FILE_PATH = path.join(process.cwd(), "src/app/api/settings/email/email_config.json");
@@ -32,8 +35,11 @@ function writeFallbackFile(data: any) {
 
 export async function GET(req: NextRequest) {
   try {
+    const admin = await requireAdmin(req);
+    if (admin instanceof NextResponse) return admin;
+
     const supabase = createAdminClient();
-    
+
     const { data, error } = await supabase
       .from("workspace_documents")
       .select("content")
@@ -50,7 +56,7 @@ export async function GET(req: NextRequest) {
         if (process.env.AZURE_TENANT_ID) localData.tenantId = process.env.AZURE_TENANT_ID;
         if (process.env.AZURE_CLIENT_ID) localData.clientId = process.env.AZURE_CLIENT_ID;
         // Mask the secret for the UI
-        localData.clientSecret = "********_SECURED_IN_ENV_********";
+        localData.clientSecret = SECRET_MASK;
         return NextResponse.json({ data: localData });
       }
 
@@ -67,7 +73,12 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({ data: JSON.parse(data.content) });
+    // This previously returned the DB-stored config as-is, including the raw
+    // clientSecret in plaintext — every other code path in this file masks
+    // it, this one just forgot to.
+    const parsed = JSON.parse(data.content);
+    if (parsed.clientSecret) parsed.clientSecret = SECRET_MASK;
+    return NextResponse.json({ data: parsed });
   } catch (err: any) {
     return await GlobalExceptionHandler.handle(err);
   }
@@ -75,14 +86,15 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const admin = await requireAdmin(req);
+    if (admin instanceof NextResponse) return admin;
+
     const body = await req.json();
     const supabase = createAdminClient();
 
     // If the UI sends the mask back, keep it secure by not overwriting it in the DB/file
     // (Instead, rely on the backend falling back to process.env.MS_GRAPH_CLIENT_SECRET)
-    const finalSecret = body.clientSecret === "********_SECURED_IN_ENV_********" 
-      ? "********_SECURED_IN_ENV_********" 
-      : body.clientSecret;
+    const finalSecret = body.clientSecret === SECRET_MASK ? SECRET_MASK : body.clientSecret;
 
     const configData = {
       provider: body.provider,

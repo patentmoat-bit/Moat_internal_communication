@@ -137,19 +137,24 @@ export const handleAuditLog = async (event: EventPayload) => {
       oldStatus = resource?.status ?? null;
     }
 
-    await supabase.from("audit_logs").insert({
-      action: event.type,
-      performed_by: event.actorId || "System",
-      details: {
-        resourceId: event.resourceId,
-        resourceType: event.resourceType,
+    // Previously inserted action/performed_by/details, none of which exist
+    // on the real audit_logs table (event_type/actor_id/metadata/entity_*
+    // do) — every single event published through this handler silently
+    // failed to write an audit row.
+    const { error: auditInsertError } = await supabase.from("audit_logs").insert({
+      event_type: event.type,
+      actor_id: event.actorId || null,
+      entity_type: event.resourceType,
+      entity_id: event.resourceId,
+      metadata: {
+        actorRole: event.actorRole,
         metadata: event.metadata,
         notificationTitle: event.notificationTitle,
       },
-      // Enhanced fields (will be ignored if columns don't exist yet)
       ...(newStatus ? { old_status: oldStatus, new_status: newStatus } : {}),
       ...(event.resourceId ? { project_id: event.resourceId } : {}),
     });
+    if (auditInsertError) throw auditInsertError;
 
     console.log(`[Audit] Logged: ${event.type} by ${event.actorId || "System"}`);
   } catch (error) {
@@ -222,6 +227,11 @@ export const handleWorkflowUpdate = async (event: EventPayload) => {
 
 export const handleNotification = async (event: EventPayload) => {
   const supabase = createAdminClient();
+  // Declared here (not inside the try block) so the catch block's local-file
+  // fallback can still see whatever recipients were resolved before the
+  // Supabase insert failed, instead of throwing ReferenceError and losing the
+  // notification entirely.
+  const userIds = new Set<string>();
 
   try {
     // Determine which roles should receive notifications
@@ -249,8 +259,6 @@ export const handleNotification = async (event: EventPayload) => {
     }
 
     // Resolve all user IDs for the roles
-    const userIds = new Set<string>();
-
     // Role-based resolution
     for (const roleName of notifyRoles) {
       // 1. Add the role name as a broadcast receiver (picked up by currentRole in UI)
@@ -511,8 +519,8 @@ export const handleEmailDispatch = async (event: EventPayload) => {
         const { data: latestAudit } = await supabase
           .from("audit_logs")
           .select("id")
-          .eq("action", event.type)
-          .eq("performed_by", event.actorId || "System")
+          .eq("event_type", event.type)
+          .eq("actor_id", event.actorId || null)
           .order("created_at", { ascending: false })
           .limit(1)
           .single();

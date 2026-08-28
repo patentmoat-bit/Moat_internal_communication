@@ -7,6 +7,7 @@ import crypto from "crypto";
 import { RateLimitingService } from "@/lib/security/rateLimitingService";
 import { SecurityLoggingService } from "@/lib/security/SecurityLoggingService";
 import { GlobalExceptionHandler } from "@/lib/errors";
+import { validatePasswordPolicy } from "@/lib/security/passwordPolicy";
 
 export async function POST(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "Unknown";
@@ -42,6 +43,14 @@ export async function POST(request: NextRequest) {
     if (!name?.trim() || !password) {
       return NextResponse.json(
         { detail: "Full name and password are required." },
+        { status: 400 }
+      );
+    }
+
+    const policyCheck = validatePasswordPolicy(password);
+    if (!policyCheck.valid) {
+      return NextResponse.json(
+        { detail: policyCheck.errors.join(" ") },
         { status: 400 }
       );
     }

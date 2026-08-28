@@ -11,17 +11,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const { isAuthenticated, isLoading, checkAuth, user } = useAuthStore();
 
+  // Runs once per session, not per navigation. Middleware already re-validates
+  // the session server-side on every request; re-running a full client-side
+  // checkAuth() (which itself triggers several DB round-trips via /api/auth/me)
+  // on every pathname change was serializing redundant work behind each click.
   useEffect(() => {
     let mounted = true;
     checkAuth().then((authed) => {
       if (mounted && !authed) {
-        router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
+        router.replace(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
       }
     });
     return () => {
       mounted = false;
     };
-  }, [checkAuth, pathname, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!isLoading && isAuthenticated && user) {

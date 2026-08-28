@@ -48,20 +48,24 @@ export default function SessionManagementPage() {
 
   const handleRevoke = async (id: string) => {
     try {
-      await fetch(`/api/iam/sessions?id=${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/iam/sessions?id=${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error(`Revoke failed with status ${res.status}`);
       setSessions(s => s.filter(x => x.id !== id));
     } catch (e) {
       console.error("Failed to revoke session", e);
+      setError("Failed to revoke session. Please try again.");
     }
   };
 
   const handleRevokeAll = async () => {
     if (!confirm("Are you sure you want to revoke ALL active sessions? Users will be instantly logged out.")) return;
     try {
-      await fetch(`/api/iam/sessions?id=all`, { method: "DELETE" });
+      const res = await fetch(`/api/iam/sessions?id=all`, { method: "DELETE" });
+      if (!res.ok) throw new Error(`Revoke-all failed with status ${res.status}`);
       setSessions([]);
     } catch (e) {
       console.error("Failed to revoke all sessions", e);
+      setError("Failed to revoke all sessions. Please try again.");
     }
   };
 

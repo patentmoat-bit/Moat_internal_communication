@@ -21,8 +21,13 @@ export default function SavedReportsModule({ context }: { context: AiHubContext 
       const { data: userData } = await supabase.auth.getUser();
       if (!userData?.user) return;
 
-      // Phase 9 Optimization: Fetch only required columns instead of select(*)
-      let query = supabase.from("ai_hub_reports").select("id, report_type, title, description, format, created_at, report_data").eq("user_id", userData.user.id).order("created_at", { ascending: false });
+      // Fetch only required columns instead of select(*). This previously
+      // requested description/format/report_data, none of which exist on
+      // ai_hub_reports — PostgREST rejects unknown columns, so every fetch
+      // errored and this module silently always showed "No reports saved
+      // yet." regardless of actual data. version was also missing from the
+      // select despite being read below.
+      let query = supabase.from("ai_hub_reports").select("id, report_type, title, version, created_at").eq("user_id", userData.user.id).order("created_at", { ascending: false });
       if (context.projectId) query = query.eq("project_id", context.projectId);
 
       const { data, error } = await query;

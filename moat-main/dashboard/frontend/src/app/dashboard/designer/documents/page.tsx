@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { Upload, FileText, CheckCircle2, Clock, AlertCircle, RefreshCw, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
@@ -12,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 
 export default function DesignerDocumentsPage() {
   const { toast } = useToast();
+  const searchParams = useSearchParams();
   const [documents, setDocuments] = useState<any[]>([]);
   const [selectedDoc, setSelectedDoc] = useState<any | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -19,8 +21,24 @@ export default function DesignerDocumentsPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [reviewTarget, setReviewTarget] = useState("Waiting for Patent Analyst Review");
 
+  // Read via ref inside the realtime callback so the subscription doesn't need
+  // to be torn down and recreated (and the document list refetched) every time
+  // a different row is selected — it only needs the LATEST selection at the
+  // moment a change event actually arrives.
+  const selectedDocRef = useRef<any | null>(null);
+  useEffect(() => {
+    selectedDocRef.current = selectedDoc;
+  }, [selectedDoc]);
+
   useEffect(() => {
     fetchDocuments();
+
+    // Deep-link support: "View Workspace" from the Designer Dashboard passes
+    // ?id=<document id> so this page opens with that specific document
+    // selected, instead of nothing pre-selected regardless of which card was
+    // clicked (previously every link pointed at this same bare URL).
+    const linkedId = searchParams.get("id");
+    if (linkedId) fetchDocDetails(linkedId);
 
     const channel = supabase
       .channel("designer-documents-updates")
@@ -29,7 +47,7 @@ export default function DesignerDocumentsPage() {
         { event: "*", schema: "public", table: "patent_documents" },
         () => {
           fetchDocuments();
-          if (selectedDoc) fetchDocDetails(selectedDoc.id);
+          if (selectedDocRef.current) fetchDocDetails(selectedDocRef.current.id);
         }
       )
       .subscribe();
@@ -37,7 +55,8 @@ export default function DesignerDocumentsPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedDoc]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchDocuments = async () => {
     try {
@@ -45,7 +64,7 @@ export default function DesignerDocumentsPage() {
       const data = await res.json();
       if (data.success) {
         // Filter to only show documents assigned to design team workflows
-        const filtered = data.data.filter((d: any) => 
+        const filtered = data.data.filter((d: any) =>
           [
             "Pending Design Review", "Pending Design Work", "Design In Progress",
             "Changes Requested", "Revision Requested by CEO", "CEO Rejected", "Rejected",

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { AccessReviewService } from "@/lib/security/access/AccessReviewService";
+import { verifyToken } from "@/lib/jwt";
 
 export async function GET(req: NextRequest) {
   try {
@@ -28,19 +29,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    let authUser: any = null;
-    try {
-      const { jwtVerify } = await import("jose");
-      const getSecretKey = () => {
-        const secret = process.env.JWT_SECRET_KEY;
-        if (!secret || secret.length === 0) {
-          return new TextEncoder().encode("moat-super-secret-jwt-key-change-me-in-prod-12345");
-        }
-        return new TextEncoder().encode(secret);
-      };
-      const { payload } = await jwtVerify(token, getSecretKey());
-      authUser = payload;
-    } catch (e) {
+    const authUser = await verifyToken(token);
+    if (!authUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

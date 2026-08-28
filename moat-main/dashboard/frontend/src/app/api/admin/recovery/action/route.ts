@@ -2,11 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { DisasterRecoveryService } from "@/lib/security/recovery";
 import { GlobalExceptionHandler } from "@/lib/errors";
+import { requireAdmin } from "@/lib/security/requireAdmin";
 
+// This had NO auth check at all — any authenticated user of any role could
+// trigger a live restore_backup action that overwrites production data, plus
+// arbitrary backup creation. Admin-only now, and "initiatedBy" is taken from
+// the verified session instead of the client-supplied body (attribution
+// spoofing on a destructive action's audit trail).
 export async function POST(request: NextRequest) {
   try {
+    const admin = await requireAdmin(request);
+    if (admin instanceof NextResponse) return admin;
+
     const body = await request.json();
-    const { action, backupId, name, target, type, initiatedBy } = body;
+    const { action, backupId, name, target, type } = body;
+    const initiatedBy = admin.email || admin.id;
 
     const supabase = createAdminClient();
     const drService = new DisasterRecoveryService(supabase);

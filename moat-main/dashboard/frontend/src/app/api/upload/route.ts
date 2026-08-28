@@ -3,6 +3,14 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyToken } from "@/lib/jwt";
 import { cookies } from "next/headers";
 
+// The only bucket every real caller of this endpoint uses (designer/, patent-drafter/,
+// patent-analyst/ document pages). This previously accepted ANY client-supplied bucket
+// name and, if it didn't already exist, created it on the fly as PUBLIC via the admin
+// client — an authenticated user of any role could spin up arbitrary public storage
+// buckets and write to any path in them, including paths that collide with other
+// features' buckets, entirely bypassing storage RLS.
+const ALLOWED_BUCKET = "patent_documents";
+
 async function getAuthUser() {
   const cookieStore = await cookies();
   const token = cookieStore.get("custom_access_token")?.value;
@@ -24,35 +32,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    let publicUrl = "";
-    try {
-      const supabase = createAdminClient();
-      // Ensure bucket exists and is public
-      try {
-        await supabase.storage.createBucket(bucket, { public: true });
-      } catch (e) {
-        // Ignore if bucket already exists
-      }
-
-      const arrayBuffer = await file.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-
-      const { data, error } = await supabase.storage.from(bucket).upload(path, buffer, {
-        contentType: file.type,
-        upsert: true
-      });
-
-      if (error) throw error;
-      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path);
-      publicUrl = urlData.publicUrl;
-    } catch (supabaseErr: any) {
-      console.warn("Supabase storage upload failed, using simulated fallback URL:", supabaseErr.message);
-      publicUrl = `https://simulated-storage.local/${bucket}/${path}`;
+    if (bucket !== ALLOWED_BUCKET) {
+      return NextResponse.json({ error: "Invalid bucket." }, { status: 400 });
+    }
+    if (path.includes("..") || path.startsWith("/")) {
+      return NextResponse.json({ error: "Invalid path." }, { status: 400 });
     }
 
-    return NextResponse.json({ success: true, url: publicUrl });
+    const supabase = createAdminClient();
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    const { error } = await supabase.storage.from(bucket).upload(path, buffer, {
+      contentType: file.type,
+      upsert: true,
+    });
+
+    if (error) {
+      console.error("Upload API storage error:", error);
+      return NextResponse.json({ error: "Upload failed." }, { status: 500 });
+    }
+
+    const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path);
+    return NextResponse.json({ success: true, url: urlData.publicUrl });
   } catch (e: any) {
     console.error("Upload API Error:", e);
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error." }, { status: 500 });
   }
 }

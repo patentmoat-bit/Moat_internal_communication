@@ -135,11 +135,18 @@ function SearchPageContent() {
     setQueryRows(queryRows.map(r => r.id === id ? { ...r, [field]: value } : r));
   };
   
-  // Auto-save logic
+  // Auto-save logic — persists the in-progress query draft locally so it
+  // survives a refresh. Deliberately does NOT call handleSaveToProject: that
+  // action requires a query name and shows user-facing error toasts when one
+  // isn't set yet, which would fire repeatedly while the user is still typing.
   useEffect(() => {
     if (!autoSaveQuery) return;
     const timeoutId = setTimeout(() => {
-      handleSaveQuery();
+      try {
+        localStorage.setItem("moat_search_query_draft", JSON.stringify({ queryRows, savedAt: Date.now() }));
+      } catch {
+        // Ignore storage errors (e.g. private browsing quota)
+      }
     }, 2000);
     return () => clearTimeout(timeoutId);
   }, [queryRows, autoSaveQuery]);

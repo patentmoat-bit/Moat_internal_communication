@@ -79,6 +79,7 @@ async function handleAuth(request: NextRequest, requestHeaders: Headers) {
     "/api/auth/mfa/verify",
     "/api/auth/refresh",
     "/api/auth/logout",
+    "/api/auth/sso/bridge", // called with only a Supabase OAuth session, before any app session exists
     "/api/health"
   ];
   if (isApiRoute && PUBLIC_API_PATHS.some((p) => pathname.startsWith(p))) {
@@ -177,14 +178,26 @@ async function handleAuth(request: NextRequest, requestHeaders: Headers) {
 
   const isAuthenticated = !!authUser;
 
-  // Detect Supabase session cookies (name includes project ref and may be chunked)
-  const hasSupabaseSession = [...request.cookies.getAll()].some(c => c.name.startsWith('sb-'));
+  // These headers carry the already-validated identity forward to route handlers
+  // so they don't have to redo the same JWT-verify + user_sessions DB check that
+  // just ran above. Always explicitly set (never leave at whatever the client
+  // sent) so a request can't forge them to skip validation.
+  if (isAuthenticated && authUser) {
+    requestHeaders.set('x-session-verified', '1');
+    requestHeaders.set('x-session-user-id', String(authUser.sub ?? ''));
+    requestHeaders.set('x-session-user-email', String(authUser.email ?? ''));
+    requestHeaders.set('x-session-user-role', String(authUser.role ?? ''));
+  } else {
+    requestHeaders.delete('x-session-verified');
+    requestHeaders.delete('x-session-user-id');
+    requestHeaders.delete('x-session-user-email');
+    requestHeaders.delete('x-session-user-role');
+  }
 
   if (isApiRoute) {
-    if (!isAuthenticated && !hasSupabaseSession) {
+    if (!isAuthenticated) {
       return NextResponse.json({ success: false, error: "Session expired or revoked" }, { status: 401 });
     }
-    // Authenticated (either custom JWT or Supabase) — allow through
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
@@ -204,7 +217,7 @@ async function handleAuth(request: NextRequest, requestHeaders: Headers) {
       analyst: "/dashboard/search",
       admin: "/dashboard/admin",
     };
-    const redirectTo = workspaceRoutes[workspace] ?? "/dashboard";
+    const redirectTo = workspace ? (workspaceRoutes[workspace] ?? "/dashboard") : "/403";
     return NextResponse.redirect(new URL(redirectTo, request.url));
   }
 
@@ -230,8 +243,8 @@ async function handleAuth(request: NextRequest, requestHeaders: Headers) {
 
     const requiredRoles = getRequiredRoles(pathname);
     if (requiredRoles.length > 0) {
-      const userRole = (authUser.role as AppRole);
-      if (!requiredRoles.includes(userRole)) {
+      const userEnterpriseRole = appRoleToEnterpriseRole(authUser.role as AppRole);
+      if (!userEnterpriseRole || !requiredRoles.includes(userEnterpriseRole)) {
         return NextResponse.redirect(new URL("/403", request.url));
       }
     }

@@ -2,13 +2,28 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { EventBus } from "@/lib/events/eventBus";
 import { GlobalExceptionHandler } from "@/lib/errors";
+import { requireAuth } from "@/lib/security/requireAdmin";
+import { appRoleToEnterpriseRole } from "@/lib/roleIntelligence";
 
+// Previously had NO auth check — any unauthenticated caller could set any
+// project's status to an arbitrary string, bypassing the whole workflow
+// state machine. This is an explicit manual override, so it's restricted to
+// admin/ceo, and actorId is now derived from the verified session instead
+// of being taken from the request body.
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { projectId, status, actorId } = body;
+    const auth = await requireAuth(req);
+    if (auth instanceof NextResponse) return auth;
+    const role = appRoleToEnterpriseRole(auth.role);
+    if (role !== "admin" && role !== "ceo") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    const actorId = auth.id;
 
-    if (!projectId || !status) {
+    const body = await req.json();
+    const { projectId, status } = body;
+
+    if (!projectId || !status || typeof status !== "string") {
       return NextResponse.json(
         { error: "projectId and status are required." },
         { status: 400 }
@@ -54,9 +69,10 @@ export async function POST(req: NextRequest) {
       .insert({
         entity_type: "project",
         entity_id: projectId,
+        actor_id: actorId,
         action: "MANUAL_STATUS_UPDATE",
         message: `Status manually updated from ${oldStatus} to ${status}`,
-        metadata: { 
+        metadata: {
           manual: true,
           old_status: oldStatus,
           new_status: status

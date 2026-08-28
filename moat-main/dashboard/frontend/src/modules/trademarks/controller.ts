@@ -120,6 +120,25 @@ export class TrademarksController {
       if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
       const resolvedParams = await params;
+
+      // Previously missing the trademarks:write authorization check that
+      // create/list/getOne all have — any authenticated user of any role
+      // could modify any trademark.
+      const authRes = await AuthorizationMiddleware.authorize({
+        token: req.cookies.get("custom_access_token")?.value,
+        userId: user.id,
+        userRole: user.role,
+        requiredPermission: "trademarks:write",
+        targetObjectId: resolvedParams.id,
+        targetObjectType: "trademark",
+        endpoint: `/api/trademarks/${resolvedParams.id}`,
+        httpMethod: "PUT",
+        clientIp: req.headers.get("x-forwarded-for") || "127.0.0.1",
+      });
+      if (!authRes.authorized) {
+        return NextResponse.json({ error: authRes.reason }, { status: 403 });
+      }
+
       const body = await req.json();
       // Allow partial updates
       const data = await service.updateTrademark(resolvedParams.id, body, user.name);
@@ -145,8 +164,13 @@ export class TrademarksController {
     }
   }
 
+  // Not currently wired to any route.ts, but had no auth check at all — fixed
+  // here too so this doesn't reproduce the pattern the moment it's wired up.
   static async uploadAttachment(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
+      const user = await getAuthUser();
+      if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
       const body = await req.json();
       const parsed = TrademarkFileSchema.safeParse(body);
       if (!parsed.success) {
@@ -171,11 +195,26 @@ export class TrademarksController {
     try {
       const user = await getAuthUser();
       if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      if (user.role === "CEO") {
-        return NextResponse.json({ error: "CEO cannot delete attachments" }, { status: 403 });
-      }
 
       const resolvedParams = await params;
+
+      // Previously blocked only the "CEO" role and let every other role
+      // (including read-only viewers) delete attachments. Gated on the same
+      // trademarks:write permission as update/create instead.
+      const authRes = await AuthorizationMiddleware.authorize({
+        token: req.cookies.get("custom_access_token")?.value,
+        userId: user.id,
+        userRole: user.role,
+        requiredPermission: "trademarks:write",
+        targetObjectId: resolvedParams.id,
+        targetObjectType: "trademark",
+        endpoint: `/api/trademarks/${resolvedParams.id}`,
+        httpMethod: "DELETE",
+        clientIp: req.headers.get("x-forwarded-for") || "127.0.0.1",
+      });
+      if (!authRes.authorized) {
+        return NextResponse.json({ error: authRes.reason }, { status: 403 });
+      }
       const { searchParams } = new URL(req.url);
       const fileId = searchParams.get("fileId");
       const fileName = searchParams.get("fileName") || "file";

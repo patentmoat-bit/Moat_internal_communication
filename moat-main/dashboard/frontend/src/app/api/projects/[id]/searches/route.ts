@@ -1,12 +1,19 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { SearchRepository } from "@/modules/workspace/searchRepository";
 import { GlobalExceptionHandler } from "@/lib/errors";
+import { requireAuth } from "@/lib/security/requireAdmin";
 
+// Previously had NO auth check — any unauthenticated caller could read a
+// project's full search history (FTO/Novelty/Invalidity/Landscape results)
+// by guessing/enumerating a project id.
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await requireAuth(request);
+    if (user instanceof NextResponse) return user;
+
     const resolvedParams = await params;
     const projectId = resolvedParams.id;
     if (!projectId) {

@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { completeJSON } from "@/lib/llm";
 import { hasOpenAIKey } from "@/lib/openai";
+import { requireAuth } from "@/lib/security/requireAdmin";
 
 function getMockAnalysis(patent: any) {
   const title = patent?.title || "Patent Title";
@@ -50,7 +51,12 @@ const SYSTEM = `You are a patent analysis expert. Return ONLY a JSON object:
   "similar_patents": [{"number": "US...", "title": "...", "similarity": 78}]
 }`;
 
-export async function POST(request: Request) {
+// Previously had NO auth check — unauthenticated resource/cost abuse of the
+// OpenAI-backed endpoint.
+export async function POST(request: NextRequest) {
+  const user = await requireAuth(request);
+  if (user instanceof NextResponse) return user;
+
   try {
     const { patent } = await request.json();
 

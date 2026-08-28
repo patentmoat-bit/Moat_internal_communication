@@ -186,7 +186,7 @@ export class SessionService {
     try {
       const cookieStore = await cookies();
       const isProd = process.env.NODE_ENV === "production";
-      cookieStore.set("custom_access_token", accessToken, {
+      cookieStore.set("custom_access_token", newAccessToken, {
         httpOnly: true,
         secure: isProd,
         sameSite: "lax",

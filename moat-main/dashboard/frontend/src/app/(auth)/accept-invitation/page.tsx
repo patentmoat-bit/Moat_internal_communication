@@ -1,8 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, ArrowRight, User, Lock, Eye, EyeOff, Shield } from "lucide-react";
+import { Loader2, ArrowRight, User, Lock, Eye, EyeOff, Shield, Check, X } from "lucide-react";
+import { PASSWORD_POLICY, validatePasswordPolicy } from "@/lib/security/passwordPolicy";
+
+const REQUIREMENTS = [
+  { label: `At least ${PASSWORD_POLICY.minLength} characters`, test: (p: string) => p.length >= PASSWORD_POLICY.minLength },
+  { label: "One uppercase letter", test: (p: string) => /[A-Z]/.test(p) },
+  { label: "One lowercase letter", test: (p: string) => /[a-z]/.test(p) },
+  { label: "One number", test: (p: string) => /[0-9]/.test(p) },
+  { label: "One special character", test: (p: string) => /[^A-Za-z0-9]/.test(p) },
+];
 
 export default function AcceptInvitationPage() {
   const router = useRouter();
@@ -19,6 +28,7 @@ export default function AcceptInvitationPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const policyCheck = useMemo(() => validatePasswordPolicy(password), [password]);
 
   useEffect(() => {
     if (!token) {
@@ -50,9 +60,13 @@ export default function AcceptInvitationPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(""); 
+    setError("");
+    if (!policyCheck.valid) {
+      setError(policyCheck.errors.join(" "));
+      return;
+    }
     setIsSubmitting(true);
-    
+
     try {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
@@ -135,7 +149,7 @@ export default function AcceptInvitationPage() {
             <input
               id="password" type={showPwd ? "text" : "password"} value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder="Create password" required minLength={8}
+              placeholder="Create password" required minLength={PASSWORD_POLICY.minLength}
               className={`${field} pr-11`}
             />
             <label htmlFor="password"
@@ -150,8 +164,22 @@ export default function AcceptInvitationPage() {
             </button>
           </div>
 
+          {password.length > 0 && (
+            <ul className="grid grid-cols-2 gap-1.5 px-1">
+              {REQUIREMENTS.map((req) => {
+                const met = req.test(password);
+                return (
+                  <li key={req.label} className={`flex items-center gap-1.5 text-xs ${met ? "text-emerald-400" : "text-slate-500"}`}>
+                    {met ? <Check className="h-3 w-3 shrink-0" /> : <X className="h-3 w-3 shrink-0" />}
+                    {req.label}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
           <button type="submit"
-            disabled={isSubmitting || !name || !password}
+            disabled={isSubmitting || !name || !password || !policyCheck.valid}
             className="relative mt-4 w-full h-12 rounded-xl text-sm font-bold text-white overflow-hidden group transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ background: "linear-gradient(135deg, #c9a84c 0%, #a07820 50%, #c9a84c 100%)", backgroundSize: "200% 100%" }}>
             <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/15 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 pointer-events-none" />

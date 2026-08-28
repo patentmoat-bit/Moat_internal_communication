@@ -119,7 +119,7 @@ export default function DesignerDashboardOverview() {
                       {doc.status}
                     </span>
                     <Button size="sm" variant="outline" asChild>
-                      <Link href="/dashboard/designer/documents">View Workspace</Link>
+                      <Link href={`/dashboard/designer/documents?id=${doc.id}`}>View Workspace</Link>
                     </Button>
                   </div>
                 </CardContent>

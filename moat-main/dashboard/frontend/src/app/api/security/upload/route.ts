@@ -13,32 +13,24 @@ import { cookies } from "next/headers";
  */
 export async function POST(req: NextRequest) {
   try {
-    // Extract JWT token from cookie or authorization header
+    // Extract JWT token from cookie or authorization header. Identity is derived
+    // ONLY from the verified token — this previously let any request override
+    // its own userId/userRole via x-test-user-id/x-test-user-role headers with
+    // no environment gating, a direct RBAC bypass for a file-upload endpoint.
     const cookieStore = await cookies();
     const token = cookieStore.get("custom_access_token")?.value || req.headers.get("authorization")?.replace("Bearer ", "");
-    
-    let userId = "anonymous";
-    let userRole = "viewer";
 
-    if (token) {
-      try {
-        const decoded: any = await verifyToken(token);
-        if (decoded && decoded.sub) {
-          userId = decoded.sub;
-          userRole = decoded.role || "Patent Analyst";
-        }
-      } catch (err) {
-        // Fallback for demo header identification if JWT fails
-      }
+    if (!token) {
+      return NextResponse.json({ success: false, message: "Unauthorized.", errors: ["Missing session."] }, { status: 401 });
     }
 
-    // Support test headers for automated verification suites and internal microservices
-    if (req.headers.get("x-test-user-id")) {
-      userId = req.headers.get("x-test-user-id")!;
+    const decoded: any = await verifyToken(token);
+    if (!decoded?.sub) {
+      return NextResponse.json({ success: false, message: "Unauthorized.", errors: ["Invalid or expired session."] }, { status: 401 });
     }
-    if (req.headers.get("x-test-user-role")) {
-      userRole = req.headers.get("x-test-user-role")!;
-    }
+
+    const userId = decoded.sub;
+    const userRole = decoded.role || "Patent Analyst";
 
     const formData = await req.formData();
     const file = formData.get("file") as File;

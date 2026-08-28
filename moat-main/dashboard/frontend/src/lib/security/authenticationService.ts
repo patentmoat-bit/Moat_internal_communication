@@ -1,5 +1,4 @@
-import { SupabaseClient } from "@supabase/supabase-js";
-import bcrypt from "bcryptjs";
+import { SupabaseClient, createClient } from "@supabase/supabase-js";
 import { SignJWT, jwtVerify } from "jose";
 import { IPReputationService } from "./ipReputationService";
 import { RateLimitingService } from "./rateLimitingService";
@@ -11,6 +10,7 @@ import { UserService } from "@/services/auth/UserService";
 import { MFAEnrollmentService } from "@/services/auth/MFAEnrollmentService";
 import { TOTPVerificationService } from "@/services/auth/TOTPVerificationService";
 import { EncryptionService } from "@/services/auth/EncryptionService";
+import { validatePasswordPolicy } from "./passwordPolicy";
 
 export class EnterpriseAuthenticationService {
   public ipReputationService: IPReputationService;
@@ -65,6 +65,33 @@ export class EnterpriseAuthenticationService {
     } catch {
       throw { status: 401, message: "MFA challenge expired or invalid. Please sign in again.", error: "MFA challenge expired or invalid. Please sign in again." };
     }
+  }
+
+  /**
+   * Issues a real password-reset token for a user who just proved they know
+   * their current (admin-issued temporary) password, so the client can jump
+   * straight to the reset-password page without an email round-trip.
+   */
+  private async issueForcedResetToken(userId: string, ip: string, userAgent: string): Promise<string> {
+    const crypto = require("crypto");
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expiryMinutes = parseInt(process.env.PASSWORD_RESET_TOKEN_EXPIRY_MINUTES || "30", 10);
+    const expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000).toISOString();
+
+    const insertRes = await this.supabase.from("password_reset_tokens").insert({
+      user_id: userId,
+      token_hash: tokenHash,
+      expires_at: expiresAt,
+      requested_ip: ip,
+      user_agent: userAgent,
+    });
+    if (insertRes.error) {
+      console.error("Failed to store forced-reset token:", insertRes.error);
+      throw { status: 500, message: "Failed to initiate password reset.", error: "Failed to initiate password reset." };
+    }
+
+    return rawToken;
   }
 
   async authenticateLogin(email: string, password: string, ip: string, userAgent: string, captchaToken?: string) {
@@ -196,7 +223,7 @@ export class EnterpriseAuthenticationService {
 
     const { data: user, error } = await this.supabase
       .from("users")
-      .select("id, name, email, password_hash, role_id, is_active, status, roles(role_name)")
+      .select("id, name, email, role_id, is_active, status, password_change_required, roles(role_name)")
       .eq("email", cleanEmail)
       .single();
 
@@ -237,7 +264,23 @@ export class EnterpriseAuthenticationService {
       throw { status: 403, message: "Account is disabled. Please contact your administrator.", error: "Account is disabled. Please contact your administrator." };
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+    // The single source of truth for credentials is Supabase Auth itself — no
+    // separate custom password store. This MUST run on a throwaway client, not
+    // `this.supabase` — signInWithPassword mutates the calling client's internal
+    // session state, which would silently switch every later call in this class
+    // (audit logs, reset tokens, MFA writes) from service-role to the freshly
+    // authenticated user's own (far more restricted) session for the rest of
+    // this request.
+    const credentialCheckClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+    const { error: signInError } = await credentialCheckClient.auth.signInWithPassword({
+      email: cleanEmail,
+      password,
+    });
+    const isPasswordValid = !signInError;
     if (!isPasswordValid) {
       const lockRes = await this.lockoutService.incrementFailure(cleanEmail);
       await this.lockoutService.applyProgressiveDelay(lockRes.attempts);
@@ -292,6 +335,38 @@ export class EnterpriseAuthenticationService {
       // Ignore DB error if table structure fallback in memory
     }
 
+    if (user.password_change_required) {
+      const resetToken = await this.issueForcedResetToken(user.id, ip, userAgent);
+      await this.auditLogService.logEvent({
+        userId: user.id,
+        email: cleanEmail,
+        eventType: "PASSWORD_RESET_REQUESTED",
+        ipAddress: ip,
+        userAgent,
+        endpoint: "/api/auth/login",
+        status: "INFO",
+        metadata: { stage: "forced_password_change" },
+      });
+      return {
+        requiresPasswordReset: true,
+        reset_token: resetToken,
+        message: "You must set a new password before continuing.",
+      };
+    }
+
+    return await this.issueMfaChallenge(user, ip, userAgent);
+  }
+
+  /**
+   * The shared "second half" of login — issues an MFA challenge (or reuses an
+   * unconfirmed one) for a user who has already been authenticated by some
+   * other means. Used by both authenticateLogin (password) and authenticateSso
+   * (Microsoft/Azure AD), so there is exactly one place that decides when MFA
+   * is satisfied and a real session becomes issuable — an SSO login can no
+   * more skip this than a password login can.
+   */
+  private async issueMfaChallenge(user: { id: string; email: string }, ip: string, userAgent: string) {
+    const cleanEmail = user.email;
     const enrollment = await this.userService.getMfaEnrollment(user.id);
     // A user is only truly enrolled once a secret actually exists — the
     // `mfa_enabled` flag can be true with no secret ever generated (e.g.
@@ -334,6 +409,117 @@ export class EnterpriseAuthenticationService {
       qr_code_svg: qrCodeSvg,
       message: "MFA challenge required.",
     };
+  }
+
+  /**
+   * Completes login for a user who already authenticated via Microsoft/Azure
+   * AD through Supabase Auth's own OAuth flow — no password ever touches this
+   * app. Applies the same organization-domain allowlist and account-status
+   * checks as password login (an existing account is still required; this
+   * never auto-provisions one), then funnels into the identical MFA challenge
+   * used everywhere else via issueMfaChallenge(). Deliberately does NOT apply
+   * the password-lockout/rate-limit/captcha machinery here — those defend
+   * against password guessing, which doesn't apply once Microsoft has already
+   * verified the user's identity — and does NOT check password_change_required,
+   * since that flag is about forcing a temporary PASSWORD to be changed, which
+   * is meaningless for a login that never used a password.
+   */
+  async authenticateSso(email: string, ip: string, userAgent: string) {
+    const cleanEmail = email.toLowerCase().trim();
+    const domain = cleanEmail.split('@')[1];
+
+    const { data: orgDomain } = await this.supabase
+      .from("organization_domains")
+      .select("id, is_enabled, organization_id")
+      .eq("domain", domain)
+      .single();
+
+    if (!orgDomain) {
+      await this.auditLogService.logEvent({
+        email: cleanEmail,
+        eventType: "DOMAIN_ACCESS_DENIED",
+        ipAddress: ip,
+        userAgent,
+        endpoint: "/api/auth/sso/bridge",
+        status: "FAILURE",
+        failureReason: "Domain not in enterprise allowlist",
+      });
+      throw { status: 401, message: "Unable to authenticate with the provided credentials.", error: "Unable to authenticate with the provided credentials." };
+    }
+
+    const { data: org } = await this.supabase
+      .from("organizations")
+      .select("id, is_enabled, name")
+      .eq("id", orgDomain.organization_id)
+      .single();
+
+    if (!orgDomain.is_enabled || !org?.is_enabled) {
+      await this.auditLogService.logEvent({
+        email: cleanEmail,
+        eventType: "DOMAIN_DISABLED",
+        ipAddress: ip,
+        userAgent,
+        endpoint: "/api/auth/sso/bridge",
+        status: "FAILURE",
+        failureReason: "Domain or organization is disabled",
+      });
+      throw { status: 401, message: "Unable to authenticate with the provided credentials.", error: "Unable to authenticate with the provided credentials." };
+    }
+
+    const { data: user, error } = await this.supabase
+      .from("users")
+      .select("id, name, email, role_id, is_active, status, roles(role_name)")
+      .eq("email", cleanEmail)
+      .single();
+
+    if (error || !user) {
+      await this.auditLogService.logEvent({
+        email: cleanEmail,
+        eventType: "LOGIN_FAILED",
+        ipAddress: ip,
+        userAgent,
+        endpoint: "/api/auth/sso/bridge",
+        status: "FAILURE",
+        failureReason: "SSO login for account with no matching profile",
+      });
+      throw { status: 403, message: "No account found for this Microsoft identity. Contact your administrator.", error: "No account found for this Microsoft identity. Contact your administrator." };
+    }
+
+    if (!user.is_active || user.status === "DISABLED" || user.status === "SUSPENDED" || user.status === "Inactive") {
+      await this.auditLogService.logEvent({
+        userId: user.id,
+        email: cleanEmail,
+        eventType: "LOGIN_FAILED",
+        ipAddress: ip,
+        userAgent,
+        endpoint: "/api/auth/sso/bridge",
+        status: "FAILURE",
+        failureReason: "Account disabled or suspended",
+      });
+      throw { status: 403, message: "Account is disabled. Please contact your administrator.", error: "Account is disabled. Please contact your administrator." };
+    }
+
+    await this.auditLogService.logEvent({
+      userId: user.id,
+      email: cleanEmail,
+      eventType: "DOMAIN_LOGIN_ALLOWED",
+      ipAddress: ip,
+      userAgent,
+      endpoint: "/api/auth/sso/bridge",
+      status: "SUCCESS",
+      metadata: { stage: "sso_verified", mfa_required: true, domain, organization: org?.name, provider: "microsoft" },
+    });
+
+    try {
+      await this.supabase
+        .from("users")
+        .update({ last_login_ip: ip, last_login_at: new Date().toISOString() })
+        .eq("id", user.id);
+    } catch {
+      // Ignore DB error if table structure fallback in memory
+    }
+
+    return await this.issueMfaChallenge(user, ip, userAgent);
   }
 
   async requestPasswordReset(email: string, ip: string, userAgent: string, captchaToken?: string) {
@@ -466,8 +652,14 @@ export class EnterpriseAuthenticationService {
   }
 
   async completePasswordReset(token: string, newPassword: string, ip: string, userAgent: string) {
-    if (!token || !newPassword || newPassword.length < 8) {
-      throw { status: 400, message: "Valid token and password with at least 8 characters are required.", error: "Valid token and password with at least 8 characters are required." };
+    if (!token || !newPassword) {
+      throw { status: 400, message: "Valid token and new password are required.", error: "Valid token and new password are required." };
+    }
+
+    const policyCheck = validatePasswordPolicy(newPassword);
+    if (!policyCheck.valid) {
+      const message = policyCheck.errors.join(" ");
+      throw { status: 400, message, error: message };
     }
 
     const rateLimit = await this.rateLimitingService.checkResetPasswordLimit(token.slice(0, 20), ip, userAgent);
@@ -543,24 +735,11 @@ export class EnterpriseAuthenticationService {
     }
 
     const email = user.email;
-    const passwordHash = await bcrypt.hash(newPassword, 10);
 
-    // 1. Update REAL Supabase Auth credential
+    // Supabase Auth is the single source of truth for credentials — update it directly,
+    // there is no separate custom password store to keep in sync anymore.
     const authUpdateRes = await this.supabase.auth.admin.updateUserById(tokenRecord.user_id, { password: newPassword });
     if (authUpdateRes.error) {
-      console.warn("Supabase Auth password update warned:", authUpdateRes.error);
-    }
-
-    // 2. Update custom profile table if needed
-    const { error: updateError } = await this.supabase
-      .from("users")
-      .update({
-        password_hash: passwordHash,
-        failed_reset_requests: 0,
-      })
-      .eq("id", tokenRecord.user_id);
-
-    if (updateError) {
       await this.auditLogService.logEvent({
         userId: tokenRecord.user_id,
         email,
@@ -569,9 +748,17 @@ export class EnterpriseAuthenticationService {
         userAgent,
         endpoint: "/api/auth/reset-password",
         status: "FAILURE",
-        failureReason: "Database update error",
+        failureReason: authUpdateRes.error.message,
       });
       throw { status: 500, message: "Failed to update password.", error: "Failed to update password." };
+    }
+
+    const clearFlagRes = await this.supabase
+      .from("users")
+      .update({ password_change_required: false })
+      .eq("id", tokenRecord.user_id);
+    if (clearFlagRes.error) {
+      console.error("Failed to clear password_change_required after reset:", clearFlagRes.error);
     }
 
     // 3. Mark token used

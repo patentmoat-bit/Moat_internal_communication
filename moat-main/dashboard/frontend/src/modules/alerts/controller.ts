@@ -28,11 +28,27 @@ export class AlertsController {
     }
   }
 
+  // getOne/update/delete previously had NO auth check at all — any
+  // authenticated user could read, modify, or delete any other user's alert
+  // by guessing its id. This mirrors the ownership gate already used for
+  // inventions (WorkspaceController.assertCanAccessInvention).
+  private static async assertCanAccessAlert(req: NextRequest, id: string) {
+    const user = await getAuthUser(req);
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const alert = await service.getAlert(id);
+    if ((alert as any)?.user_id !== user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    return alert;
+  }
+
   static async getOne(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
       const resolvedParams = await params;
-      const data = await service.getAlert(resolvedParams.id);
-      return NextResponse.json({ data });
+      const gate = await AlertsController.assertCanAccessAlert(req, resolvedParams.id);
+      if (gate instanceof NextResponse) return gate;
+      return NextResponse.json({ data: gate });
     } catch (err: any) {
       return NextResponse.json({ error: err.message }, { status: 404 });
     }
@@ -62,6 +78,8 @@ export class AlertsController {
   static async update(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
       const resolvedParams = await params;
+      const gate = await AlertsController.assertCanAccessAlert(req, resolvedParams.id);
+      if (gate instanceof NextResponse) return gate;
       const body = await req.json();
       const data = await service.updateAlert(resolvedParams.id, body);
       return NextResponse.json({ success: true, data });
@@ -73,6 +91,8 @@ export class AlertsController {
   static async delete(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
       const resolvedParams = await params;
+      const gate = await AlertsController.assertCanAccessAlert(req, resolvedParams.id);
+      if (gate instanceof NextResponse) return gate;
       await service.removeAlert(resolvedParams.id);
       return NextResponse.json({ success: true });
     } catch (err: any) {

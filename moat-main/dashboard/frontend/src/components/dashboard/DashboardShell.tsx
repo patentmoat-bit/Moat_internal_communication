@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getDashboardConfig } from "@/lib/enterpriseDashboardData";
 import type { DashboardConfig } from "@/lib/dashboardEngine";
-import { getRoleWorkspace, type EnterpriseRole } from "@/lib/roleIntelligence";
+import { ROLE_WORKSPACES, type EnterpriseRole } from "@/lib/roleIntelligence";
 import { RoleNavBar } from "./RoleNavBar";
 import { WidgetEngine } from "./WidgetEngine";
 import { AIInsightPanel } from "./AIInsightPanel";
@@ -20,7 +20,7 @@ interface DashboardShellProps {
 
 export function DashboardShell({ role }: DashboardShellProps) {
   const baseConfig = useMemo(() => getDashboardConfig(role), [role]);
-  const workspace = useMemo(() => getRoleWorkspace(role), [role]);
+  const workspace = useMemo(() => ROLE_WORKSPACES[role], [role]);
 
   const [liveConfig, setLiveConfig] = useState<DashboardConfig | null>(null);
 

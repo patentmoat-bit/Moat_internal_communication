@@ -1,12 +1,16 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { EventBus } from "@/lib/events/eventBus";
 import { GlobalExceptionHandler } from "@/lib/errors";
+import { requireAuth } from "@/lib/security/requireAdmin";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   try {
+    const auth = await requireAuth(req);
+    if (auth instanceof NextResponse) return auth;
+
     const { id } = await props.params;
     const formData = await req.formData();
     const file = formData.get("file") as File;

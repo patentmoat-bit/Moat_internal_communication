@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { cookies } from "next/headers";
-import * as jose from "jose";
+import { verifyToken } from "@/lib/jwt";
 import { GlobalExceptionHandler } from "@/lib/errors";
 
-// Minimal auth check for getting user ID and role
+// Verifies against the app's real signing key (@/lib/jwt, same as
+// middleware.ts and every other route) — this previously verified against a
+// separate, hardcoded fallback secret ("super-secret-jwt-key-for-moat-platform")
+// that would accept a forged token signed with that known string, and read a
+// `userId` claim that the app's real tokens never set (real tokens use `sub`),
+// which meant genuine sessions were always rejected here.
 const getUserInfo = async (req: NextRequest) => {
   const token = req.cookies.get("custom_access_token")?.value;
   if (!token) return null;
-  try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET || "super-secret-jwt-key-for-moat-platform");
-    const { payload } = await jose.jwtVerify(token, secret);
-    return { userId: payload.userId as string, role: payload.role as string };
-  } catch {
-    return null;
-  }
+  const payload = await verifyToken(token);
+  if (!payload) return null;
+  return { userId: payload.sub as string, role: payload.role as string };
 };
 
 export async function GET(req: NextRequest) {

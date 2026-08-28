@@ -53,6 +53,7 @@ interface AuthState {
   hasPermission: (permission: string) => boolean;
   setMfaChallenge: (required: boolean, factorId?: string) => void;
   verifyMfa: (code: string) => Promise<User>;
+  completeSsoLogin: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -81,6 +82,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail ?? "Login failed.");
 
+      if (data.requiresPasswordReset) {
+        set({ isLoading: false });
+        const err: any = new Error(data.message ?? "You must set a new password before continuing.");
+        err.requiresPasswordReset = true;
+        err.resetToken = data.reset_token;
+        throw err;
+      }
+
       // Check for MFA requirement in response
       if (data.mfa_required) {
         set({ 
@@ -96,6 +105,38 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const user = normalizeUser(data.user);
       set({ user, isAuthenticated: true, isLoading: false });
       return user;
+    } catch (err) {
+      set({ isLoading: false });
+      throw err;
+    }
+  },
+
+  // ── SSO (Microsoft/Azure AD) ──────────────────────────────────────────────
+  // Called from /auth/callback right after Supabase's OAuth flow returns.
+  // Never sets isAuthenticated on its own — same as loginWithCredentials, it
+  // only ever leads to mfaChallengeRequired, so the SAME MFA UI on the login
+  // page (and the same verifyMfa() call below) handles the rest.
+  completeSsoLogin: async () => {
+    set({ isLoading: true });
+    try {
+      const res = await fetch("/api/auth/sso/bridge", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail ?? "Microsoft sign-in failed.");
+
+      if (data.mfa_required) {
+        set({
+          mfaChallengeRequired: true,
+          mfaEnrolled: data.mfa_enrolled,
+          mfaChallengeToken: data.challenge_token,
+          qrCodeSvg: data.qr_code_svg || null,
+          isLoading: false,
+        });
+        return;
+      }
+
+      // authenticateSso never returns anything else today, but fail closed
+      // rather than silently treating an unrecognized response as success.
+      throw new Error(data.message ?? "Microsoft sign-in did not complete.");
     } catch (err) {
       set({ isLoading: false });
       throw err;
@@ -118,7 +159,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (!res.ok) throw new Error(data.detail ?? "MFA verification failed.");
 
       const user = normalizeUser(data.user);
-      set({ user, isAuthenticated: true, mfaChallengeRequired: false, mfaChallengeToken: null, otpauthUrl: null, isLoading: false });
+      set({ user, isAuthenticated: true, mfaChallengeRequired: false, mfaChallengeToken: null, qrCodeSvg: null, isLoading: false });
       return user;
     } catch (err) {
       set({ isLoading: false });

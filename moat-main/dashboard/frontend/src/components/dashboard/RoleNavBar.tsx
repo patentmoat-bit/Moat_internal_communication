@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { getRoleWorkspace, type EnterpriseRole } from "@/lib/roleIntelligence";
+import { ROLE_WORKSPACES, type EnterpriseRole } from "@/lib/roleIntelligence";
 import { cn } from "@/lib/utils";
 
 interface RoleNavBarProps {
@@ -12,7 +12,7 @@ interface RoleNavBarProps {
 
 export function RoleNavBar({ role }: RoleNavBarProps) {
   const pathname = usePathname();
-  const workspace = getRoleWorkspace(role);
+  const workspace = ROLE_WORKSPACES[role];
 
   // Filter modules to avoid duplicates and internal sub-paths if any
   const navItems = workspace.modules.map((m) => {

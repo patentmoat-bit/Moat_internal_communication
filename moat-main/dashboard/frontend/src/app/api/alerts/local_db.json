@@ -1,6 +1,664 @@
 {
   "notifications": [
     {
+      "id": "07caba1a-d2b0-4323-8674-7917246a581d",
+      "title": "Workflow Update",
+      "description": "CEO approved the report for Cybersecurity Testing",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "Patent Analyst",
+      "metadata": {
+        "event_type": "CEO_APPROVED",
+        "resource_id": "f69cbf2d-4b44-48ea-887a-c6ae01d62d80",
+        "resource_type": "invention",
+        "action_url": "/dashboard/ceo/moat/f69cbf2d-4b44-48ea-887a-c6ae01d62d80"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:40:57.820Z"
+    },
+    {
+      "id": "9df3250a-9fac-4c20-bd7a-e4b7c9bedfa8",
+      "title": "Workflow Update",
+      "description": "CEO approved the report for Cybersecurity Testing",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "eb8ab143-a7ac-403d-ad66-295b8bf2089f",
+      "metadata": {
+        "event_type": "CEO_APPROVED",
+        "resource_id": "f69cbf2d-4b44-48ea-887a-c6ae01d62d80",
+        "resource_type": "invention",
+        "action_url": "/dashboard/ceo/moat/f69cbf2d-4b44-48ea-887a-c6ae01d62d80"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:40:57.820Z"
+    },
+    {
+      "id": "86a69948-1b72-4089-b78a-a26f56826e63",
+      "title": "Workflow Update",
+      "description": "CEO approved the report for Cybersecurity Testing",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "Finance Manager",
+      "metadata": {
+        "event_type": "CEO_APPROVED",
+        "resource_id": "f69cbf2d-4b44-48ea-887a-c6ae01d62d80",
+        "resource_type": "invention",
+        "action_url": "/dashboard/ceo/moat/f69cbf2d-4b44-48ea-887a-c6ae01d62d80"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:40:57.820Z"
+    },
+    {
+      "id": "2db35ba3-5fe3-496d-bba9-8724205f011d",
+      "title": "Workflow Update",
+      "description": "CEO approved the report for Cybersecurity Testing",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "7f21b1ba-559c-47b5-a260-f5aec612c239",
+      "metadata": {
+        "event_type": "CEO_APPROVED",
+        "resource_id": "f69cbf2d-4b44-48ea-887a-c6ae01d62d80",
+        "resource_type": "invention",
+        "action_url": "/dashboard/ceo/moat/f69cbf2d-4b44-48ea-887a-c6ae01d62d80"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:40:57.820Z"
+    },
+    {
+      "id": "90d09932-78e3-4845-9b27-cabd4b71e169",
+      "title": "Workflow Update",
+      "description": "CEO approved the report for Cybersecurity Testing",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "Patent Drafter",
+      "metadata": {
+        "event_type": "CEO_APPROVED",
+        "resource_id": "f69cbf2d-4b44-48ea-887a-c6ae01d62d80",
+        "resource_type": "invention",
+        "action_url": "/dashboard/ceo/moat/f69cbf2d-4b44-48ea-887a-c6ae01d62d80"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:40:57.820Z"
+    },
+    {
+      "id": "4ca036c5-c711-4c15-86e1-c322f4b5b78f",
+      "title": "Workflow Update",
+      "description": "CEO approved the report for Cybersecurity Testing",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "1d9c74dc-2804-474c-a2fb-b5a87022afd2",
+      "metadata": {
+        "event_type": "CEO_APPROVED",
+        "resource_id": "f69cbf2d-4b44-48ea-887a-c6ae01d62d80",
+        "resource_type": "invention",
+        "action_url": "/dashboard/ceo/moat/f69cbf2d-4b44-48ea-887a-c6ae01d62d80"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:40:57.820Z"
+    },
+    {
+      "id": "b96b43a3-eca3-495a-b373-99e2a28acca9",
+      "title": "Workflow Update",
+      "description": "CEO approved the report for Cybersecurity Testing",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "Admin",
+      "metadata": {
+        "event_type": "CEO_APPROVED",
+        "resource_id": "f69cbf2d-4b44-48ea-887a-c6ae01d62d80",
+        "resource_type": "invention",
+        "action_url": "/dashboard/ceo/moat/f69cbf2d-4b44-48ea-887a-c6ae01d62d80"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:40:57.820Z"
+    },
+    {
+      "id": "632dc1f8-3127-4567-88c2-e5eaf121b9f8",
+      "title": "Workflow Update",
+      "description": "CEO approved the report for Cybersecurity Testing",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "d266ce27-206e-4918-aca5-20141a58884d",
+      "metadata": {
+        "event_type": "CEO_APPROVED",
+        "resource_id": "f69cbf2d-4b44-48ea-887a-c6ae01d62d80",
+        "resource_type": "invention",
+        "action_url": "/dashboard/ceo/moat/f69cbf2d-4b44-48ea-887a-c6ae01d62d80"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:40:57.820Z"
+    },
+    {
+      "id": "7b397fa3-5ee7-46c0-b16d-42a06061fe3c",
+      "title": "Document Status Updated: Pending Design Review",
+      "description": "Jothika changed the document status from Uploaded by Patent Analyst to Pending Design Review.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "CEO",
+      "metadata": {
+        "event_type": "DESIGN_REQUESTED",
+        "resource_id": "a8700327-fd8f-4ef9-8af7-93212369da8a",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test",
+        "old_status": "Uploaded by Patent Analyst",
+        "new_status": "Pending Design Review"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:28:19.733Z"
+    },
+    {
+      "id": "656af243-0bb0-44c2-98ca-aec3d7fafee0",
+      "title": "Document Status Updated: Pending Design Review",
+      "description": "Jothika changed the document status from Uploaded by Patent Analyst to Pending Design Review.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "34cfb254-b10c-4a3d-b215-2b3673b64438",
+      "metadata": {
+        "event_type": "DESIGN_REQUESTED",
+        "resource_id": "a8700327-fd8f-4ef9-8af7-93212369da8a",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test",
+        "old_status": "Uploaded by Patent Analyst",
+        "new_status": "Pending Design Review"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:28:19.733Z"
+    },
+    {
+      "id": "a264d6cf-de8c-4a92-ba23-686b8c73276e",
+      "title": "Document Status Updated: Pending Design Review",
+      "description": "Jothika changed the document status from Uploaded by Patent Analyst to Pending Design Review.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "9fa32f89-77f7-4a5c-afa1-a4c9b8edce40",
+      "metadata": {
+        "event_type": "DESIGN_REQUESTED",
+        "resource_id": "a8700327-fd8f-4ef9-8af7-93212369da8a",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test",
+        "old_status": "Uploaded by Patent Analyst",
+        "new_status": "Pending Design Review"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:28:19.733Z"
+    },
+    {
+      "id": "da1321ae-1c53-4b48-9b07-f6f5052879d5",
+      "title": "Document Status Updated: Pending Design Review",
+      "description": "Jothika changed the document status from Uploaded by Patent Analyst to Pending Design Review.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "Admin",
+      "metadata": {
+        "event_type": "DESIGN_REQUESTED",
+        "resource_id": "a8700327-fd8f-4ef9-8af7-93212369da8a",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test",
+        "old_status": "Uploaded by Patent Analyst",
+        "new_status": "Pending Design Review"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:28:19.733Z"
+    },
+    {
+      "id": "0b6b1c8e-afee-4303-aebf-a5008d2af9a3",
+      "title": "Document Status Updated: Pending Design Review",
+      "description": "Jothika changed the document status from Uploaded by Patent Analyst to Pending Design Review.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "d266ce27-206e-4918-aca5-20141a58884d",
+      "metadata": {
+        "event_type": "DESIGN_REQUESTED",
+        "resource_id": "a8700327-fd8f-4ef9-8af7-93212369da8a",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test",
+        "old_status": "Uploaded by Patent Analyst",
+        "new_status": "Pending Design Review"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:28:19.733Z"
+    },
+    {
+      "id": "d6b6b0e4-301b-40ce-a7fa-4f0bc3d90850",
+      "title": "Document Status Updated: Uploaded by Patent Analyst",
+      "description": "Jothika changed the document status from Draft Created to Uploaded by Patent Analyst.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "CEO",
+      "metadata": {
+        "event_type": "DOCUMENT_UPLOADED",
+        "resource_id": "a8700327-fd8f-4ef9-8af7-93212369da8a",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test",
+        "old_status": "Draft Created",
+        "new_status": "Uploaded by Patent Analyst"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:27:48.570Z"
+    },
+    {
+      "id": "b08914a5-e49e-4539-b36a-de46f87732b1",
+      "title": "Document Status Updated: Uploaded by Patent Analyst",
+      "description": "Jothika changed the document status from Draft Created to Uploaded by Patent Analyst.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "34cfb254-b10c-4a3d-b215-2b3673b64438",
+      "metadata": {
+        "event_type": "DOCUMENT_UPLOADED",
+        "resource_id": "a8700327-fd8f-4ef9-8af7-93212369da8a",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test",
+        "old_status": "Draft Created",
+        "new_status": "Uploaded by Patent Analyst"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:27:48.570Z"
+    },
+    {
+      "id": "46b0b49f-de69-4f68-8a62-e7dcb9ca70d6",
+      "title": "Document Status Updated: Uploaded by Patent Analyst",
+      "description": "Jothika changed the document status from Draft Created to Uploaded by Patent Analyst.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "9fa32f89-77f7-4a5c-afa1-a4c9b8edce40",
+      "metadata": {
+        "event_type": "DOCUMENT_UPLOADED",
+        "resource_id": "a8700327-fd8f-4ef9-8af7-93212369da8a",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test",
+        "old_status": "Draft Created",
+        "new_status": "Uploaded by Patent Analyst"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:27:48.570Z"
+    },
+    {
+      "id": "2ec218fe-343b-4dfa-9aa0-910ad62acf21",
+      "title": "Document Status Updated: Uploaded by Patent Analyst",
+      "description": "Jothika changed the document status from Draft Created to Uploaded by Patent Analyst.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "Admin",
+      "metadata": {
+        "event_type": "DOCUMENT_UPLOADED",
+        "resource_id": "a8700327-fd8f-4ef9-8af7-93212369da8a",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test",
+        "old_status": "Draft Created",
+        "new_status": "Uploaded by Patent Analyst"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:27:48.570Z"
+    },
+    {
+      "id": "03e0d299-fb75-45a6-ab0a-a361cd83575e",
+      "title": "Document Status Updated: Uploaded by Patent Analyst",
+      "description": "Jothika changed the document status from Draft Created to Uploaded by Patent Analyst.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "d266ce27-206e-4918-aca5-20141a58884d",
+      "metadata": {
+        "event_type": "DOCUMENT_UPLOADED",
+        "resource_id": "a8700327-fd8f-4ef9-8af7-93212369da8a",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test",
+        "old_status": "Draft Created",
+        "new_status": "Uploaded by Patent Analyst"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:27:48.570Z"
+    },
+    {
+      "id": "de48b9e6-1533-4cf3-ad4c-aa6c95f1ad67",
+      "title": "New Document Version Uploaded",
+      "description": "Jothika uploaded a new version: Blockchain_Final.docx.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "CEO",
+      "metadata": {
+        "event_type": "DOCUMENT_UPLOADED",
+        "resource_id": "a8700327-fd8f-4ef9-8af7-93212369da8a",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:27:42.193Z"
+    },
+    {
+      "id": "ccfaac39-03a5-4f8a-9049-9ce7230d2b0d",
+      "title": "New Document Version Uploaded",
+      "description": "Jothika uploaded a new version: Blockchain_Final.docx.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "34cfb254-b10c-4a3d-b215-2b3673b64438",
+      "metadata": {
+        "event_type": "DOCUMENT_UPLOADED",
+        "resource_id": "a8700327-fd8f-4ef9-8af7-93212369da8a",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:27:42.193Z"
+    },
+    {
+      "id": "a5a93aef-7f98-4175-a82a-65ef666a364d",
+      "title": "New Document Version Uploaded",
+      "description": "Jothika uploaded a new version: Blockchain_Final.docx.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "9fa32f89-77f7-4a5c-afa1-a4c9b8edce40",
+      "metadata": {
+        "event_type": "DOCUMENT_UPLOADED",
+        "resource_id": "a8700327-fd8f-4ef9-8af7-93212369da8a",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:27:42.193Z"
+    },
+    {
+      "id": "b53d76f9-e184-4280-a644-47c56522ece0",
+      "title": "New Document Version Uploaded",
+      "description": "Jothika uploaded a new version: Blockchain_Final.docx.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "Admin",
+      "metadata": {
+        "event_type": "DOCUMENT_UPLOADED",
+        "resource_id": "a8700327-fd8f-4ef9-8af7-93212369da8a",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:27:42.193Z"
+    },
+    {
+      "id": "2fdcbee6-3065-4acf-8d71-e2d08e225472",
+      "title": "New Document Version Uploaded",
+      "description": "Jothika uploaded a new version: Blockchain_Final.docx.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "d266ce27-206e-4918-aca5-20141a58884d",
+      "metadata": {
+        "event_type": "DOCUMENT_UPLOADED",
+        "resource_id": "a8700327-fd8f-4ef9-8af7-93212369da8a",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:27:42.193Z"
+    },
+    {
+      "id": "08c3c84f-f2b1-4c4a-93c7-6e5cb679374a",
+      "title": "New Document Comment",
+      "description": "Jothika added a comment: \"here i have uploaded the document \"",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "CEO",
+      "metadata": {
+        "event_type": "COMMENT_ADDED",
+        "resource_id": "a8700327-fd8f-4ef9-8af7-93212369da8a",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:26:54.350Z"
+    },
+    {
+      "id": "94965b3b-69ba-433e-a3b0-030e45751615",
+      "title": "New Document Comment",
+      "description": "Jothika added a comment: \"here i have uploaded the document \"",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "34cfb254-b10c-4a3d-b215-2b3673b64438",
+      "metadata": {
+        "event_type": "COMMENT_ADDED",
+        "resource_id": "a8700327-fd8f-4ef9-8af7-93212369da8a",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:26:54.350Z"
+    },
+    {
+      "id": "184549bf-595f-4cde-8a8d-32487ed7cdbd",
+      "title": "New Document Comment",
+      "description": "Jothika added a comment: \"here i have uploaded the document \"",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "9fa32f89-77f7-4a5c-afa1-a4c9b8edce40",
+      "metadata": {
+        "event_type": "COMMENT_ADDED",
+        "resource_id": "a8700327-fd8f-4ef9-8af7-93212369da8a",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:26:54.350Z"
+    },
+    {
+      "id": "9aca8bd2-b8e5-40f7-8892-18e5cab7d56c",
+      "title": "New Document Comment",
+      "description": "Jothika added a comment: \"here i have uploaded the document \"",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "Patent Analyst",
+      "metadata": {
+        "event_type": "COMMENT_ADDED",
+        "resource_id": "a8700327-fd8f-4ef9-8af7-93212369da8a",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test"
+      },
+      "is_read": true,
+      "created_at": "2026-08-27T11:26:54.350Z"
+    },
+    {
+      "id": "5f7a3144-5d6d-4689-bfee-eb8c906970e3",
+      "title": "New Document Comment",
+      "description": "Jothika added a comment: \"here i have uploaded the document \"",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "eb8ab143-a7ac-403d-ad66-295b8bf2089f",
+      "metadata": {
+        "event_type": "COMMENT_ADDED",
+        "resource_id": "a8700327-fd8f-4ef9-8af7-93212369da8a",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:26:54.350Z"
+    },
+    {
+      "id": "2f9ab1e6-0517-43c8-857e-17d1a77fe70c",
+      "title": "New Document Comment",
+      "description": "Jothika added a comment: \"here i have uploaded the document \"",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "Designer",
+      "metadata": {
+        "event_type": "COMMENT_ADDED",
+        "resource_id": "a8700327-fd8f-4ef9-8af7-93212369da8a",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:26:54.350Z"
+    },
+    {
+      "id": "7f8a5bea-d517-43b8-9d46-9446ca106ddf",
+      "title": "New Document Comment",
+      "description": "Jothika added a comment: \"here i have uploaded the document \"",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "Admin",
+      "metadata": {
+        "event_type": "COMMENT_ADDED",
+        "resource_id": "a8700327-fd8f-4ef9-8af7-93212369da8a",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:26:54.350Z"
+    },
+    {
+      "id": "8dc84aaa-299f-4edc-ab40-9ce922b8ce36",
+      "title": "New Document Comment",
+      "description": "Jothika added a comment: \"here i have uploaded the document \"",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "d266ce27-206e-4918-aca5-20141a58884d",
+      "metadata": {
+        "event_type": "COMMENT_ADDED",
+        "resource_id": "a8700327-fd8f-4ef9-8af7-93212369da8a",
+        "resource_type": "document",
+        "action_url": "/dashboard/ceo/approvals",
+        "title": "test"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:26:54.350Z"
+    },
+    {
+      "id": "ccf9ed13-c967-41c3-9417-14352fa3bd1a",
+      "title": "New Project Created",
+      "description": "Project \"Cybersecurity Testing\" has been created.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "Patent Analyst",
+      "metadata": {
+        "event_type": "PROJECT_CREATED",
+        "resource_id": "f69cbf2d-4b44-48ea-887a-c6ae01d62d80",
+        "resource_type": "invention",
+        "action_url": "/dashboard/inventions/f69cbf2d-4b44-48ea-887a-c6ae01d62d80",
+        "title": "Cybersecurity Testing"
+      },
+      "is_read": true,
+      "created_at": "2026-08-27T11:19:52.201Z"
+    },
+    {
+      "id": "cfe26683-1c88-4359-9ac3-74530e74ce65",
+      "title": "New Project Created",
+      "description": "Project \"Cybersecurity Testing\" has been created.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "eb8ab143-a7ac-403d-ad66-295b8bf2089f",
+      "metadata": {
+        "event_type": "PROJECT_CREATED",
+        "resource_id": "f69cbf2d-4b44-48ea-887a-c6ae01d62d80",
+        "resource_type": "invention",
+        "action_url": "/dashboard/inventions/f69cbf2d-4b44-48ea-887a-c6ae01d62d80",
+        "title": "Cybersecurity Testing"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:19:52.201Z"
+    },
+    {
+      "id": "8d1e4e36-d5d6-4fd2-971c-8045c8f6babe",
+      "title": "New Project Created",
+      "description": "Project \"Cybersecurity Testing\" has been created.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "CEO",
+      "metadata": {
+        "event_type": "PROJECT_CREATED",
+        "resource_id": "f69cbf2d-4b44-48ea-887a-c6ae01d62d80",
+        "resource_type": "invention",
+        "action_url": "/dashboard/inventions/f69cbf2d-4b44-48ea-887a-c6ae01d62d80",
+        "title": "Cybersecurity Testing"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:19:52.201Z"
+    },
+    {
+      "id": "744a1521-a36c-49fb-919f-ca9d394e59d5",
+      "title": "New Project Created",
+      "description": "Project \"Cybersecurity Testing\" has been created.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "34cfb254-b10c-4a3d-b215-2b3673b64438",
+      "metadata": {
+        "event_type": "PROJECT_CREATED",
+        "resource_id": "f69cbf2d-4b44-48ea-887a-c6ae01d62d80",
+        "resource_type": "invention",
+        "action_url": "/dashboard/inventions/f69cbf2d-4b44-48ea-887a-c6ae01d62d80",
+        "title": "Cybersecurity Testing"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:19:52.201Z"
+    },
+    {
+      "id": "699ad124-29bc-4537-be24-4408e6b60048",
+      "title": "New Project Created",
+      "description": "Project \"Cybersecurity Testing\" has been created.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "9fa32f89-77f7-4a5c-afa1-a4c9b8edce40",
+      "metadata": {
+        "event_type": "PROJECT_CREATED",
+        "resource_id": "f69cbf2d-4b44-48ea-887a-c6ae01d62d80",
+        "resource_type": "invention",
+        "action_url": "/dashboard/inventions/f69cbf2d-4b44-48ea-887a-c6ae01d62d80",
+        "title": "Cybersecurity Testing"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:19:52.201Z"
+    },
+    {
+      "id": "40fb55e5-c50c-438f-92e9-fe0b687a1865",
+      "title": "New Project Created",
+      "description": "Project \"Cybersecurity Testing\" has been created.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "Admin",
+      "metadata": {
+        "event_type": "PROJECT_CREATED",
+        "resource_id": "f69cbf2d-4b44-48ea-887a-c6ae01d62d80",
+        "resource_type": "invention",
+        "action_url": "/dashboard/inventions/f69cbf2d-4b44-48ea-887a-c6ae01d62d80",
+        "title": "Cybersecurity Testing"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:19:52.201Z"
+    },
+    {
+      "id": "a9f35d78-1eac-4bd9-a63c-6799b27195f0",
+      "title": "New Project Created",
+      "description": "Project \"Cybersecurity Testing\" has been created.",
+      "type": "workflow",
+      "priority": "normal",
+      "receiver": "d266ce27-206e-4918-aca5-20141a58884d",
+      "metadata": {
+        "event_type": "PROJECT_CREATED",
+        "resource_id": "f69cbf2d-4b44-48ea-887a-c6ae01d62d80",
+        "resource_type": "invention",
+        "action_url": "/dashboard/inventions/f69cbf2d-4b44-48ea-887a-c6ae01d62d80",
+        "title": "Cybersecurity Testing"
+      },
+      "is_read": false,
+      "created_at": "2026-08-27T11:19:52.201Z"
+    },
+    {
       "id": "test-badge",
       "title": "Badge Test",
       "description": "Testing the unread badge",

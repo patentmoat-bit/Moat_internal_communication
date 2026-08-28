@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GlobalExceptionHandler } from "@/lib/errors";
+import { getSessionUser } from "@/lib/security/requireAdmin";
+import { appRoleToEnterpriseRole } from "@/lib/roleIntelligence";
 
+// Previously had NO auth check on any method — anyone unauthenticated could
+// list all CEO feedback or create arbitrary entries. Reads require login;
+// writes are CEO/admin-only since this is CEO-authored review feedback.
 export async function GET(req: NextRequest) {
   try {
+    const user = await getSessionUser(req);
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const supabase = createAdminClient();
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
@@ -25,6 +33,13 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const user = await getSessionUser(req);
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const role = appRoleToEnterpriseRole(user.role);
+    if (role !== "ceo" && role !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const supabase = createAdminClient();
     const body = await req.json();
 
@@ -36,7 +51,7 @@ export async function POST(req: NextRequest) {
         status: body.status || 'Open',
         target_id: body.target_id,
         target_type: body.target_type,
-        created_by: body.created_by || 'CEO'
+        created_by: user.id
       })
       .select()
       .single();
@@ -53,7 +68,7 @@ export async function POST(req: NextRequest) {
         attachments: body.attachments || [],
         links: body.links || [],
         version_number: 1,
-        created_by: body.created_by || 'CEO'
+        created_by: user.id
       });
 
     if (versionError) throw versionError;

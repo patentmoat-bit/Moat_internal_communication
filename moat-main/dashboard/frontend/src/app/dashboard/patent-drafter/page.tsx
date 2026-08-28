@@ -43,6 +43,15 @@ export default function PatentDrafterWorkspacePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
 
+  // Read via ref inside the realtime callback so the subscription doesn't
+  // need to be torn down and recreated every time the user clicks a
+  // different row, and so the callback doesn't permanently close over the
+  // initial (null) value of selectedDoc.
+  const selectedDocRef = useRef<any | null>(null);
+  useEffect(() => {
+    selectedDocRef.current = selectedDoc;
+  }, [selectedDoc]);
+
   useEffect(() => {
     fetchStats();
     fetchDocuments();
@@ -54,7 +63,7 @@ export default function PatentDrafterWorkspacePage() {
         { event: "*", schema: "public", table: "patent_documents" },
         () => {
           fetchDocuments();
-          if (selectedDoc) fetchDocDetails(selectedDoc.id);
+          if (selectedDocRef.current) fetchDocDetails(selectedDocRef.current.id);
         }
       )
       .on(
@@ -123,7 +132,7 @@ export default function PatentDrafterWorkspacePage() {
   const fetchDocDetails = async (id: string | undefined) => {
     if (!id) return;
     try {
-      const res = await fetch(`/api/documents/${id}?_t=${Date.now()}`, { cache: "no-store" });
+      const res = await fetch(`/api/documents/${id}`);
       const data = await res.json();
       if (data.success) {
         if (data.data && data.data.document_versions && data.data.document_versions.length > 0) {

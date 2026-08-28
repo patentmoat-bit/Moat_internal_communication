@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GlobalExceptionHandler } from "@/lib/errors";
+import { requireAdmin } from "@/lib/security/requireAdmin";
 
+// No auth check previously — this is effectively a generic "send an email via
+// any Azure app registration's credentials" relay (accepts tenantId/clientId/
+// clientSecret straight from the request body). Admin-only now.
 export async function POST(req: NextRequest) {
   try {
+    const admin = await requireAdmin(req);
+    if (admin instanceof NextResponse) return admin;
+
     const body = await req.json();
     const { provider, tenantId, clientId, clientSecret, fromEmail, toEmails, ccEmails } = body;
 

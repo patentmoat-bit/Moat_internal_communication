@@ -1,13 +1,19 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { completeJSON } from "@/lib/llm";
 import { hasOpenAIKey } from "@/lib/openai";
+import { requireAuth } from "@/lib/security/requireAdmin";
 import {
   DECISION_SYSTEM,
   heuristicDecision,
   sanitizeDecision,
 } from "@/lib/analysis/decision";
 
-export async function POST(request: Request) {
+// Previously had NO auth check — unauthenticated resource/cost abuse of the
+// OpenAI-backed endpoint.
+export async function POST(request: NextRequest) {
+  const user = await requireAuth(request);
+  if (user instanceof NextResponse) return user;
+
   let query = "";
   try {
     const body = await request.json();

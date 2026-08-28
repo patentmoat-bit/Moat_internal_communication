@@ -1,6 +1,5 @@
 import { Metadata } from "next";
 import { Suspense } from "react";
-import { AIAssistantLayout } from "@/components/ai/AIAssistantLayout";
 import { LoadingState } from "@/components/shared/LoadingState";
 import AiHubWorkspace from "@/components/ai-hub/AiHubWorkspace";
 

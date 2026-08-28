@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GlobalExceptionHandler } from "@/lib/errors";
+import { requireAdmin } from "@/lib/security/requireAdmin";
 
 // Hardcoded rules from the previous setup
 const ROUTING_RULES = [
@@ -101,7 +102,12 @@ const ROUTING_RULES = [
   }
 ];
 
-export async function POST() {
+// No auth check previously — any authenticated user could bulk-reset
+// notification routing rules. Admin-only now.
+export async function POST(request: NextRequest) {
+  const admin = await requireAdmin(request);
+  if (admin instanceof NextResponse) return admin;
+
   const supabase = createAdminClient();
   let count = 0;
 

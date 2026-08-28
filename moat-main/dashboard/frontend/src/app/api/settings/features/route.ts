@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import fs from "fs";
 import path from "path";
 import { GlobalExceptionHandler } from "@/lib/errors";
+import { requireAdmin } from "@/lib/security/requireAdmin";
 
 const CONFIG_DOC_NAME = "SYSTEM_FEATURES_CONFIG";
 const FALLBACK_FILE_PATH = path.join(process.cwd(), "src/app/api/settings/features/features_config.json");
@@ -37,10 +38,15 @@ function writeFallbackFile(data: any) {
   }
 }
 
+// Neither method had an auth check — any authenticated user could read or
+// overwrite the feature-flag config. Admin-only now.
 export async function GET(req: NextRequest) {
   try {
+    const admin = await requireAdmin(req);
+    if (admin instanceof NextResponse) return admin;
+
     const supabase = createAdminClient();
-    
+
     const { data, error } = await supabase
       .from("workspace_documents")
       .select("content")
@@ -64,6 +70,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const admin = await requireAdmin(req);
+    if (admin instanceof NextResponse) return admin;
+
     const body = await req.json();
     const supabase = createAdminClient();
 

@@ -8,20 +8,37 @@ interface TimelineProps {
 }
 
 export function DocumentTimeline({ currentStatus, isDrafter }: TimelineProps) {
+  // Matched against the real status strings written by
+  // src/modules/documents/repository.ts / controller.ts (confirmed against the
+  // live patent_documents data) — the previous version matched against
+  // "Draft" and "CEO Approval Pending", neither of which any real document
+  // status ever equals, so the stepper silently fell back to stage 0 for
+  // almost every document regardless of its actual progress.
   const STAGES = [
-    { label: "Draft", status: "Draft" },
-    { label: "Design Review", status: "Pending Design Review" },
-    { label: isDrafter ? "Drafter Review" : "Analyst Review", status: isDrafter ? "Waiting for Drafter Review" : "Waiting for Patent Analyst Review" },
-    { label: "CEO Review", status: "CEO Approval Pending" },
-    { label: "Approved", status: "CEO Approved" },
+    { label: "Draft", statuses: ["Draft Created"] },
+    {
+      label: "Design Review",
+      statuses: [
+        "Pending Design Review", "Pending Design Work", "Design In Progress",
+        "Under Design Review", "Changes Requested", "Returned to Designing Team",
+      ],
+    },
+    {
+      label: isDrafter ? "Drafter Review" : "Analyst Review",
+      statuses: isDrafter
+        ? ["Waiting for Drafter Review"]
+        : ["Waiting for Patent Analyst Review", "Uploaded by Patent Analyst"],
+    },
+    { label: "CEO Review", statuses: ["CEO Approval Pending"] },
+    { label: "Approved", statuses: ["CEO Approved", "Approved", "Completed"] },
   ];
-  const currentIndex = STAGES.findIndex((s) => s.status === currentStatus);
+  const currentIndex = STAGES.findIndex((s) => s.statuses.includes(currentStatus));
   const activeIndex = currentIndex === -1 ? 0 : currentIndex;
 
   return (
     <div className="flex items-center w-full my-6">
       {STAGES.map((stage, index) => {
-        const isCompleted = index < activeIndex || stage.status === "CEO Approved" || currentStatus === "Completed";
+        const isCompleted = index < activeIndex || currentStatus === "Completed";
         const isActive = index === activeIndex;
 
         return (

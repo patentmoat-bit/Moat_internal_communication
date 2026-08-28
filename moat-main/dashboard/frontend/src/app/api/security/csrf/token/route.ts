@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { CSRFTokenService } from "@/lib/security/csrf/CSRFTokenService";
 import { CORSOptionsService } from "@/lib/security/csrf/CORSOptionsService";
 import { GlobalExceptionHandler } from "@/lib/errors";
+import { verifyToken } from "@/lib/jwt";
 
 /**
  * CSRF Token Issuance API Route
@@ -16,8 +17,16 @@ import { GlobalExceptionHandler } from "@/lib/errors";
 export async function GET(req: NextRequest) {
   try {
     const origin = req.headers.get("origin") || "https://moat.ai";
-    const userId = req.headers.get("x-test-user-id") || "usr_ceo_01";
-    const sessionId = req.headers.get("x-test-session-id") || "sess_prod_889900";
+    // Identity is derived ONLY from the verified session — this previously
+    // defaulted to a hardcoded fake user ("usr_ceo_01") whenever no
+    // x-test-user-id header was sent, and trusted that header when present.
+    const sessionCookie = req.cookies.get("custom_access_token")?.value;
+    const decoded: any = sessionCookie ? await verifyToken(sessionCookie) : null;
+    if (!decoded?.sub) {
+      return NextResponse.json({ success: false, message: "Unauthorized." }, { status: 401 });
+    }
+    const userId = decoded.sub;
+    const sessionId = decoded.jti || decoded.sub;
 
     const { token, record, cookies } = CSRFTokenService.generateToken(userId, sessionId);
     const corsHeaders = CORSOptionsService.getCORSHeaders(origin);

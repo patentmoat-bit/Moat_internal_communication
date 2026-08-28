@@ -26,7 +26,7 @@ export class TrademarksService {
       resourceId: data.id,
       resourceType: "trademark",
       notificationTitle: "New Trademark Project Created",
-      notificationMessage: `A new Trademark project "${data.title}" has been created.`,
+      notificationMessage: `A new Trademark project "${data.name}" has been created.`,
       actionUrl: "/dashboard/patent-analyst/trademark",
       projectData: data
     });
@@ -47,7 +47,7 @@ export class TrademarksService {
       resourceId: data.id,
       resourceType: "trademark",
       notificationTitle: `Trademark ${isStatusUpdate ? "Status" : "Project"} Updated`,
-      notificationMessage: `Trademark project "${data.title}" has been updated.`,
+      notificationMessage: `Trademark project "${data.name}" has been updated.`,
       actionUrl: "/dashboard/patent-analyst/trademark",
       projectData: data
     });
@@ -77,7 +77,7 @@ export class TrademarksService {
       resourceId: trademarkId,
       resourceType: "trademark",
       notificationTitle: "New Trademark Document Uploaded",
-      notificationMessage: `A new document (${name}) was uploaded to Trademark project "${tmData?.title || trademarkId}".`,
+      notificationMessage: `A new document (${name}) was uploaded to Trademark project "${tmData?.name || trademarkId}".`,
       actionUrl: "/dashboard/patent-analyst/trademark",
       projectData: tmData || undefined
     });

@@ -7,7 +7,7 @@ import {
   Check, X, MessageSquare, Search, Filter, History, RefreshCw, ChevronRight, CornerDownRight
 } from "lucide-react";
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/client";
 
 interface Alert {
   id: string;
@@ -66,18 +66,14 @@ export default function AlertsPage() {
   useEffect(() => {
     fetchAlerts();
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-    if (supabaseUrl && supabaseKey) {
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      const channel = supabase
-        .channel('public:notifications')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => {
-          fetchAlerts();
-        })
-        .subscribe();
-      return () => { supabase.removeChannel(channel); };
-    }
+    const supabase = createClient();
+    const channel = supabase
+      .channel('public:notifications')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => {
+        fetchAlerts();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [fetchAlerts]);
 
   const handleAction = async (id: string, action: string) => {

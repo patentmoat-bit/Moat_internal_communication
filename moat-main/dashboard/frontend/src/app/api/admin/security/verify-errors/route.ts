@@ -1,9 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { runErrorHandlingVerification } from "@/lib/errors/__tests__/verifyErrorHandlingStack";
 import { GlobalExceptionHandler } from "@/lib/errors";
+import { requireAdmin } from "@/lib/security/requireAdmin";
 
-export async function GET(request: Request) {
+// No auth check previously. Admin-only now.
+export async function GET(request: NextRequest) {
   try {
+    const admin = await requireAdmin(request);
+    if (admin instanceof NextResponse) return admin;
+
     const report = await runErrorHandlingVerification();
     return NextResponse.json({
       success: report.success,

@@ -20,7 +20,7 @@ export function NotificationCenter() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const { user, currentRole } = useApp();
+  const { user } = useApp();
 
   useEffect(() => {
     if (!user) return;
@@ -32,7 +32,7 @@ export function NotificationCenter() {
         const { data, error: err } = await supabase
           .from('notifications')
           .select('id, type, title, description, is_read, created_at') // Phase 5 Optimization: Removed select(*)
-          .in('receiver', [user.id, currentRole || ''])
+          .in('receiver', [user.id, user.role || ''])
           .order('created_at', { ascending: false })
           .limit(20);
 
@@ -54,7 +54,7 @@ export function NotificationCenter() {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications' },
         (payload) => {
-          if (payload.new.receiver === user.id || payload.new.receiver === currentRole) {
+          if (payload.new.receiver === user.id || payload.new.receiver === user.role) {
             setNotifications(prev => [payload.new, ...prev].slice(0, 50));
           }
         }
@@ -64,7 +64,7 @@ export function NotificationCenter() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, currentRole]);
+  }, [user]);
 
   const markAsRead = async (id: string) => {
     // Optimistic UI

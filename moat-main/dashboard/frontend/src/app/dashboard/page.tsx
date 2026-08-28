@@ -13,7 +13,7 @@ export default function DashboardHome() {
   useEffect(() => {
     if (!isLoading && isAuthenticated && user) {
       const workspace = getRoleWorkspace(user.role);
-      router.replace(workspace.route);
+      router.replace(workspace?.route ?? "/403");
     } else if (!isLoading && !isAuthenticated) {
       router.replace("/login");
     }

@@ -1,16 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { EnvironmentSecretManager } from "@/lib/security/secrets/EnvironmentSecretManager";
 import { GlobalExceptionHandler } from "@/lib/errors";
+import { requireAdmin } from "@/lib/security/requireAdmin";
 
 /**
  * List Stored Secrets API Route
- * 
+ *
  * GET /api/security/secrets/list
  * Returns metadata, version count, and expiration status of all registered credentials
- * without ever exposing raw plaintext strings or ciphertexts.
+ * without ever exposing raw plaintext strings or ciphertexts. Admin-only.
  */
 export async function GET(req: NextRequest) {
   try {
+    const admin = await requireAdmin(req);
+    if (admin instanceof NextResponse) return admin;
+
     const secrets = await EnvironmentSecretManager.listSecrets();
 
     return NextResponse.json({

@@ -1,11 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GlobalExceptionHandler } from "@/lib/errors";
+import { requireAuth } from "@/lib/security/requireAdmin";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const auth = await requireAuth(req);
+    if (auth instanceof NextResponse) return auth;
+
     const resolvedParams = await params;
     const id = resolvedParams.id;
     const supabase = createAdminClient();
@@ -46,9 +50,21 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const auth = await requireAuth(req);
+    if (auth instanceof NextResponse) return auth;
+
     const resolvedParams = await params;
     const id = resolvedParams.id;
     const body = await req.json();
+
+    // storage_path must live under this copyright's own folder — otherwise a
+    // caller could point this record at (or claim access to) a file that
+    // actually belongs to a different copyright/org's folder in the shared
+    // 'copyrights' bucket.
+    if (typeof body.storage_path !== "string" || !body.storage_path.startsWith(`${id}/`)) {
+      return NextResponse.json({ error: "Invalid storage_path for this copyright." }, { status: 400 });
+    }
+
     const supabase = createAdminClient();
 
     const { data, error } = await supabase

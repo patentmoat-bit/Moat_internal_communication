@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { completeJSON } from "@/lib/llm";
 import { hasOpenAIKey } from "@/lib/openai";
 import { parseConcepts } from "@/lib/analysis/shared";
+import { requireAuth } from "@/lib/security/requireAdmin";
 import {
   INVALIDITY_SYSTEM,
   buildInvalidityUser,
@@ -9,7 +10,12 @@ import {
   type InvalidityAssessment,
 } from "@/lib/analysis/invalidity";
 
-export async function POST(request: Request) {
+// Previously had NO auth check — any unauthenticated caller could inject or
+// overwrite INVALIDITY search results on any project_id.
+export async function POST(request: NextRequest) {
+  const user = await requireAuth(request);
+  if (user instanceof NextResponse) return user;
+
   let query = "";
   let concepts: string[] = [];
   let projectId = "";

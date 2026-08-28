@@ -9,11 +9,21 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { EventBus, type EventType } from "@/lib/events/eventBus";
 import { getNextStatus, canTransition, type WorkflowStatus } from "@/lib/events/workflowStateMachine";
 import { GlobalExceptionHandler } from "@/lib/errors";
+import { requireAuth } from "@/lib/security/requireAdmin";
 
 export async function POST(req: NextRequest) {
   try {
+    // actorId/actorRole are derived from the verified session, not trusted from
+    // the request body — this previously had NO auth check at all and let the
+    // client self-declare who performed the transition (e.g. claiming
+    // actorRole: "CEO" to drive an approval-stage transition/notification).
+    const auth = await requireAuth(req);
+    if (auth instanceof NextResponse) return auth;
+
     const body = await req.json();
-    const { projectId, eventType, actorId, actorRole, metadata, resourceType } = body;
+    const { projectId, eventType, metadata, resourceType } = body;
+    const actorId = auth.id;
+    const actorRole = auth.role;
 
     if (!projectId || !eventType) {
       return NextResponse.json(

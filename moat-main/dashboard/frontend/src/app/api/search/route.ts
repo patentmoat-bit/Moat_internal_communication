@@ -141,9 +141,18 @@ export async function POST(request: NextRequest | Request) {
 
     // Perform database search fallback
     let queryBuilder = supabase.from('patent_search').select('*');
-    
+
     if (cleanKeywords && cleanKeywords.trim().length > 0) {
-      const terms = cleanKeywords.split(/\s+/).filter(t => t.length > 1);
+      // cleanKeywords comes straight from the user's search box. PostgREST's
+      // .or() filter string treats ",", "(", ")", and "." as syntax — an
+      // unescaped search term could inject extra filter clauses (e.g. break
+      // out of the intended title/abstract/description scoping). Strip those
+      // characters from each term before building the filter string; they're
+      // not meaningful in a patent keyword search anyway.
+      const terms = cleanKeywords
+        .split(/\s+/)
+        .map(t => t.replace(/[,().]/g, ""))
+        .filter(t => t.length > 1);
       if (terms.length > 0) {
         const ilikeQuery = `%${terms.join('%')}%`;
         queryBuilder = queryBuilder.or(`title.ilike.${ilikeQuery},abstract.ilike.${ilikeQuery},description.ilike.${ilikeQuery}`);

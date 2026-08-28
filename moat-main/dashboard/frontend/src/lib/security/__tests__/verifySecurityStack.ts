@@ -114,7 +114,7 @@ async function runSecurityVerification() {
     // Test 1: Valid login succeeds
     // -------------------------------------------------------------------------
     try {
-      const res = await authService.authenticateLogin("verify@moat.ai", "CorrectEnterprisePassword123!", "10.0.1.1", testAgent);
+      const res: any = await authService.authenticateLogin("verify@moat.ai", "CorrectEnterprisePassword123!", "10.0.1.1", testAgent);
       record(1, "Valid login succeeds", res.requiresMFA === true, "Authentication successful; MFA challenge issued.");
     } catch (err: any) {
       record(1, "Valid login succeeds", false, `Unexpected error: ${err.message}`);

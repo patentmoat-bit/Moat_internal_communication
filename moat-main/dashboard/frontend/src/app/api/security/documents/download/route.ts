@@ -16,23 +16,18 @@ export async function POST(req: NextRequest) {
     const cookieStore = await cookies();
     const token = cookieStore.get("custom_access_token")?.value || req.headers.get("authorization")?.replace("Bearer ", "");
     
-    let userId = "anonymous";
-    let userRole = "viewer";
-
-    if (token) {
-      try {
-        const decoded: any = await verifyToken(token);
-        if (decoded && decoded.sub) {
-          userId = decoded.sub;
-          userRole = decoded.role || "Patent Analyst";
-        }
-      } catch (err) {
-        // Ignore
-      }
+    // Identity is derived ONLY from the verified token — this previously let any
+    // request override its own userId/userRole via x-test-user-* headers, a
+    // direct bypass on a signed-download-URL issuance endpoint.
+    if (!token) {
+      return NextResponse.json({ success: false, error: "Unauthorized." }, { status: 401 });
     }
-
-    if (req.headers.get("x-test-user-id")) userId = req.headers.get("x-test-user-id")!;
-    if (req.headers.get("x-test-user-role")) userRole = req.headers.get("x-test-user-role")!;
+    const decoded: any = await verifyToken(token);
+    if (!decoded?.sub) {
+      return NextResponse.json({ success: false, error: "Unauthorized." }, { status: 401 });
+    }
+    const userId = decoded.sub;
+    const userRole = decoded.role || "Patent Analyst";
 
     const body = await req.json();
     const { documentId, versionNumber, expirationSeconds } = body;

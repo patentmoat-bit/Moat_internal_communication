@@ -106,12 +106,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ detail: `Failed to create role in database: ${insertError.message}` }, { status: 500 });
     }
 
-    await supabase.from("audit_logs").insert({
+    // Previously inserted action/module/ip, none of which exist on the real
+    // audit_logs table — this write silently failed every time.
+    const { error: auditError } = await supabase.from("audit_logs").insert({
       user_id: authUser.sub,
-      action: `Created Custom Role: ${role_name}`,
-      module: "Role Management",
-      ip: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "Unknown",
+      actor_id: authUser.sub,
+      event_type: "ROLE_CREATED",
+      entity_type: "role",
+      metadata: { role_name, description: `Created Custom Role: ${role_name}` },
+      ip_address: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "Unknown",
     });
+    if (auditError) console.error("Failed to log role creation:", auditError);
 
     return NextResponse.json({ 
       detail: "Role created successfully.", 

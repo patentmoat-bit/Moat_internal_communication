@@ -265,11 +265,9 @@ export default function ImageSearchPage() {
 
     try {
       // 1. Upload to Supabase Storage
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+
       const fileExt = imageFile.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = `${uploadType.replace(/\s+/g, '_').toLowerCase()}/${fileName}`;

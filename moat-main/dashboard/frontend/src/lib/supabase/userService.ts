@@ -28,7 +28,6 @@ export interface CreateUserPayload {
   role?: AppRole;
   department?: string;
   company?: string;
-  password_hash?: string;
 }
 
 export interface UpdateUserPayload {
@@ -136,10 +135,6 @@ export async function adminUpsertUser(payload: CreateUserPayload): Promise<User 
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
-
-  if (payload.password_hash) {
-    upsertData.password_hash = payload.password_hash;
-  }
 
   const { data, error } = await admin
     .from("users")

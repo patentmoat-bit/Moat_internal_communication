@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { CSRFCORSMiddleware, CSRFCORSRequestContext } from "@/lib/security/csrf/CSRFCORSMiddleware";
 import { GlobalExceptionHandler } from "@/lib/errors";
+import { verifyToken } from "@/lib/jwt";
 
 async function handleCSRFCORSValidation(req: NextRequest, httpMethod: string) {
   try {
@@ -9,8 +10,12 @@ async function handleCSRFCORSValidation(req: NextRequest, httpMethod: string) {
     const csrfTokenHeader = req.headers.get("x-csrf-token") || req.headers.get("x-xsrf-token");
     const requestMethodHeader = req.headers.get("access-control-request-method");
     const requestHeadersHeader = req.headers.get("access-control-request-headers");
-    const userId = req.headers.get("x-test-user-id") || "usr_ceo_01";
-    const sessionId = req.headers.get("x-test-session-id") || "sess_prod_889900";
+    // Identity is derived ONLY from the verified session — see csrf/token/route.ts
+    // for why the previous hardcoded-fallback/test-header pattern was unsafe.
+    const token = req.cookies.get("custom_access_token")?.value;
+    const decoded: any = token ? await verifyToken(token) : null;
+    const userId = decoded?.sub || "anonymous";
+    const sessionId = decoded?.jti || decoded?.sub || "anonymous";
 
     const ctx: CSRFCORSRequestContext = {
       endpoint: "/api/security/csrf/validate",

@@ -24,13 +24,34 @@ function LoginContent() {
   const [mfaCode, setMfaCode]       = useState("");
   const [showPwd, setShowPwd]       = useState(false);
   const [isLoading, setIsLoading]   = useState(false);
-  const [error, setError]           = useState("");
+  const [ssoLoading, setSsoLoading] = useState(false);
+  const [error, setError]           = useState(searchParams.get("error") || "");
   const isExpired = searchParams.get("expired") === "1";
+
+  const handleMicrosoftSignIn = async () => {
+    setError(""); setSsoLoading(true);
+    try {
+      const supabase = createClient();
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: "azure",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          scopes: "openid profile email",
+        },
+      });
+      // On success the browser is redirected away to Microsoft immediately —
+      // this only returns if it failed to even start the redirect.
+      if (oauthError) throw oauthError;
+    } catch (err: any) {
+      setError(err.message ?? "Unable to start Microsoft sign-in.");
+      setSsoLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (isAuthenticated && user) {
       const workspace = getRoleWorkspace(user.role);
-      router.replace(redirectTo ?? workspace.route);
+      router.replace(redirectTo ?? workspace?.route ?? "/403");
     }
   }, [isAuthenticated, user, redirectTo, router]);
 
@@ -40,9 +61,13 @@ function LoginContent() {
     try {
       const loggedUser = await loginWithCredentials(email, password);
       if (!useAuthStore.getState().mfaChallengeRequired) {
-        router.push(redirectTo ?? getRoleWorkspace(loggedUser.role).route);
+        router.push(redirectTo ?? getRoleWorkspace(loggedUser.role)?.route ?? "/403");
       }
     } catch (err: any) {
+      if (err.requiresPasswordReset && err.resetToken) {
+        router.push(`/reset-password?token=${encodeURIComponent(err.resetToken)}&forced=1`);
+        return;
+      }
       setError(err.message ?? "Invalid credentials. Please try again.");
     } finally { setIsLoading(false); }
   };
@@ -52,7 +77,7 @@ function LoginContent() {
     setError(""); setIsLoading(true);
     try {
       const loggedUser = await verifyMfa(mfaCode);
-      router.push(redirectTo ?? getRoleWorkspace(loggedUser.role).route);
+      router.push(redirectTo ?? getRoleWorkspace(loggedUser.role)?.route ?? "/403");
     } catch (err: any) {
       setError(err.message ?? "Invalid code. Please try again.");
     } finally { setIsLoading(false); }
@@ -184,6 +209,32 @@ function LoginContent() {
             <span className="flex items-center justify-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Authenticating…</span>
           ) : (
             <span className="flex items-center justify-center gap-2">Sign In <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" /></span>
+          )}
+        </button>
+
+        {/* Divider */}
+        <div className="flex items-center gap-3 py-1">
+          <div className="h-px flex-1 bg-white/10" />
+          <span className="text-[10px] uppercase tracking-wider text-white/30 font-semibold">or</span>
+          <div className="h-px flex-1 bg-white/10" />
+        </div>
+
+        {/* Microsoft SSO — still requires the same MFA step afterward */}
+        <button type="button" onClick={handleMicrosoftSignIn}
+          disabled={ssoLoading || isLoading}
+          className="w-full h-12 rounded-xl text-sm font-semibold text-slate-200 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.07] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5">
+          {ssoLoading ? (
+            <><Loader2 className="h-4 w-4 animate-spin" />Redirecting to Microsoft…</>
+          ) : (
+            <>
+              <svg width="16" height="16" viewBox="0 0 21 21" aria-hidden="true">
+                <rect x="1" y="1" width="9" height="9" fill="#f25022" />
+                <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
+                <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
+                <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
+              </svg>
+              Sign in with Microsoft
+            </>
           )}
         </button>
       </form>

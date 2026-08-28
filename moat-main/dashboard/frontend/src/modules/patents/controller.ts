@@ -27,6 +27,9 @@ async function getAuthUser() {
 export class PatentsController {
   static async listProjects(req: NextRequest) {
     try {
+      const user = await getAuthUser();
+      if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
       const data = await service.listProjects();
       return NextResponse.json({ data });
     } catch (err: any) {
@@ -162,6 +165,9 @@ export class PatentsController {
 
   static async listDocuments(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
+      const user = await getAuthUser();
+      if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
       const resolvedParams = await params;
       const data = await service.listDocuments(resolvedParams.id);
       return NextResponse.json({ data });

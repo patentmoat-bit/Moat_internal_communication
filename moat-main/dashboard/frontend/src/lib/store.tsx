@@ -187,7 +187,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const [p, c, s, w, a, ri] = await Promise.all([
         supabase.from('saved_patents').select('id, patent_number, title, assignee, publication_date, filing_date, abstract, ipc_codes, status, jurisdiction, citations').order('created_at', { ascending: false }),
         supabase.from('collections').select('id, name, description, color, created_at').order('created_at', { ascending: false }),
-        supabase.from('recent_searches').select('id, query, search_type, created_at').order('created_at', { ascending: false }).limit(20),
+        supabase.from('recent_searches').select('id, query, search_type, created_at, results').order('created_at', { ascending: false }).limit(20),
         supabase.from('workspaces').select('id, name, description, notes, created_at').order('created_at', { ascending: false }),
         supabase.from('alerts').select('id, name, alert_type, criteria, frequency, is_active, last_checked_at').order('created_at', { ascending: false }),
         supabase.from('moat_ideas').select('id, title, description, created_at').order('created_at', { ascending: false })

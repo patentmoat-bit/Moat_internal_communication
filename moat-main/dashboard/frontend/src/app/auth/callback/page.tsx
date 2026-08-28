@@ -1,39 +1,36 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
 import { Loader2 } from "lucide-react";
-import { getRoleWorkspace } from "@/lib/roleIntelligence";
 
 /**
- * OAuth callback page — called after Supabase OAuth redirect.
- * Supabase SSR middleware handles the session token automatically.
- * This page simply calls checkAuth() to populate the store, then
- * redirects to the appropriate role workspace.
+ * OAuth callback page — lands here after Supabase's Microsoft/Azure AD flow
+ * redirects back with a real Supabase session already set (sb-* cookies).
+ * That session alone is never enough to use the app: it hands off to the
+ * exact same MFA challenge password login goes through (see
+ * authStore.completeSsoLogin() / EnterpriseAuthenticationService.authenticateSso),
+ * then lands on /login, whose existing MFA UI takes over from there — there is
+ * no separate SSO-specific MFA form to keep in sync with the real one.
  */
-function getSafeNext(value: string | null) {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) return null;
-  return value;
-}
-
 export default function AuthCallbackPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const { checkAuth } = useAuthStore();
+  const completeSsoLogin = useAuthStore((state) => state.completeSsoLogin);
+  const ran = useRef(false);
 
   useEffect(() => {
-    checkAuth().then((authed) => {
-      if (!authed) {
-        router.push("/login?error=oauth_failed");
-        return;
-      }
-      // checkAuth populates the store; read user from store directly
-      const { user } = useAuthStore.getState();
-      const workspace = getRoleWorkspace(user?.role);
-      router.push(getSafeNext(searchParams.get("next")) ?? workspace.route);
-    });
-  }, [checkAuth, router, searchParams]);
+    if (ran.current) return;
+    ran.current = true;
+
+    completeSsoLogin()
+      .then(() => {
+        router.replace("/login");
+      })
+      .catch((err: any) => {
+        router.replace(`/login?error=${encodeURIComponent(err?.message || "sso_failed")}`);
+      });
+  }, [completeSsoLogin, router]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#0c0c08] text-white">

@@ -4,6 +4,8 @@ import { verifyToken } from "@/lib/jwt";
 import { cookies } from "next/headers";
 import { appRoleToEnterpriseRole } from "@/lib/roleIntelligence";
 import { AuditLogService, SecurityEventType } from "@/lib/security/auditLogService";
+import { EnterpriseAuthenticationService } from "@/lib/security/authenticationService";
+import { SessionService } from "@/lib/security/sessionService";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -41,8 +43,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       case "RESET_PASSWORD":
         updatePayload = { password_change_required: true };
         auditEvent = "PASSWORD_RESET_REQUESTED";
+        try {
+          await new EnterpriseAuthenticationService(supabase).requestPasswordReset(targetUser.email, ip, userAgent);
+        } catch (resetError) {
+          console.error("Failed to dispatch admin-triggered password reset email:", resetError);
+        }
         break;
-      
+
       case "RESET_MFA":
         updatePayload = { 
           mfa_enabled: false, 
@@ -64,11 +71,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
       case "REVOKE_SESSIONS":
         auditEvent = "SESSION_REVOKED";
+        await new SessionService(supabase).revokeSession(targetUserId);
         break;
 
       case "FORCE_PASSWORD_CHANGE":
         updatePayload = { password_change_required: true };
         auditEvent = "PASSWORD_POLICY_CHANGED";
+        try {
+          await new EnterpriseAuthenticationService(supabase).requestPasswordReset(targetUser.email, ip, userAgent);
+        } catch (resetError) {
+          console.error("Failed to dispatch admin-triggered password reset email:", resetError);
+        }
         break;
 
       case "DEACTIVATE":

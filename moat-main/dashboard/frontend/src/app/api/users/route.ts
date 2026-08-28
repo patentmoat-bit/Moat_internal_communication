@@ -5,6 +5,7 @@ import crypto from "crypto";
 import { cookies } from "next/headers";
 import { appRoleToEnterpriseRole } from "@/lib/roleIntelligence";
 import { dispatchEmails } from "@/lib/events/handlers";
+import { validatePasswordPolicy } from "@/lib/security/passwordPolicy";
 
 // Authentication Helper
 async function getAuthUser() {
@@ -132,6 +133,11 @@ export async function POST(request: NextRequest) {
 
     // Direct Provisioning
     if (name && password) {
+      const policyCheck = validatePasswordPolicy(password);
+      if (!policyCheck.valid) {
+        return NextResponse.json({ detail: policyCheck.errors.join(" ") }, { status: 400 });
+      }
+
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email,
         password,
@@ -146,12 +152,10 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ detail: authError?.message ?? "Failed to create user in Auth system." }, { status: 400 });
       }
 
-      // We must explicitly hash the password for the public.users table 
-      // because the EnterpriseAuthenticationService uses it for custom login validation.
-      const bcrypt = require("bcryptjs");
-      const passwordHash = await bcrypt.hash(password, 10);
-
-      // Ensure users table is updated
+      // The admin-issued password lives only in Supabase Auth (set via
+      // admin.createUser above) — password_change_required forces the user to
+      // set their own password on first login before they get a session
+      // (enforced once the login route checks this flag).
       const { error: upsertError } = await supabase.from("users").upsert({
         id: authData.user.id,
         email: authData.user.email!,
@@ -161,7 +165,7 @@ export async function POST(request: NextRequest) {
         role_id: roleData.id,
         is_active: true,
         status: "Active",
-        password_hash: passwordHash,
+        password_change_required: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       });

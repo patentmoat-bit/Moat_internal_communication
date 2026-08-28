@@ -43,6 +43,15 @@ export default function AnalystDocumentsPage() {
     return false;
   };
 
+  // Read via ref inside the realtime callback so the subscription doesn't need
+  // to be torn down and recreated (and the document list refetched) every time
+  // the user clicks a different row — it only needs the LATEST selection at
+  // the moment a change event actually arrives.
+  const selectedDocRef = useRef<any | null>(null);
+  useEffect(() => {
+    selectedDocRef.current = selectedDoc;
+  }, [selectedDoc]);
+
   useEffect(() => {
     fetchDocuments();
 
@@ -54,7 +63,7 @@ export default function AnalystDocumentsPage() {
         { event: "*", schema: "public", table: "patent_documents" },
         () => {
           fetchDocuments();
-          if (selectedDoc) fetchDocDetails(selectedDoc.id);
+          if (selectedDocRef.current) fetchDocDetails(selectedDocRef.current.id);
         }
       )
       .subscribe();
@@ -62,7 +71,8 @@ export default function AnalystDocumentsPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedDoc]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchDocuments = async () => {
     try {

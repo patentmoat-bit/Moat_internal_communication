@@ -2,9 +2,27 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { EventBus } from "@/lib/events/eventBus";
 import { GlobalExceptionHandler } from "@/lib/errors";
+import { getSessionUser } from "@/lib/security/requireAdmin";
+import { appRoleToEnterpriseRole } from "@/lib/roleIntelligence";
 
+async function requireCeoOrAdmin(req: NextRequest) {
+  const user = await getSessionUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const role = appRoleToEnterpriseRole(user.role);
+  if (role !== "ceo" && role !== "admin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  return user;
+}
+
+// Previously had NO auth check on PUT/DELETE — anyone could edit or delete
+// any CEO feedback entry. CEO/admin-only now.
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const gate = await requireCeoOrAdmin(req);
+    if (gate instanceof NextResponse) return gate;
+    const user = gate;
+
     const resolvedParams = await params;
     const supabase = createAdminClient();
     const body = await req.json();
@@ -53,7 +71,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           attachments: body.attachments || [],
           links: body.links || [],
           version_number: newVersionNum,
-          created_by: body.created_by || 'CEO'
+          created_by: user.id
         });
 
       if (versionError) throw versionError;
@@ -75,6 +93,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const gate = await requireCeoOrAdmin(req);
+    if (gate instanceof NextResponse) return gate;
+
     const resolvedParams = await params;
     const supabase = createAdminClient();
     

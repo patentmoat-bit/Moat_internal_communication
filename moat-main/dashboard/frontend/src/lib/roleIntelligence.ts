@@ -30,7 +30,6 @@ export type RoleWorkspace = {
   agents: string[];
   questions: string[];
   modules: string[];
-  apiScopes: string[];
 };
 
 export const ROLE_WORKSPACES: Record<EnterpriseRole, RoleWorkspace> = {
@@ -54,7 +53,6 @@ export const ROLE_WORKSPACES: Record<EnterpriseRole, RoleWorkspace> = {
       "/ceo/trademark", 
       "/ceo/patent-filing"
     ],
-    apiScopes: ["analytics:read", "portfolio:read", "competitors:read", "reports:read"],
   },
   patent_counsel: {
     role: "patent_counsel",
@@ -67,7 +65,6 @@ export const ROLE_WORKSPACES: Record<EnterpriseRole, RoleWorkspace> = {
     agents: ["Prior Art Agent", "Claim Mapping Agent", "Patent Drafting Agent", "Filing Risk Agent"],
     questions: ["Is this invention patentable?", "What prior art exists?", "Generate claims for this invention.", "What are filing risks?"],
     modules: ["/dashboard/legal", "/dashboard/search", "/dashboard/claim-intelligence", "/dashboard/patentability", "/dashboard/invalidity", "/dashboard/reports"],
-    apiScopes: ["prior_art:read", "claims:write", "patentability:read", "reports:write"],
   },
   research_lead: {
     role: "research_lead",
@@ -80,7 +77,6 @@ export const ROLE_WORKSPACES: Record<EnterpriseRole, RoleWorkspace> = {
     agents: ["Research Commercialization Agent", "Publication Analysis Agent", "Novelty Agent"],
     questions: ["Which research can become filings?", "Which publications create defensible claims?", "Where is the commercial white space?"],
     modules: ["/dashboard/research", "/dashboard/workspace/invention", "/dashboard/novelty", "/dashboard/landscape", "/dashboard/reports", "/dashboard/search"],
-    apiScopes: ["inventions:write", "novelty:read", "landscape:read", "documents:write"],
   },
   product_manager: {
     role: "product_manager",
@@ -93,7 +89,6 @@ export const ROLE_WORKSPACES: Record<EnterpriseRole, RoleWorkspace> = {
     agents: ["Feature Novelty Agent", "Product Mapping Agent", "UX Innovation Agent"],
     questions: ["Which product features are novel?", "Where do competitors overlap?", "What should we protect next?"],
     modules: ["/dashboard/product", "/dashboard/competitor", "/dashboard/alerts", "/dashboard/novelty", "/dashboard/search", "/dashboard/reports"],
-    apiScopes: ["products:read", "competitors:read", "novelty:read", "alerts:write"],
   },
   analyst: {
     role: "analyst",
@@ -106,7 +101,6 @@ export const ROLE_WORKSPACES: Record<EnterpriseRole, RoleWorkspace> = {
     agents: ["Patent Search Agent", "Landscape Analysis Agent", "Similarity Agent"],
     questions: ["What patents match this concept?", "Which results are most relevant?", "What patterns appear in the landscape?"],
     modules: ["/dashboard/patent-analyst", "/patent-analyst", "/dashboard/search", "/dashboard/semantic-search", "/dashboard/similarity", "/dashboard/landscape", "/dashboard/alerts", "/dashboard/reports", "/dashboard/workspace/invention", "/dashboard/decision", "/dashboard/novelty", "/dashboard/patentability", "/dashboard/tracker", "/dashboard/uploads", "/dashboard/pfs", "/dashboard/image-search", "/dashboard/trademark", "/dashboard/copyright", "/dashboard/ai-hub", "/dashboard/research"],
-    apiScopes: ["search:read", "analytics:read", "alerts:read"],
   },
   admin: {
     role: "admin",
@@ -119,7 +113,6 @@ export const ROLE_WORKSPACES: Record<EnterpriseRole, RoleWorkspace> = {
     agents: ["Security Agent", "RBAC Agent", "Audit Agent"],
     questions: ["Who can access which intelligence?", "Where are permission gaps?", "What activity needs review?"],
     modules: ["/dashboard/admin", "/dashboard/admin/reports", "/dashboard/admin/recovery", "/dashboard/admin/audit-logs", "/dashboard/security", "/dashboard/authentication", "/dashboard/settings", "/dashboard/reports", "/cms", "/dashboard/ai-hub"],
-    apiScopes: ["admin:*", "rbac:*", "audit:read"],
   },
   designer: {
     role: "designer",
@@ -135,7 +128,6 @@ export const ROLE_WORKSPACES: Record<EnterpriseRole, RoleWorkspace> = {
       "/dashboard/designer", 
       "/dashboard/designer/documents"
     ],
-    apiScopes: ["documents:read", "documents:write"],
   },
   finance_manager: {
     role: "finance_manager",
@@ -148,7 +140,6 @@ export const ROLE_WORKSPACES: Record<EnterpriseRole, RoleWorkspace> = {
     agents: [],
     questions: [],
     modules: ["/dashboard/finance"],
-    apiScopes: ["finance:read", "finance:write"]
   },
   patent_drafter: {
     role: "patent_drafter",
@@ -161,66 +152,72 @@ export const ROLE_WORKSPACES: Record<EnterpriseRole, RoleWorkspace> = {
     agents: [],
     questions: [],
     modules: ["/dashboard/patent-drafter"],
-    apiScopes: ["documents:read", "documents:write", "workflows:transition"]
   }
 };
 
 // ── Role Mapping ───────────────────────────────────────────────────────────────
 
+const APP_ROLE_TO_ENTERPRISE_ROLE: Record<string, EnterpriseRole> = {
+  "CEO":                  "ceo",
+  "Chief IP Officer":     "patent_counsel",
+  "Inventor":             "research_lead",
+  "Business Development": "product_manager",
+  "Patent Analyst":       "analyst",
+  "Admin":                "admin",
+  "Super Admin":          "admin",
+  "System Admin":         "admin",
+  "ADMIN":                "admin",
+  "Designer":             "designer",
+  "Designing Team":       "designer",
+  "Design Team":          "designer",
+  "Finance Manager":      "finance_manager",
+  "Patent Drafter":       "patent_drafter",
+  // Legacy string values (backward compat)
+  "ceo":            "ceo",
+  "patent_counsel": "patent_counsel",
+  "research_lead":  "research_lead",
+  "product_manager":"product_manager",
+  "analyst":        "analyst",
+  "admin":          "admin",
+  "super_admin":    "admin",
+  "system_admin":   "admin",
+  "designer":       "designer",
+  "finance_manager":"finance_manager",
+  "patent_drafter": "patent_drafter",
+};
+
 /**
  * Maps an AppRole (from Supabase users table) to an internal EnterpriseRole
- * used by the workspace / dashboard system.
+ * used by the workspace / dashboard system. Returns null for any role string
+ * not explicitly recognized above — callers must treat null as "deny access",
+ * never silently fall back to a real role (an unrecognized role used to
+ * default to "analyst", which was a silent privilege-assignment risk).
  */
-export function appRoleToEnterpriseRole(role?: AppRole | string | null): EnterpriseRole {
-  switch (role) {
-    case "CEO":                  return "ceo";
-    case "Chief IP Officer":     return "patent_counsel";
-    case "Inventor":             return "research_lead";
-    case "Business Development": return "product_manager";
-    case "Patent Analyst":       return "analyst";
-    case "Admin":                return "admin";
-    case "Super Admin":          return "admin";
-    case "System Admin":         return "admin";
-    case "ADMIN":                return "admin";
-    case "Designer":             return "designer";
-    case "Designing Team":       return "designer";
-    case "Design Team":          return "designer";
-    case "Finance Manager":      return "finance_manager";
-    case "Patent Drafter":       return "patent_drafter";
-    // Legacy string values (backward compat)
-    case "ceo":           return "ceo";
-    case "patent_counsel":return "patent_counsel";
-    case "research_lead": return "research_lead";
-    case "product_manager":return "product_manager";
-    case "analyst":       return "analyst";
-    case "admin":         return "admin";
-    case "super_admin":   return "admin";
-    case "system_admin":  return "admin";
-    case "designer":      return "designer";
-    case "finance_manager":return "finance_manager";
-    case "patent_drafter":return "patent_drafter";
-    default:              return "analyst";
-  }
+export function appRoleToEnterpriseRole(role?: AppRole | string | null): EnterpriseRole | null {
+  if (!role) return null;
+  return APP_ROLE_TO_ENTERPRISE_ROLE[role] ?? null;
 }
 
 /** Alias kept for backward compatibility with existing components. */
 export const toEnterpriseRole = appRoleToEnterpriseRole;
 
-/** Get the full workspace config for a role. */
-export function getRoleWorkspace(role?: AppRole | string | null): RoleWorkspace {
-  return ROLE_WORKSPACES[appRoleToEnterpriseRole(role)];
+/** Get the full workspace config for a role, or null if the role is unrecognized. */
+export function getRoleWorkspace(role?: AppRole | string | null): RoleWorkspace | null {
+  const enterpriseRole = appRoleToEnterpriseRole(role);
+  return enterpriseRole ? ROLE_WORKSPACES[enterpriseRole] : null;
 }
 
-/** Check whether a user with the given role may access an href. */
+/** Check whether a user with the given role may access an href. Unrecognized roles are denied. */
 export function canAccessModule(role: AppRole | string | undefined | null, href: string): boolean {
   const workspace = getRoleWorkspace(role);
+  if (!workspace) return false;
   if ((href === "/dashboard/ceo" || href.startsWith("/dashboard/ceo/") || href === "/ceo" || href.startsWith("/ceo/")) && role !== "CEO") return false;
-  
+
   if (workspace.role === "admin") {
     // Admins should ONLY see settings/admin pages, not patent tools.
     return workspace.modules.some((module) => href === module || href.startsWith(`${module}/`));
   }
-  
+
   const adminOnlyPaths = [
     "/dashboard/settings/email",
     "/dashboard/settings/alerts",
@@ -230,15 +227,15 @@ export function canAccessModule(role: AppRole | string | undefined | null, href:
     "/dashboard/settings/roles",
     "/dashboard/authentication"
   ];
-  
+
   if (adminOnlyPaths.some(path => href === path || href.startsWith(`${path}/`))) {
     return false; // Only admins can access these
   }
-  
+
   if (href === "/dashboard/settings" || href === "/dashboard/settings/notifications" || href === "/dashboard/settings/theme") {
     return true; // All authenticated users can access their personal settings
   }
-  
+
   if (href === "/dashboard" || href === "/dashboard/analytics") return false;
   if (href === workspace.route) return true;
   return workspace.modules.some((module) => href === module || href.startsWith(`${module}/`));
@@ -246,26 +243,35 @@ export function canAccessModule(role: AppRole | string | undefined | null, href:
 
 // ── Route-to-required-role map (for middleware) ──────────────────────────────
 
-/** Returns the AppRole required to access a given dashboard prefix, or null if public. */
-export const ROLE_ROUTE_MAP: Record<string, AppRole[]> = {
-  "/dashboard/ceo":      ["CEO"],
-  "/ceo":                ["CEO"],
-  "/dashboard/cto":      ["CTO", "Admin", "Super Admin"],
-  "/dashboard/cio":      ["CIO", "Admin", "Super Admin"],
-  "/dashboard/legal":    ["Chief IP Officer", "Admin", "Super Admin"],
-  "/dashboard/research": ["Inventor", "Admin", "Super Admin", "Patent Analyst"],
-  "/dashboard/product":  ["Business Development", "Admin", "Super Admin"],
-  "/dashboard/patent-analyst": ["Patent Analyst", "Admin", "Super Admin"],
-  "/patent-analyst":     ["Patent Analyst", "Admin", "Super Admin"],
-  "/dashboard/search":   ["Patent Analyst", "Admin", "Super Admin"],
-  "/dashboard/admin":    ["Admin", "Super Admin"],
-  "/cms":                ["Admin", "Super Admin", "System Admin"],
-  "/dashboard/finance":  ["Finance Manager", "Admin", "Super Admin"],
-  "/dashboard/patent-drafter": ["Patent Drafter", "Admin", "Super Admin"],
+/**
+ * Canonical roles allowed to access a given dashboard route prefix, keyed by
+ * EnterpriseRole rather than raw DB role strings. This is the single source
+ * of truth for route-level access (previously a separate raw-string map here
+ * duplicated — and could drift from — the normalization in
+ * appRoleToEnterpriseRole above; e.g. a new admin-label variant only needs to
+ * be added to APP_ROLE_TO_ENTERPRISE_ROLE, not here as well).
+ *
+ * "/dashboard/cto" and "/dashboard/cio" were previously listed here but have
+ * no corresponding page or EnterpriseRole anywhere in the app — dropped as
+ * dead entries rather than kept referencing a role that doesn't exist.
+ */
+export const ROLE_ROUTE_MAP: Record<string, EnterpriseRole[]> = {
+  "/dashboard/ceo":            ["ceo"],
+  "/ceo":                      ["ceo"],
+  "/dashboard/legal":          ["patent_counsel", "admin"],
+  "/dashboard/research":       ["research_lead", "admin", "analyst"],
+  "/dashboard/product":        ["product_manager", "admin"],
+  "/dashboard/patent-analyst": ["analyst", "admin"],
+  "/patent-analyst":           ["analyst", "admin"],
+  "/dashboard/search":         ["analyst", "admin"],
+  "/dashboard/admin":          ["admin"],
+  "/cms":                      ["admin"],
+  "/dashboard/finance":        ["finance_manager", "admin"],
+  "/dashboard/patent-drafter": ["patent_drafter", "admin"],
 };
 
-/** Returns which AppRoles are required for a given pathname. Empty = any auth'd user. */
-export function getRequiredRoles(pathname: string): AppRole[] {
+/** Returns which EnterpriseRoles are required for a given pathname. Empty = any auth'd user. */
+export function getRequiredRoles(pathname: string): EnterpriseRole[] {
   for (const [prefix, roles] of Object.entries(ROLE_ROUTE_MAP)) {
     if (pathname === prefix || pathname.startsWith(`${prefix}/`)) {
       return roles;

@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { completeJSON } from "@/lib/llm";
 import { hasOpenAIKey } from "@/lib/openai";
 import { parseConcepts } from "@/lib/analysis/shared";
+import { requireAuth } from "@/lib/security/requireAdmin";
 import {
   PATENTABILITY_SYSTEM,
   buildPatentabilityUser,
@@ -9,7 +10,13 @@ import {
   type PatentabilityAssessment,
 } from "@/lib/analysis/patentability";
 
-export async function POST(request: Request) {
+// Previously had NO auth check — unauthenticated resource/cost abuse of the
+// OpenAI-backed endpoint, and unauthenticated writes into any project_id's
+// search record.
+export async function POST(request: NextRequest) {
+  const user = await requireAuth(request);
+  if (user instanceof NextResponse) return user;
+
   let query = "";
   let concepts: string[] = [];
   let projectId = "";

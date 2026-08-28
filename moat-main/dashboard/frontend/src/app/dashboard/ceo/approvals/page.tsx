@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { CheckCircle2, XCircle, AlertCircle, FileText, Activity, Clock, RefreshCw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
@@ -20,6 +20,15 @@ export default function CEOApprovalsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const supabase = createClient();
 
+  // Read via ref inside the realtime callback so the subscription doesn't need
+  // to be torn down and recreated (and the document list refetched) every time
+  // the CEO clicks a different row — it only needs the LATEST selection at the
+  // moment a change event actually arrives.
+  const selectedDocRef = useRef<any | null>(null);
+  useEffect(() => {
+    selectedDocRef.current = selectedDoc;
+  }, [selectedDoc]);
+
   useEffect(() => {
     fetchDocuments();
 
@@ -31,7 +40,7 @@ export default function CEOApprovalsPage() {
         { event: "*", schema: "public", table: "patent_documents" },
         () => {
           fetchDocuments();
-          if (selectedDoc) fetchDocDetails(selectedDoc.id);
+          if (selectedDocRef.current) fetchDocDetails(selectedDocRef.current.id);
         }
       )
       .subscribe();
@@ -39,7 +48,8 @@ export default function CEOApprovalsPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedDoc]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchDocuments = async () => {
     try {

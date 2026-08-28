@@ -37,19 +37,33 @@ export default function PortfolioPage() {
   const [categories, setCategories] = useState<any[]>([]);
   
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
+  // Debounce the search box so typing doesn't fire a network request per
+  // keystroke — only fetch 350ms after the user stops typing.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 350);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Stats (KPIs/timeline/category charts) don't depend on page/filter/search
+  // at all — fetch once on mount instead of refetching alongside the list.
+  useEffect(() => {
+    fetchStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     fetchData();
-    fetchStats();
-  }, [page, filterStatus, search]);
+  }, [page, filterStatus, debouncedSearch]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/portfolio?page=${page}&limit=10&status=${filterStatus}&query=${search}`);
+      const res = await fetch(`/api/portfolio?page=${page}&limit=10&status=${filterStatus}&query=${debouncedSearch}`);
       const json = await res.json();
       if (json.data) setPatents(json.data);
     } catch (err) {

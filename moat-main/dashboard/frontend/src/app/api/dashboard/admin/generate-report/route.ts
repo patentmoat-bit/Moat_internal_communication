@@ -407,12 +407,19 @@ export const POST = withSessionValidation(async (req: NextRequest, sessionUser: 
     const executiveSummary = `During this reporting period (${start.toLocaleDateString()} – ${end.toLocaleDateString()}), ${kpis.totalUsers} users accessed the MOAT Patent Intelligence Platform across roles: ${roleNames || "multiple roles"}. The platform recorded ${kpis.totalLogins} successful login(s), ${kpis.failedLogins} failed login attempt(s), ${kpis.docsUploaded} document upload(s), ${kpis.patentSearches} patent search(es), and ${kpis.workflowActions} workflow action(s). ${kpis.securityEvents > 0 ? `${kpis.securityEvents} security event(s) were also recorded and require attention.` : "No critical security events were detected."}`;
 
     // ── Log this report generation ─────────────────────────────────────────────
+    // Previously inserted columns (action/module/new_value) that don't exist
+    // on audit_logs, and never checked the insert's result — every call
+    // silently failed. Fixed to real columns, still best-effort (doesn't
+    // block the response) but now actually logs failures.
     supabase.from("audit_logs").insert({
+      actor_id: sessionUser.sub,
       user_id: sessionUser.sub,
-      action: "REPORT_GENERATED",
-      module: "ENTERPRISE_REPORT",
-      new_value: { email: sessionUser.email, filters: { dateFrom, dateTo, roleFilter, activityFilter } },
-    }).then(() => {});
+      event_type: "REPORT_GENERATED",
+      entity_type: "ENTERPRISE_REPORT",
+      metadata: { email: sessionUser.email, filters: { dateFrom, dateTo, roleFilter, activityFilter } },
+    }).then(({ error }) => {
+      if (error) console.error("Failed to log report generation:", error);
+    });
 
     return NextResponse.json({
       generatedAt: new Date().toISOString(),

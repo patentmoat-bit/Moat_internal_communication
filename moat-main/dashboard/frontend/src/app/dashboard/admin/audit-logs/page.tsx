@@ -5,7 +5,7 @@
 // Filterable, paginated audit log table for system administrators.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Shield,
   Search,
@@ -83,19 +83,28 @@ export default function AuditLogsPage() {
 
   useEffect(() => {
     fetchLogs();
+  }, [page, actionFilter]);
 
+  // Read the latest fetchLogs via a ref inside the realtime callback so the
+  // subscription doesn't need to be torn down and recreated every time the
+  // admin changes page or filter — it only needs the LATEST fetch behavior
+  // at the moment a new audit log row actually arrives.
+  const fetchLogsRef = useRef(fetchLogs);
+  fetchLogsRef.current = fetchLogs;
+
+  useEffect(() => {
     const supabase = createClient();
     const channel = supabase
       .channel('admin_audit_logs_realtime')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'audit_logs' }, () => {
-        fetchLogs();
+        fetchLogsRef.current();
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [page, actionFilter]);
+  }, []);
 
   const handleExportCSV = () => {
     if (logs.length === 0) return;

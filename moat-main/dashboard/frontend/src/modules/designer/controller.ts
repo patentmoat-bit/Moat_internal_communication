@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { DesignerService } from "./service";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/jwt";
+import { appRoleToEnterpriseRole } from "@/lib/roleIntelligence";
 
 const service = new DesignerService();
 
@@ -9,7 +10,7 @@ async function getAuthUser(req?: NextRequest) {
   const cookieStore = await cookies();
   const token = cookieStore.get("custom_access_token")?.value;
   if (!token) return null;
-  
+
   const payload = await verifyToken(token);
   if (!payload) return null;
 
@@ -18,6 +19,14 @@ async function getAuthUser(req?: NextRequest) {
     name: (payload.name as string) || (payload.email as string)?.split("@")[0] || "User",
     role: (payload.role as string) || "Designer",
   };
+}
+
+// Tasks are a shared queue any designer can pick up (the UI never filters by
+// or displays a per-task assignee), so the gate here is role — designer or
+// admin — not per-resource ownership.
+function canManageDesignTasks(role: string): boolean {
+  const enterpriseRole = appRoleToEnterpriseRole(role);
+  return enterpriseRole === "designer" || enterpriseRole === "admin";
 }
 
 export class DesignerController {
@@ -50,6 +59,9 @@ export class DesignerController {
     try {
       const user = await getAuthUser();
       if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      if (!canManageDesignTasks(user.role)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
 
       const resolvedParams = await params;
       const body = await req.json();
@@ -64,6 +76,9 @@ export class DesignerController {
     try {
       const user = await getAuthUser();
       if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      if (!canManageDesignTasks(user.role)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
 
       const resolvedParams = await params;
       const body = await req.json();

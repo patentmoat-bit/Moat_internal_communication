@@ -2,19 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { KeyRotationService } from "@/lib/security/secrets/KeyRotationService";
 import { EnvironmentSecretManager } from "@/lib/security/secrets/EnvironmentSecretManager";
 import { GlobalExceptionHandler } from "@/lib/errors";
+import { requireAdmin } from "@/lib/security/requireAdmin";
 
 /**
  * Secret Rotation API Route
- * 
+ *
  * POST /api/security/secrets/rotate
  * Body: { "secretType": "JWT_SECRET" | "GRAPH_SECRET" | "SUPABASE_KEY" | "AES_MASTER_KEY" | "ALL" }
  * Rotates the specified credentials, increments versions, deprecates old keys, and returns audit summary.
+ * Admin-only — this had NO auth check at all and trusted a client-supplied
+ * header for the audit trail's "who did this" field.
  */
 export async function POST(req: NextRequest) {
   try {
+    const admin = await requireAdmin(req);
+    if (admin instanceof NextResponse) return admin;
+
     const body = await req.json().catch(() => ({}));
     const secretType = body.secretType || "ALL";
-    const initiatedBy = req.headers.get("x-test-user-id") || "admin_security";
+    const initiatedBy = admin.email || admin.id;
 
     await EnvironmentSecretManager.initialize();
 

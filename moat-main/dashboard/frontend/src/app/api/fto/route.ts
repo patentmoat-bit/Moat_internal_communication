@@ -1,10 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { completeJSON } from "@/lib/llm";
 import { hasOpenAIKey } from "@/lib/openai";
 import { parseConcepts } from "@/lib/analysis/shared";
+import { requireAuth } from "@/lib/security/requireAdmin";
 import { FTO_SYSTEM, buildFtoUser, mockFto, type FtoAssessment } from "@/lib/analysis/fto";
 
-export async function POST(request: Request) {
+// Previously only "kept the session warm" without ever gating on it — any
+// unauthenticated caller could inject/overwrite FTO search results on any
+// project_id. Now actually requires a valid session.
+export async function POST(request: NextRequest) {
+  const user = await requireAuth(request);
+  if (user instanceof NextResponse) return user;
+
   let query = "";
   let concepts: string[] = [];
   let projectId = "";
@@ -24,15 +31,6 @@ export async function POST(request: Request) {
   // Phase 14 & 15: Security & Performance Input Validation
   if (query.length > 15000) {
     return NextResponse.json({ error: "Query exceeds maximum length of 15,000 characters." }, { status: 400 });
-  }
-
-  // Optional auth — gate is handled by RLS at DB level
-  try {
-    const { createClient } = await import("@/lib/supabase/server");
-    const supabase = await createClient();
-    await supabase.auth.getUser(); // keep session warm; no 401 gate in dev
-  } catch (err) {
-    console.warn("Auth context unavailable, proceeding without session:", err);
   }
 
   if (hasOpenAIKey) {

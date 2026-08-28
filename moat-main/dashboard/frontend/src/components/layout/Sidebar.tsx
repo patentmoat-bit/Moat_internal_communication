@@ -144,10 +144,10 @@ export function Sidebar({ user, collapsed = false, onToggle, isMobile = false, o
 
   const roleWorkspace = getRoleWorkspace(user?.role)
   const isAnalyst = appRoleToEnterpriseRole(user?.role) === "analyst";
-  
+
   const activeNavItems = cmsNavItems.length > 0 ? cmsNavItems : navItems;
   let visibleNavItems = activeNavItems
-    .filter((item) => canAccessModule(user?.role, item.href) || item.href === roleWorkspace.route)
+    .filter((item) => canAccessModule(user?.role, item.href) || (roleWorkspace && item.href === roleWorkspace.route))
 
   let menuLabel = "Main Menu";
 
@@ -319,7 +319,7 @@ export function Sidebar({ user, collapsed = false, onToggle, isMobile = false, o
             <div className="flex-1 overflow-hidden">
               <p className="text-sm font-semibold text-[hsl(var(--sidebar-foreground))] truncate">{user?.name || "User"}</p>
               <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-[#c9a84c]/15 text-[#c9a84c] border border-[#c9a84c]/20">
-                {roleWorkspace.label}
+                {roleWorkspace?.label ?? "Member"}
               </span>
             </div>
             <button

@@ -4,9 +4,9 @@ import React, { useState } from "react";
 import { AiHubContext } from "../AiHubWorkspace";
 import { Button } from "@/components/ui/button";
 import { 
-  Sparkles, Loader2, Save, FileDown, DownloadCloud, Paperclip, 
+  Sparkles, Loader2, Save, FileDown, DownloadCloud, Paperclip,
   ChevronRight, Edit2, CheckCircle2, AlertTriangle, Info, FileText,
-  ListTree, Search, Check, X, Circle, Triangle, Play
+  ListTree, Search, Check, X, Circle, Triangle, Play, Bookmark
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";

@@ -93,7 +93,8 @@ async function handleAuth(request: NextRequest, requestHeaders: Headers) {
     "/api/auth/refresh",
     "/api/auth/logout",
     "/api/auth/sso/bridge", // called with only a Supabase OAuth session, before any app session exists
-    "/api/health"
+    "/api/health",
+    "/api/network-check" // diagnostic endpoint for ALLOWED_IPS; must stay reachable without a session
   ];
   if (isApiRoute && PUBLIC_API_PATHS.some((p) => pathname.startsWith(p))) {
     return NextResponse.next({ request: { headers: requestHeaders } });

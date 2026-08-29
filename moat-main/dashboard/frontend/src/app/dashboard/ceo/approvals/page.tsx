@@ -16,7 +16,7 @@ export default function CEOApprovalsPage() {
   const [selectedDoc, setSelectedDoc] = useState<any | null>(null);
   const [rejectComment, setRejectComment] = useState("");
   const [showRejectInput, setShowRejectInput] = useState(false);
-  const [activeTab, setActiveTab] = useState("Pending");
+  const [activeTab, setActiveTab] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const supabase = createClient();
 
@@ -138,6 +138,9 @@ export default function CEOApprovalsPage() {
     if (activeTab === "Approved" && d.status !== "CEO Approved") return false;
     if (activeTab === "Rejected" && d.status !== "CEO Rejected") return false;
     if (activeTab === "Revisions" && d.status !== "Revision Requested by CEO") return false;
+    // "All" shows every document regardless of workflow stage, including ones
+    // still in progress (e.g. "Draft Created") that never appear in the other
+    // tabs since none of them match a terminal CEO-decision status.
     
     // Search filter
     if (searchQuery) {
@@ -207,7 +210,11 @@ export default function CEOApprovalsPage() {
           </div>
           
           <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
-            <button 
+            <button
+              className={`flex-1 text-xs py-1.5 rounded-md font-medium transition-all ${activeTab === 'All' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+              onClick={() => setActiveTab('All')}
+            >All</button>
+            <button
               className={`flex-1 text-xs py-1.5 rounded-md font-medium transition-all ${activeTab === 'Pending' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
               onClick={() => setActiveTab('Pending')}
             >Pending</button>

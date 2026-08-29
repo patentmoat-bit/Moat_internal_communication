@@ -66,23 +66,14 @@ export class DocumentsController {
 
       const data = await service.createDocument(parsed.data, user.id);
 
-      // Trigger notification for new document draft
-      try {
-        await EventBus.publishEvent({
-          type: 'DOCUMENT_UPLOADED',
-          actorId: user.id,
-          actorRole: user.role,
-          resourceId: data.id,
-          resourceType: 'document',
-          targetRole: 'CEO',
-          notificationTitle: `New Document Draft Created`,
-          notificationMessage: `${user.name} created a new document draft: ${parsed.data.title}.`,
-          actionUrl: `/dashboard/ceo/approvals`,
-          metadata: { title: parsed.data.title },
-        });
-      } catch (notifyErr) {
-        console.error("Notification delivery failed on create:", notifyErr);
-      }
+      // No CEO notification here: a freshly created draft has no file yet and
+      // isn't ready for review. Notifying the CEO at this point (previously
+      // reusing the DOCUMENT_UPLOADED event/email) claimed a document had been
+      // uploaded when nothing existed yet, and the draft doesn't even appear
+      // in the CEO Approval queue until it's actually submitted (status
+      // "CEO Approval Pending", which fires its own REPORT_SUBMITTED
+      // notification via transitionStatus). The real "file uploaded" moment
+      // is addVersion() below, which does notify.
 
       return NextResponse.json({ success: true, data });
     } catch (err: any) {

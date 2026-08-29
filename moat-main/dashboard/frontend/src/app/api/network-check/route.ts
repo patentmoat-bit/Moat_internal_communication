@@ -7,7 +7,7 @@ import { getAllowedIpRanges, getClientIp, isRequestIpAllowed } from "@/lib/secur
 // without exposing the configured allowlist itself.
 export async function GET(req: NextRequest) {
   const allowedRanges = getAllowedIpRanges();
-  const clientIp = getClientIp(req.headers.get("x-forwarded-for"));
+  const clientIp = getClientIp(req.headers);
   const allowed = isRequestIpAllowed(clientIp, allowedRanges);
 
   return NextResponse.json({

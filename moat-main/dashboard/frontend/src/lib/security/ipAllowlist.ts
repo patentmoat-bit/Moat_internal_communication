@@ -57,8 +57,23 @@ export function getAllowedIpRanges(): string[] {
     .filter(Boolean);
 }
 
-/** Extracts the originating client IP from Vercel's x-forwarded-for header. */
-export function getClientIp(forwardedFor: string | null): string | null {
+/**
+ * Extracts the originating client IP from request headers.
+ *
+ * This app's production domain is proxied through Cloudflare in front of
+ * Vercel, so the peer Vercel's own edge sees connecting to it — and thus
+ * the value it would set for x-forwarded-for — is Cloudflare's relay IP,
+ * not the real visitor's. Cloudflare provides the true original IP in
+ * CF-Connecting-IP (set authoritatively by Cloudflare itself, so a client
+ * can't spoof it), which takes priority when present. x-forwarded-for is
+ * kept as a fallback for setups without Cloudflare in front (e.g. hitting
+ * a *.vercel.app URL directly).
+ */
+export function getClientIp(headers: Headers): string | null {
+  const cfConnectingIp = headers.get("cf-connecting-ip");
+  if (cfConnectingIp) return cfConnectingIp.trim();
+
+  const forwardedFor = headers.get("x-forwarded-for");
   if (!forwardedFor) return null;
   const first = forwardedFor.split(",")[0]?.trim();
   return first || null;

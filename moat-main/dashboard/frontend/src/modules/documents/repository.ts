@@ -32,19 +32,17 @@ export class DocumentsRepository {
 
   async createDocument(payload: any, userId: string) {
     const docData = { ...payload, created_by: userId, id: uuidv4() };
-    try {
-      const { data, error } = await this.supabase.from("patent_documents").insert(docData).select().single();
-      if (error) throw error;
-      return { data };
-    } catch (err: any) {
-      console.error("[DocumentsRepository] Supabase INSERT failed:", err.message);
-      // We will still fallback for development ease
-      const db = getLocalDB();
-      const newDoc = { ...docData, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
-      db.documents.unshift(newDoc);
-      saveLocalDB(db);
-      return { data: newDoc };
+    const { data, error } = await this.supabase.from("patent_documents").insert(docData).select().single();
+    if (error) {
+      // Surface the failure — a silent fallback to a local JSON file previously
+      // reported success here even when the real database write failed (and
+      // that file doesn't persist or get shared across serverless instances
+      // in production), leaving the caller believing a document was created
+      // when it never actually landed in Supabase.
+      console.error("[DocumentsRepository] Supabase INSERT failed:", error.message);
+      throw new Error(error.message);
     }
+    return { data };
   }
 
   async getAllDocuments(userId: string, role: string) {
@@ -202,21 +200,18 @@ export class DocumentsRepository {
     }
 
     const versionData = { ...payload, version_number, document_id: documentId, uploaded_by: userId, id: uuidv4() };
-    try {
-      const { data, error } = await this.supabase.from("document_versions").insert(versionData).select().single();
-      if (error) throw error;
-      await this.supabase.from("patent_documents").update({ current_version_id: data.id }).eq("id", documentId);
-      return { data };
-    } catch (err: any) {
-      console.warn("[DocumentsRepository] Supabase failed, using local DB:", err.message);
-      const db = getLocalDB();
-      const newVersion = { ...versionData, created_at: new Date().toISOString() };
-      db.versions.unshift(newVersion);
-      const doc = db.documents.find(d => d.id === documentId);
-      if (doc) doc.current_version_id = newVersion.id;
-      saveLocalDB(db);
-      return { data: newVersion };
+    const { data, error } = await this.supabase.from("document_versions").insert(versionData).select().single();
+    if (error) {
+      // Surface the failure — a silent fallback to a local JSON file previously
+      // reported success here even when the real database write failed (and
+      // that file doesn't persist or get shared across serverless instances
+      // in production), so the analyst saw a "Success" toast for a version
+      // that never actually landed in Supabase and never showed up on refresh.
+      console.error("[DocumentsRepository] Supabase INSERT failed for document_versions:", error.message);
+      throw new Error(error.message);
     }
+    await this.supabase.from("patent_documents").update({ current_version_id: data.id }).eq("id", documentId);
+    return { data };
   }
 
   async logStatusTransition(documentId: string, previousStatus: string, newStatus: string, userId: string, notes?: string) {

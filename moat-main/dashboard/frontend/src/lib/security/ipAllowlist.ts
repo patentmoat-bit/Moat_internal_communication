@@ -61,22 +61,22 @@ export function getAllowedIpRanges(): string[] {
  * Extracts the originating client IP from request headers.
  *
  * This app's production domain is proxied through Cloudflare in front of
- * Vercel, so the peer Vercel's own edge sees connecting to it — and thus
- * the value it would set for x-forwarded-for — is Cloudflare's relay IP,
- * not the real visitor's. Cloudflare provides the true original IP in
- * CF-Connecting-IP (set authoritatively by Cloudflare itself, so a client
- * can't spoof it), which takes priority when present. x-forwarded-for is
- * kept as a fallback for setups without Cloudflare in front (e.g. hitting
- * a *.vercel.app URL directly).
+ * Vercel, and CF-Connecting-IP is set authoritatively by Cloudflare itself
+ * at its edge — Cloudflare strips any copy of this header a client tries
+ * to send, so it can't be spoofed. This is deliberately the ONLY source
+ * trusted here: x-forwarded-for is not a fallback, because Vercel's Hobby
+ * plan leaves the raw <project>.vercel.app deployment URL (and preview
+ * URLs) publicly reachable alongside the custom domain, bypassing
+ * Cloudflare entirely — a request sent straight to that URL could set its
+ * own x-forwarded-for value and, if Vercel didn't strip it, walk straight
+ * through the allowlist. Requiring CF-Connecting-IP means any request that
+ * didn't come through the trusted Cloudflare path has no way to satisfy
+ * the check at all, rather than relying on an unverified assumption about
+ * how Vercel handles that header on such requests.
  */
 export function getClientIp(headers: Headers): string | null {
   const cfConnectingIp = headers.get("cf-connecting-ip");
-  if (cfConnectingIp) return cfConnectingIp.trim();
-
-  const forwardedFor = headers.get("x-forwarded-for");
-  if (!forwardedFor) return null;
-  const first = forwardedFor.split(",")[0]?.trim();
-  return first || null;
+  return cfConnectingIp ? cfConnectingIp.trim() : null;
 }
 
 export function isRequestIpAllowed(ip: string | null, allowedRanges: string[]): boolean {

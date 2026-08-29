@@ -29,8 +29,10 @@ const getSecretKey = () => {
 export async function middleware(request: NextRequest) {
   // Network-level allowlist (opt-in via ALLOWED_IPS). Runs before anything
   // else so a disallowed IP never reaches auth/session logic or app code.
+  // /api/network-check is exempt so it stays reachable to diagnose exactly
+  // this restriction (e.g. a blocked network checking what IP it's seen as).
   const allowedIpRanges = getAllowedIpRanges();
-  if (allowedIpRanges.length > 0) {
+  if (allowedIpRanges.length > 0 && request.nextUrl.pathname !== "/api/network-check") {
     const clientIp = getClientIp(request.headers.get("x-forwarded-for"));
     if (!isRequestIpAllowed(clientIp, allowedIpRanges)) {
       return new NextResponse("Forbidden", { status: 403 });

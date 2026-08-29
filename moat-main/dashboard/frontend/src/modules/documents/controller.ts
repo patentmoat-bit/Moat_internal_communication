@@ -4,21 +4,24 @@ import { PatentDocumentSchema, DocumentVersionSchema, WorkflowTransitionSchema, 
 import { cookies } from "next/headers";
 import { WorkflowEmailService } from "@/lib/workflow/WorkflowEmailService";
 import { AuditLogService } from "@/lib/security/auditLogService";
-import { createClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyToken } from "@/lib/jwt";
 import { AuthorizationMiddleware } from "@/lib/security/authorization";
 import { EventBus } from "@/lib/events/eventBus";
 
-const supabaseAdminUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  // Server-only module: never silently downgrade to the public anon key.
-  throw new Error("Missing required environment variable: SUPABASE_SERVICE_ROLE_KEY");
-}
-const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabaseAdmin = createClient(supabaseAdminUrl, supabaseAdminKey);
-
 const service = new DocumentsService();
-const auditLog = new AuditLogService(supabaseAdmin);
+
+let auditLogInstance: AuditLogService | null = null;
+function getAuditLog() {
+  if (!auditLogInstance) {
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      // Server-only module: never silently downgrade to the public anon key.
+      throw new Error("Missing required environment variable: SUPABASE_SERVICE_ROLE_KEY");
+    }
+    auditLogInstance = new AuditLogService(createAdminClient());
+  }
+  return auditLogInstance;
+}
 
 async function getAuthUser(req?: NextRequest) {
   const cookieStore = await cookies();
@@ -161,7 +164,7 @@ export class DocumentsController {
       const data = await service.addVersion(resolvedParams.id, parsed.data, user.id);
 
       // Audit Log
-      await auditLog.logEvent({
+      await getAuditLog().logEvent({
         userId: user.id,
         email: user.name,
         eventType: "DOCUMENT_UPLOADED",
@@ -224,7 +227,7 @@ export class DocumentsController {
       const data = await service.transitionStatus(resolvedParams.id, previousStatus, parsed.data.new_status, user.id, parsed.data.notes);
 
       // Audit Log
-      await auditLog.logEvent({
+      await getAuditLog().logEvent({
         userId: user.id,
         email: user.name,
         eventType: "PATENT_STATUS_CHANGED",
@@ -290,7 +293,7 @@ export class DocumentsController {
       const data = await service.addComment(resolvedParams.id, parsed.data, user.id, user.role);
 
       // Audit Log
-      await auditLog.logEvent({
+      await getAuditLog().logEvent({
         userId: user.id,
         email: user.name,
         eventType: "DOCUMENT_MODIFIED",

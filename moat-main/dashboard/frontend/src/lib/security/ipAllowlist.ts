@@ -7,9 +7,11 @@
  * ALLOWED_IPS is set, so existing deployments aren't locked out until
  * someone explicitly configures it.
  *
- * ALLOWED_IPS is a comma-separated list of IPv4 addresses and/or CIDR
- * ranges, e.g. "203.0.113.10,198.51.100.0/24". IPv6 is supported only as
- * an exact match (no CIDR range parsing).
+ * ALLOWED_IPS is a comma- or newline-separated list of IPv4 addresses
+ * and/or CIDR ranges, e.g. "203.0.113.10,198.51.100.0/24". IPv6 is
+ * supported only as an exact match (no CIDR range parsing). A trailing
+ * label after the IP/CIDR (e.g. "203.0.113.10/32 - Office WiFi") is
+ * tolerated and ignored, since that's an easy format to paste by mistake.
  */
 
 function ipv4ToInt(ip: string): number | null {
@@ -46,8 +48,12 @@ export function getAllowedIpRanges(): string[] {
   const raw = process.env.ALLOWED_IPS;
   if (!raw) return [];
   return raw
-    .split(",")
-    .map((s) => s.trim())
+    .split(/[,\n]/)
+    // Keep only the leading IP/CIDR token on each entry — a trailing
+    // " - some label" (a natural way to annotate which network an entry
+    // belongs to) would otherwise fail CIDR-prefix parsing and silently
+    // drop every entry, locking out everyone including allowed IPs.
+    .map((s) => s.trim().split(/\s+/)[0])
     .filter(Boolean);
 }
 

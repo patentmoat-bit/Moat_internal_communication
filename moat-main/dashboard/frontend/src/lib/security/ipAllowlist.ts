@@ -74,7 +74,40 @@ export function getAllowedIpRanges(): string[] {
  * the check at all, rather than relying on an unverified assumption about
  * how Vercel handles that header on such requests.
  */
+/** Constant-time string comparison (avoids leaking the secret via timing). */
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+/**
+ * Whether the request carries the shared secret Cloudflare is configured to
+ * stamp on every request via a Transform Rule (header name x-origin-secret,
+ * value CF_ORIGIN_SECRET). This is what actually makes CF-Connecting-IP
+ * trustworthy: without it, someone bypassing Cloudflare and hitting Vercel's
+ * shared origin directly could set their own CF-Connecting-IP header, since
+ * nothing on that path strips it the way Cloudflare's edge does. The secret
+ * never reaches a browser, so a request lacking it didn't come through the
+ * configured Cloudflare rule.
+ *
+ * Opt-in: if CF_ORIGIN_SECRET isn't set, this check is skipped entirely
+ * (returns true) so the allowlist keeps working on CF-Connecting-IP alone
+ * until the Cloudflare-side rule is set up.
+ */
+export function hasValidOriginSecret(headers: Headers): boolean {
+  const expected = process.env.CF_ORIGIN_SECRET;
+  if (!expected) return true; // Not configured yet: don't block on it.
+  const provided = headers.get("x-origin-secret");
+  if (!provided) return false;
+  return timingSafeEqual(provided, expected);
+}
+
 export function getClientIp(headers: Headers): string | null {
+  if (!hasValidOriginSecret(headers)) return null;
   const cfConnectingIp = headers.get("cf-connecting-ip");
   return cfConnectingIp ? cfConnectingIp.trim() : null;
 }

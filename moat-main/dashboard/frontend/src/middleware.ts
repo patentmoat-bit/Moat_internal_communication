@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getRequiredRoles, appRoleToEnterpriseRole } from "@/lib/roleIntelligence";
 import type { AppRole } from "@/types";
 import { jwtVerify } from "jose";
+import { getAllowedIpRanges, getClientIp, isRequestIpAllowed } from "@/lib/security/ipAllowlist";
 
 const PUBLIC_PATHS = [
   "/login",
@@ -26,6 +27,16 @@ const getSecretKey = () => {
 };
 
 export async function middleware(request: NextRequest) {
+  // Network-level allowlist (opt-in via ALLOWED_IPS). Runs before anything
+  // else so a disallowed IP never reaches auth/session logic or app code.
+  const allowedIpRanges = getAllowedIpRanges();
+  if (allowedIpRanges.length > 0) {
+    const clientIp = getClientIp(request.headers.get("x-forwarded-for"));
+    if (!isRequestIpAllowed(clientIp, allowedIpRanges)) {
+      return new NextResponse("Forbidden", { status: 403 });
+    }
+  }
+
   const nonce = btoa(crypto.randomUUID());
   const isDev = process.env.NODE_ENV === "development";
 

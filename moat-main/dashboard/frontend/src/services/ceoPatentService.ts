@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/apiFetch";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -10,6 +11,7 @@ export interface DBInvention {
   status: string;
   tags: string[];
   metadata: Record<string, any>;
+  due_date?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -49,7 +51,7 @@ const supabase = createClient();
 export const ceoPatentService = {
   // ── Projects (Inventions) ──────────────────────────────────────────────────
   async getProjects(): Promise<DBInvention[]> {
-    const res = await fetch("/api/ceo/projects", { cache: "no-store" });
+    const res = await apiFetch("/api/ceo/projects", { cache: "no-store" });
     if (!res.ok) {
       const data = await res.json();
       throw new Error(data.error || "Failed to fetch projects");
@@ -61,7 +63,7 @@ export const ceoPatentService = {
     const user = useAuthStore.getState().user;
     if (!user) throw new Error("Unauthorized: Please log in again.");
 
-    const res = await fetch("/api/ceo/projects", {
+    const res = await apiFetch("/api/ceo/projects", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -83,7 +85,7 @@ export const ceoPatentService = {
 
   // ── Alerts ──────────────────────────────────────────────────────────────────
   async getAlerts(): Promise<DBAlert[]> {
-    const res = await fetch("/api/ceo/alerts", { cache: "no-store" });
+    const res = await apiFetch("/api/ceo/alerts", { cache: "no-store" });
     if (!res.ok) {
       const data = await res.json();
       throw new Error(data.error || "Failed to fetch alerts");
@@ -92,7 +94,7 @@ export const ceoPatentService = {
   },
 
   async dismissAlert(alertId: string): Promise<void> {
-    const res = await fetch(`/api/ceo/alerts?id=${alertId}`, { method: "PATCH" });
+    const res = await apiFetch(`/api/ceo/alerts?id=${alertId}`, { method: "PATCH" });
     if (!res.ok) {
       const data = await res.json();
       throw new Error(data.error || "Failed to dismiss alert");
@@ -101,7 +103,7 @@ export const ceoPatentService = {
 
   // ── Notifications (Activity Logs) ──────────────────────────────────────────
   async getNotifications(): Promise<DBActivityLog[]> {
-    const res = await fetch("/api/ceo/notifications", { cache: "no-store" });
+    const res = await apiFetch("/api/ceo/notifications", { cache: "no-store" });
     if (!res.ok) {
       const data = await res.json();
       throw new Error(data.error || "Failed to fetch notifications");
@@ -110,7 +112,7 @@ export const ceoPatentService = {
   },
 
   async markNotificationRead(notificationId: string): Promise<void> {
-    const res = await fetch(`/api/ceo/notifications?id=${notificationId}`, { method: "PATCH" });
+    const res = await apiFetch(`/api/ceo/notifications?id=${notificationId}`, { method: "PATCH" });
     if (!res.ok) {
       const data = await res.json();
       throw new Error(data.error || "Failed to mark notification read");
@@ -118,7 +120,7 @@ export const ceoPatentService = {
   },
 
   async markAllNotificationsRead(): Promise<void> {
-    const res = await fetch("/api/ceo/notifications", { method: "PATCH" });
+    const res = await apiFetch("/api/ceo/notifications", { method: "PATCH" });
     if (!res.ok) {
       const data = await res.json();
       throw new Error(data.error || "Failed to mark all notifications read");

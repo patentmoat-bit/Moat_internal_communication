@@ -2,7 +2,6 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getRequiredRoles, appRoleToEnterpriseRole } from "@/lib/roleIntelligence";
 import type { AppRole } from "@/types";
 import { jwtVerify } from "jose";
-import { getAllowedIpRanges, getClientIp, isRequestIpAllowed } from "@/lib/security/ipAllowlist";
 
 const PUBLIC_PATHS = [
   "/login",
@@ -27,18 +26,6 @@ const getSecretKey = () => {
 };
 
 export async function middleware(request: NextRequest) {
-  // Network-level allowlist (opt-in via ALLOWED_IPS). Runs before anything
-  // else so a disallowed IP never reaches auth/session logic or app code.
-  // /api/network-check is exempt so it stays reachable to diagnose exactly
-  // this restriction (e.g. a blocked network checking what IP it's seen as).
-  const allowedIpRanges = getAllowedIpRanges();
-  if (allowedIpRanges.length > 0 && request.nextUrl.pathname !== "/api/network-check") {
-    const clientIp = getClientIp(request.headers);
-    if (!isRequestIpAllowed(clientIp, allowedIpRanges)) {
-      return new NextResponse("Forbidden", { status: 403 });
-    }
-  }
-
   const nonce = btoa(crypto.randomUUID());
   const isDev = process.env.NODE_ENV === "development";
 
@@ -93,8 +80,7 @@ async function handleAuth(request: NextRequest, requestHeaders: Headers) {
     "/api/auth/refresh",
     "/api/auth/logout",
     "/api/auth/sso/bridge", // called with only a Supabase OAuth session, before any app session exists
-    "/api/health",
-    "/api/network-check" // diagnostic endpoint for ALLOWED_IPS; must stay reachable without a session
+    "/api/health"
   ];
   if (isApiRoute && PUBLIC_API_PATHS.some((p) => pathname.startsWith(p))) {
     return NextResponse.next({ request: { headers: requestHeaders } });

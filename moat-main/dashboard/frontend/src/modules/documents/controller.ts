@@ -4,24 +4,21 @@ import { PatentDocumentSchema, DocumentVersionSchema, WorkflowTransitionSchema, 
 import { cookies } from "next/headers";
 import { WorkflowEmailService } from "@/lib/workflow/WorkflowEmailService";
 import { AuditLogService } from "@/lib/security/auditLogService";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@supabase/supabase-js";
 import { verifyToken } from "@/lib/jwt";
 import { AuthorizationMiddleware } from "@/lib/security/authorization";
 import { EventBus } from "@/lib/events/eventBus";
 
-const service = new DocumentsService();
-
-let auditLogInstance: AuditLogService | null = null;
-function getAuditLog() {
-  if (!auditLogInstance) {
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      // Server-only module: never silently downgrade to the public anon key.
-      throw new Error("Missing required environment variable: SUPABASE_SERVICE_ROLE_KEY");
-    }
-    auditLogInstance = new AuditLogService(createAdminClient());
-  }
-  return auditLogInstance;
+const supabaseAdminUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  // Server-only module: never silently downgrade to the public anon key.
+  throw new Error("Missing required environment variable: SUPABASE_SERVICE_ROLE_KEY");
 }
+const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseAdmin = createClient(supabaseAdminUrl, supabaseAdminKey);
+
+const service = new DocumentsService();
+const auditLog = new AuditLogService(supabaseAdmin);
 
 async function getAuthUser(req?: NextRequest) {
   const cookieStore = await cookies();
@@ -66,14 +63,23 @@ export class DocumentsController {
 
       const data = await service.createDocument(parsed.data, user.id);
 
-      // No CEO notification here: a freshly created draft has no file yet and
-      // isn't ready for review. Notifying the CEO at this point (previously
-      // reusing the DOCUMENT_UPLOADED event/email) claimed a document had been
-      // uploaded when nothing existed yet, and the draft doesn't even appear
-      // in the CEO Approval queue until it's actually submitted (status
-      // "CEO Approval Pending", which fires its own REPORT_SUBMITTED
-      // notification via transitionStatus). The real "file uploaded" moment
-      // is addVersion() below, which does notify.
+      // Trigger notification for new document draft
+      try {
+        await EventBus.publishEvent({
+          type: 'DOCUMENT_UPLOADED',
+          actorId: user.id,
+          actorRole: user.role,
+          resourceId: data.id,
+          resourceType: 'document',
+          targetRole: 'CEO',
+          notificationTitle: `New Document Draft Created`,
+          notificationMessage: `${user.name} created a new document draft: ${parsed.data.title}.`,
+          actionUrl: `/dashboard/ceo/approvals`,
+          metadata: { title: parsed.data.title },
+        });
+      } catch (notifyErr) {
+        console.error("Notification delivery failed on create:", notifyErr);
+      }
 
       return NextResponse.json({ success: true, data });
     } catch (err: any) {
@@ -155,7 +161,7 @@ export class DocumentsController {
       const data = await service.addVersion(resolvedParams.id, parsed.data, user.id);
 
       // Audit Log
-      await getAuditLog().logEvent({
+      await auditLog.logEvent({
         userId: user.id,
         email: user.name,
         eventType: "DOCUMENT_UPLOADED",
@@ -218,7 +224,7 @@ export class DocumentsController {
       const data = await service.transitionStatus(resolvedParams.id, previousStatus, parsed.data.new_status, user.id, parsed.data.notes);
 
       // Audit Log
-      await getAuditLog().logEvent({
+      await auditLog.logEvent({
         userId: user.id,
         email: user.name,
         eventType: "PATENT_STATUS_CHANGED",
@@ -284,7 +290,7 @@ export class DocumentsController {
       const data = await service.addComment(resolvedParams.id, parsed.data, user.id, user.role);
 
       // Audit Log
-      await getAuditLog().logEvent({
+      await auditLog.logEvent({
         userId: user.id,
         email: user.name,
         eventType: "DOCUMENT_MODIFIED",
@@ -324,3 +330,4 @@ export class DocumentsController {
     }
   }
 }
+// trigger hmr

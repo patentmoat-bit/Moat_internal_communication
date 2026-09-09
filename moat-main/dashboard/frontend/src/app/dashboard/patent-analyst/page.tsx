@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ExecutiveDashboardCard } from "@/components/dashboard/ExecutiveDashboardCard";
 import { 
   Award, ShieldAlert, Sparkles, Building2, 
   Layers, CheckCircle, Scale, Users,
   ShieldCheck, Stamp, Bell, Loader2, Copyright,
-  Activity, Search, Upload, FileText, Target, MoreHorizontal
+  Activity, Search, Upload, FileText, Target, MoreHorizontal, Plus, Trash2, StickyNote, Save, X
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ceoPatentService, DBInvention, DBActivityLog, DBAlert } from "@/services/ceoPatentService";
+import { apiFetch } from "@/lib/apiFetch";
 
 export default function PatentAnalystWorkspacePage() {
   const [projects, setProjects] = useState<DBInvention[]>([]);
@@ -28,22 +29,34 @@ export default function PatentAnalystWorkspacePage() {
   const [copyrights, setCopyrights] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<"All" | "Patent" | "Trademark" | "Copyright">("All");
   const [loading, setLoading] = useState(true);
+  
+  const [priorities, setPriorities] = useState<any[]>([]);
+  const [newPriorityText, setNewPriorityText] = useState('');
+  const [newPriorityLevel, setNewPriorityLevel] = useState<'High'|'Medium'|'Low'>('Medium');
+  const [savingPriorities, setSavingPriorities] = useState(false);
+  const [stickyNotes, setStickyNotes] = useState<any[]>([]);
+  const [savingNotes, setSavingNotes] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [p, tRes, aRes, cRes] = await Promise.all([
+        const [p, tRes, aRes, cRes, nRes, prRes, snRes] = await Promise.all([
           ceoPatentService.getProjects(),
-          fetch("/api/trademarks").then(res => res.json()),
-          fetch("/api/alerts").then(res => res.json()),
-          fetch("/api/copyrights").then(res => res.ok ? res.json() : { data: [] }).catch(() => ({ data: [] }))
+          apiFetch("/api/trademarks").then(res => res.json()),
+          apiFetch("/api/alerts").then(res => res.json()),
+          apiFetch("/api/copyrights").then(res => res.ok ? res.json() : { data: [] }).catch(() => ({ data: [] })),
+          ceoPatentService.getNotifications().catch(() => []),
+          fetch("/api/priorities").then(res => res.json()).catch(() => ({ priorities: [] })),
+          fetch(`/api/sticky-notes?t=${Date.now()}`, { cache: 'no-store' }).then(res => res.json()).catch(() => ({ notes: [] }))
         ]);
         setProjects(p);
         setTrademarks(tRes.data || []);
+        setPriorities(prRes.priorities || []);
+        setStickyNotes(snRes.notes || []);
         
         const liveAlerts = aRes.data || [];
-        setAlerts(liveAlerts); // Using alerts for both Alerts & Notifications now
-        setNotifications(liveAlerts); 
+        setAlerts(liveAlerts); 
+        setNotifications(nRes || []); 
         
         setCopyrights(cRes.data || []);
       } catch (e) {
@@ -62,6 +75,56 @@ export default function PatentAnalystWorkspacePage() {
       unsubscribe();
     };
   }, []);
+
+  // Auto-save sticky notes when they change
+  const initialNotesLoaded = useRef(false);
+  useEffect(() => {
+    if (!initialNotesLoaded.current) {
+      if (stickyNotes.length > 0 || !loading) {
+        initialNotesLoaded.current = true;
+      }
+      return;
+    }
+    const timer = setTimeout(() => {
+      setSavingNotes(true);
+      fetch("/api/sticky-notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: stickyNotes })
+      }).finally(() => setSavingNotes(false)).catch(console.error);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [stickyNotes, loading]);
+
+  const handleSavePriorities = async (newPriorities: any[]) => {
+    setSavingPriorities(true);
+    try {
+      await fetch("/api/priorities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priorities: newPriorities })
+      });
+      setNewPriorityText('');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSavingPriorities(false);
+    }
+  };
+
+  const handleAddPriority = () => {
+    if (!newPriorityText.trim()) return;
+    const newP = [{ id: Date.now().toString(), text: newPriorityText, level: newPriorityLevel }, ...priorities];
+    setPriorities(newP);
+    setNewPriorityText('');
+    handleSavePriorities(newP);
+  };
+
+  const handleRemovePriority = (id: string) => {
+    const newP = priorities.filter(p => p.id !== id);
+    setPriorities(newP);
+    handleSavePriorities(newP);
+  };
 
   const unifiedStats = useMemo(() => {
     let total = projects.length + trademarks.length + copyrights.length;
@@ -146,14 +209,41 @@ export default function PatentAnalystWorkspacePage() {
 
   const upcomingDeadlines = useMemo(() => {
     const all = [
-      ...projects.filter(p => p.due_date && !p.status?.toLowerCase().includes("completed") && !p.status?.toLowerCase().includes("granted")).map(p => ({ title: p.title, type: "Patent", dueDate: new Date(p.due_date).getTime(), status: p.status, href: `/dashboard/research/moat/${p.id}` })),
-      ...trademarks.filter(t => t.due_date && !t.status?.toLowerCase().includes("registered") && !t.status?.toLowerCase().includes("completed")).map(t => ({ title: t.brand_name || t.name, type: "Trademark", dueDate: new Date(t.due_date).getTime(), status: t.status, href: `/dashboard/trademark/${t.id}` })),
-      ...copyrights.filter(c => c.due_date && !c.status?.toLowerCase().includes("registered") && !c.status?.toLowerCase().includes("completed")).map(c => ({ title: c.title, type: "Copyright", dueDate: new Date(c.due_date).getTime(), status: c.status, href: `/dashboard/copyright/${c.id}` }))
+      ...projects.filter(p => p.due_date && !p.status?.toLowerCase().includes("completed") && !p.status?.toLowerCase().includes("granted")).map(p => ({ title: p.title, type: "Patent", dueDate: new Date(p.due_date!).getTime(), status: p.status, href: `/dashboard/research/moat/${p.id}` })),
+      ...trademarks.filter(t => t.due_date && !t.status?.toLowerCase().includes("registered") && !t.status?.toLowerCase().includes("completed")).map(t => ({ title: t.brand_name || t.name, type: "Trademark", dueDate: new Date(t.due_date!).getTime(), status: t.status, href: `/dashboard/trademark/${t.id}` })),
+      ...copyrights.filter(c => c.due_date && !c.status?.toLowerCase().includes("registered") && !c.status?.toLowerCase().includes("completed")).map(c => ({ title: c.title, type: "Copyright", dueDate: new Date(c.due_date!).getTime(), status: c.status, href: `/dashboard/copyright/${c.id}` }))
     ];
     
     // Sort ascending by due date (closest first)
     return all.sort((a, b) => a.dueDate - b.dueDate).slice(0, 3);
   }, [projects, trademarks, copyrights]);
+
+  const handleAddNote = () => {
+    setStickyNotes([...stickyNotes, { id: crypto.randomUUID(), content: "", color: "yellow" }]);
+  };
+
+  const handleRemoveNote = (id: string) => {
+    setStickyNotes(stickyNotes.filter(n => n.id !== id));
+  };
+
+  const handleUpdateNote = (id: string, content: string) => {
+    setStickyNotes(stickyNotes.map(n => n.id === id ? { ...n, content } : n));
+  };
+
+  const handleSaveNotes = async () => {
+    setSavingNotes(true);
+    try {
+      await fetch("/api/sticky-notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: stickyNotes })
+      });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSavingNotes(false);
+    }
+  };
 
   const summaryCards = useMemo(() => {
     if (loading) {
@@ -395,36 +485,65 @@ export default function PatentAnalystWorkspacePage() {
             </CardContent>
           </Card>
 
-          {/* Recent Activity */}
-          <Card className="flex-1 border border-border/40 shadow-sm bg-white dark:bg-card rounded-xl overflow-hidden flex flex-col">
-            <CardContent className="p-6 flex-1 flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-bold tracking-tight text-foreground">Recent Activity</h2>
-                <a href="/dashboard/notifications" className="text-[11px] font-bold text-[#c9a84c] hover:underline flex items-center gap-1">
-                  View All <span>→</span>
-                </a>
+          {/* Sticky Notes */}
+          <Card className="flex-1 border border-[#e8d5b5]/60 shadow-sm bg-[#fffcf0] dark:bg-[#1f1a0f] rounded-xl flex flex-col min-h-[300px]">
+            <CardHeader className="border-b border-[#e8d5b5]/50 dark:border-[#e8d5b5]/10 pb-3 pt-4 flex flex-row items-center justify-between shrink-0">
+              <CardTitle className="text-base flex items-center gap-2">
+                <StickyNote className="w-4 h-4 text-[#c9a84c]" />
+                Sticky Notes
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={handleAddNote} 
+                  className="text-[11px] font-bold text-[#c9a84c] hover:bg-[#c9a84c]/10 px-2.5 py-1.5 rounded flex items-center gap-1.5 transition-colors border border-[#c9a84c]/20"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add Note
+                </button>
+                <button 
+                  onClick={handleSaveNotes} 
+                  disabled={savingNotes} 
+                  className="text-[11px] font-bold bg-[#c9a84c] text-white hover:bg-[#b09342] px-2.5 py-1.5 rounded flex items-center gap-1.5 transition-colors"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  {savingNotes ? "Saving..." : "Save"}
+                </button>
               </div>
-              <div className="space-y-4 flex-1">
-                {alerts.length === 0 && <p className="text-xs text-muted-foreground italic">No recent activity.</p>}
-                {alerts.slice(0, 5).map((act: any, i) => {
-                  let Icon = FileText;
-                  let color = "text-blue-500";
-                  if (act.type === "Patent") { Icon = FileText; color = "text-amber-500"; }
-                  if (act.type === "Trademark") { Icon = Layers; color = "text-purple-500"; }
-                  if (act.type === "Approval") { Icon = CheckCircle; color = "text-emerald-500"; }
-                  if (act.type === "Workflow") { Icon = Activity; color = "text-blue-500"; }
-                  
-                  return (
-                    <div key={i} className="flex gap-3 items-start">
-                      <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${color}`} />
-                      <div className="flex-1 flex justify-between gap-4">
-                        <p className="text-xs text-foreground leading-tight">{act.title}</p>
-                        <span className="text-[10px] text-muted-foreground shrink-0 whitespace-nowrap">{new Date(act.created_at).toLocaleDateString()}</span>
+            </CardHeader>
+            <CardContent className="p-4 flex-1 relative overflow-y-auto custom-scrollbar">
+              {stickyNotes.length === 0 ? (
+                <div className="text-center text-[#8a6b2d]/60 text-sm py-12 italic">No notes yet. Click 'Add Note' to create one.</div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4 auto-rows-max">
+                  {stickyNotes.map((note) => (
+                    <div key={note.id} className="relative group bg-[#fdfbf7] dark:bg-[#2a2416] border border-[#e8d5b5]/70 shadow-md hover:shadow-lg transition-shadow aspect-square flex flex-col pt-6 pb-2 px-3">
+                      {/* Pin */}
+                      <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 w-3 h-3 rounded-full bg-red-600 shadow-sm border border-red-800">
+                         <div className="absolute top-0.5 left-0.5 w-1 h-1 rounded-full bg-white/50"></div>
                       </div>
+                      
+                      {/* Folded Corner Effect (bottom right) */}
+                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-gradient-to-tl from-[#d6b77a]/40 to-transparent rounded-tl-sm"></div>
+                      
+                      {/* Delete button (shows on hover) */}
+                      <button 
+                        onClick={() => handleRemoveNote(note.id)}
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-[#8a6b2d] hover:text-red-500"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                      
+                      <textarea
+                        value={note.content}
+                        onChange={(e) => handleUpdateNote(note.id, e.target.value)}
+                        placeholder="Type a note..."
+                        className="flex-1 w-full bg-transparent border-none outline-none resize-none text-[11px] text-[#5c4a1e] dark:text-[#d6b77a] placeholder-[#c9a84c]/50 custom-scrollbar leading-relaxed"
+                        style={{ boxShadow: 'none' }}
+                      />
                     </div>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -500,34 +619,64 @@ export default function PatentAnalystWorkspacePage() {
         {/* Top Priorities */}
         <Card className="border border-border/40 shadow-sm bg-white dark:bg-card rounded-xl">
           <CardContent className="p-6 h-[310px] flex flex-col">
-            <h2 className="text-base font-bold tracking-tight text-foreground mb-4">Top Priorities</h2>
-            <div className="space-y-5 flex-1 overflow-y-auto pr-2">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-base font-bold tracking-tight text-foreground">Top Priorities</h2>
+              {savingPriorities && <span className="text-[10px] text-muted-foreground flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin"/> Saving</span>}
+            </div>
+            
+            <div className="flex gap-2 mb-4">
+              <input 
+                type="text" 
+                value={newPriorityText}
+                onChange={(e) => setNewPriorityText(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddPriority()}
+                placeholder="Add a priority..." 
+                className="flex-1 text-xs px-3 py-1.5 rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-[#c9a84c]/50"
+              />
+              <select 
+                value={newPriorityLevel}
+                onChange={(e) => setNewPriorityLevel(e.target.value as any)}
+                className="text-xs px-2 py-1.5 rounded-md border border-input bg-background w-24 focus:outline-none focus:ring-1 focus:ring-[#c9a84c]/50"
+              >
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+              </select>
+              <button 
+                onClick={handleAddPriority}
+                className="bg-[#c9a84c] text-white p-1.5 rounded-md hover:bg-[#b09342] transition-colors flex items-center justify-center w-8 shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2 flex-1 overflow-y-auto pr-2 custom-scrollbar">
               {loading ? (
                 <p className="text-sm text-muted-foreground">Loading priorities...</p>
-              ) : alerts.filter((a: any) => a.status === 'Pending').length === 0 ? (
-                <p className="text-xs text-muted-foreground italic">No top priorities right now.</p>
+              ) : priorities.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic text-center py-4">No top priorities right now.</p>
               ) : (
-                alerts.filter((a: any) => a.status === 'Pending').slice(0, 4).map((a: any, i) => {
-                  let tag = a.type || "System";
-                  let color = "bg-blue-50 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400";
-                  if (tag === "Patent") color = "bg-amber-50 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400";
-                  if (tag === "Trademark") color = "bg-purple-50 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400";
-                  if (tag === "Copyright") color = "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400";
+                priorities.map((p: any) => {
+                  let color = "bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400"; // Medium
+                  if (p.level === "High") color = "bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-500/10 dark:text-rose-400";
+                  if (p.level === "Low") color = "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400";
                   
                   return (
-                    <div key={i} className="flex gap-3 justify-between items-center group">
-                      <p className="text-xs font-semibold text-foreground truncate flex-1" title={a.title}>{a.title}</p>
-                      <Badge variant="outline" className={`text-[9px] font-bold px-1.5 py-0 border-transparent shrink-0 ${color}`}>{tag}</Badge>
-                      <span className="text-[11px] text-muted-foreground shrink-0 w-10 text-right">{new Date(a.created_at).getDate()} {new Date(a.created_at).toLocaleString('default', { month: 'short' })}</span>
+                    <div key={p.id} className="flex gap-3 justify-between items-center group bg-gray-50/50 dark:bg-gray-800/30 p-2.5 rounded-lg border border-border/40 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-foreground truncate" title={p.text}>{p.text}</p>
+                      </div>
+                      <Badge variant="outline" className={`text-[9px] font-bold px-1.5 py-0 shrink-0 ${color}`}>{p.level}</Badge>
+                      <button 
+                        onClick={() => handleRemovePriority(p.id)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-red-500 shrink-0 p-1"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   );
                 })
               )}
-            </div>
-            <div className="mt-4 pt-4 border-t text-center">
-              <a href="/dashboard/tracker" className="text-[11px] font-bold text-[#c9a84c] hover:underline">
-                View All Priorities →
-              </a>
             </div>
           </CardContent>
         </Card>

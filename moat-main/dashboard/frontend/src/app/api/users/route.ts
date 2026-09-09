@@ -152,27 +152,46 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ detail: authError?.message ?? "Failed to create user in Auth system." }, { status: 400 });
       }
 
-      // The admin-issued password lives only in Supabase Auth (set via
-      // admin.createUser above) — password_change_required forces the user to
-      // set their own password on first login before they get a session
-      // (enforced once the login route checks this flag).
-      const { error: upsertError } = await supabase.from("users").upsert({
-        id: authData.user.id,
-        email: authData.user.email!,
-        name: name.trim(),
-        role: role,
-        department: department || null,
-        role_id: roleData.id,
-        is_active: true,
-        status: "Active",
-        password_change_required: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      });
+      // A Supabase DB trigger fires on auth.users INSERT and auto-creates a
+      // bare public.users row (no role, no name). We wait briefly for it, then
+      // UPDATE the row so our data wins. If somehow the trigger didn't run yet
+      // we fall back to a direct INSERT.
+      await new Promise(resolve => setTimeout(resolve, 400));
 
-      if (upsertError) {
-        console.error("Error upserting user:", upsertError);
-        return NextResponse.json({ detail: "User created in Auth but failed to sync to Database." }, { status: 500 });
+      const { error: updateError, count } = await supabase
+        .from("users")
+        .update({
+          name: name.trim(),
+          role: role,
+          department: department || null,
+          role_id: roleData.id,
+          is_active: true,
+          status: "Active",
+          password_change_required: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", authData.user.id);
+
+      if (updateError) {
+        // Row didn't exist yet — do a plain insert
+        const { error: insertError } = await supabase.from("users").insert({
+          id: authData.user.id,
+          email: authData.user.email!,
+          name: name.trim(),
+          role: role,
+          department: department || null,
+          role_id: roleData.id,
+          is_active: true,
+          status: "Active",
+          password_change_required: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+        if (insertError) {
+          console.error("Error inserting user profile:", insertError);
+          return NextResponse.json({ detail: "User created in Auth but failed to sync to Database." }, { status: 500 });
+        }
       }
 
       // Audit Log

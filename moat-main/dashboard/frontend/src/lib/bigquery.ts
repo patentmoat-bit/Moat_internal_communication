@@ -106,9 +106,9 @@ export async function searchPatentsFromBigQuery(queryString: string) {
   
   if (terms.length === 0) return [];
 
-  // Build the AND conditions for the abstract
-  const conditions = terms.map((t, i) => `LOWER(a.text) LIKE @term${i}`).join(' AND ');
-  const titleConditions = terms.map((t, i) => `LOWER(t.text) LIKE @term${i}`).join(' AND ');
+  // Build the OR conditions for the abstract
+  const conditions = terms.map((t, i) => `LOWER(a.text) LIKE @term${i}`).join(' OR ');
+  const titleConditions = terms.map((t, i) => `LOWER(t.text) LIKE @term${i}`).join(' OR ');
   
   const query = `
     SELECT 
@@ -126,14 +126,15 @@ export async function searchPatentsFromBigQuery(queryString: string) {
     WHERE 
       EXISTS (
         SELECT 1 FROM UNNEST(abstract_localized) AS a 
-        WHERE a.language = 'en' AND ${conditions}
+        WHERE a.language = 'en' AND (${conditions})
       )
       OR
       EXISTS (
         SELECT 1 FROM UNNEST(title_localized) AS t 
-        WHERE t.language = 'en' AND ${titleConditions}
+        WHERE t.language = 'en' AND (${titleConditions})
       )
     ORDER BY publication_date DESC
+    LIMIT 100
   `;
 
   const params: Record<string, any> = {};

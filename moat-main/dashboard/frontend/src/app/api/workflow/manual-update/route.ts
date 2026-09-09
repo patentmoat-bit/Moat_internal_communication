@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     const auth = await requireAuth(req);
     if (auth instanceof NextResponse) return auth;
     const role = appRoleToEnterpriseRole(auth.role);
-    if (role !== "admin" && role !== "ceo") {
+    if (!role) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     const actorId = auth.id;

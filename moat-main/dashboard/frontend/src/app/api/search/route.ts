@@ -90,10 +90,11 @@ export async function POST(request: NextRequest | Request) {
         let bqResults = await searchPatentsFromBigQuery(cleanKeywords);
         if (bqResults && bqResults.length > 0) {
           
-          // Verify and correct missing BigQuery inventor/assignee data using live scraping
+          // Verify and correct missing BigQuery inventor/assignee data using live scraping for top 5 only to prevent timeouts
           try {
             const { getGooglePatentDetails } = require('@/lib/googlePatents');
-            for (const p of bqResults) {
+            for (let i = 0; i < Math.min(5, bqResults.length); i++) {
+              const p = bqResults[i];
               if (p.patent_number && p.patent_number !== "Unknown") {
                 const liveDetails = await getGooglePatentDetails(p.patent_number);
                 if (liveDetails) {

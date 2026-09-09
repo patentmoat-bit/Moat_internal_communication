@@ -11,6 +11,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { createBrowserClient } from "@supabase/ssr";
+import { apiFetch } from "@/lib/apiFetch";
 
 interface Props {
   type: string;
@@ -53,7 +54,7 @@ export default function GenericResearchModule({ type, label, context }: Props) {
     setLoading(true);
     try {
       const prompt = `Extract exactly 3 to 5 core technical features from this text. Return ONLY a valid JSON array of strings. Text: ${input}`;
-      const response = await fetch("/api/ai-hub/perplexity", {
+      const response = await apiFetch("/api/ai-hub/perplexity", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: [{ role: "user", content: prompt }] })
@@ -97,7 +98,7 @@ export default function GenericResearchModule({ type, label, context }: Props) {
 
       const userPrompt = `Input Description: ${input}\\n\\nKey Features:\\n${features.map(f => "- " + f.text).join("\\n")}`;
 
-      const response = await fetch("/api/ai-hub/perplexity", {
+      const response = await apiFetch("/api/ai-hub/perplexity", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -141,19 +142,26 @@ export default function GenericResearchModule({ type, label, context }: Props) {
 
   const handleSaveReport = async () => {
     if (!reportData) return;
-    
-    if (!context.projectId) {
-      alert("No active project context. Please launch this tool from a Project Dashboard to save evidence to the PFS Engine.");
-      return;
-    }
 
     setIsSaving(true);
     try {
-      const response = await fetch("/api/reports", {
+      let targetProjectId = context.projectId;
+      
+      if (!targetProjectId) {
+        const { ceoPatentService } = await import("@/services/ceoPatentService");
+        const newProject = await ceoPatentService.createProjectIdea(
+          `Ad-Hoc ${type} Research`,
+          "Standalone research automatically saved from the AI Hub.",
+          "research"
+        );
+        targetProjectId = newProject.id;
+      }
+
+      const response = await apiFetch("/api/reports", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          project_id: context.projectId,
+          project_id: targetProjectId,
           search_type: type.toUpperCase(),
           report_json: reportData,
           status: "FINAL"
@@ -163,13 +171,69 @@ export default function GenericResearchModule({ type, label, context }: Props) {
       const data = await response.json();
       if (!data.success) throw new Error(data.error || "Failed to save report to Enterprise PFS Engine");
       
-      alert(`Report saved securely to Enterprise Database (Version ${data.version})!`);
+      alert(`Report saved securely to Enterprise Database (Version ${data.version})!\\nDownloading PDF copy...`);
+      handleExportPDF();
     } catch (err: any) {
       console.error(err);
       alert(err.message || "Failed to save report.");
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleExportPDF = async () => {
+    const reportElement = document.getElementById("report-content");
+    if (!reportElement) {
+      alert("Report content not found.");
+      return;
+    }
+    
+    try {
+      const html2pdf = (await import('html2pdf.js')).default;
+      
+      const opt = {
+        margin:       [10, 10, 10, 10], // margin in mm
+        filename:     `${label.replace(/\\s+/g, '_')}_Report.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      await html2pdf().from(reportElement).set(opt).save();
+    } catch (err) {
+      console.error("PDF export failed:", err);
+      alert("Failed to export PDF.");
+    }
+  };
+
+  const handleExportDOCX = () => {
+    const reportElement = document.getElementById("report-content");
+    if (!reportElement) {
+      alert("Report content not found.");
+      return;
+    }
+    
+    const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+    <head><meta charset='utf-8'><title>${label} Report</title></head><body>${reportElement.innerHTML}</body></html>`;
+    
+    const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${label.replace(/\s+/g, '_')}_Report.doc`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleNewSearch = () => {
+    setStep("INPUT");
+    setInput("");
+    setFeatures([]);
+    setReportData(null);
+    setSearchId(null);
+    setActiveTab("executive");
   };
 
   const getStatusIcon = (status: string) => {
@@ -205,7 +269,7 @@ export default function GenericResearchModule({ type, label, context }: Props) {
             size="sm" 
             className="font-semibold" 
             disabled={step !== "REPORT"}
-            onClick={() => alert("PDF Export is currently in development.")}
+            onClick={handleExportPDF}
           >
             <DownloadCloud className="h-4 w-4 mr-2" /> PDF
           </Button>
@@ -214,12 +278,12 @@ export default function GenericResearchModule({ type, label, context }: Props) {
             size="sm" 
             className="font-semibold" 
             disabled={step !== "REPORT"}
-            onClick={() => alert("DOCX Export is currently in development.")}
+            onClick={handleExportDOCX}
           >
             <FileDown className="h-4 w-4 mr-2" /> DOCX
           </Button>
           {step === "REPORT" && (
-            <Button variant="ghost" size="sm" onClick={() => setStep("INPUT")}>New Search</Button>
+            <Button variant="ghost" size="sm" onClick={handleNewSearch}>New Search</Button>
           )}
         </div>
       </div>
@@ -320,30 +384,9 @@ export default function GenericResearchModule({ type, label, context }: Props) {
         {/* STEP 4: REPORT VIEWER */}
         {step === "REPORT" && reportData && (
           <div className="flex h-full">
-            {/* Report Sidebar */}
-            <div className="w-64 border-r bg-muted/10 p-4 space-y-1 overflow-y-auto shrink-0">
-              <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 px-2">Report Sections</div>
-              {[
-                { id: "executive", label: "Executive Summary", icon: FileText },
-                { id: "technical", label: "Technical Analysis", icon: Sparkles },
-                { id: "strategy", label: "Search Strategy", icon: Search },
-                { id: "deep", label: "Deep Comparison", icon: ListTree },
-                { id: "references", label: "References", icon: Bookmark },
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-colors text-left ${activeTab === tab.id ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300' : 'hover:bg-muted text-muted-foreground'}`}
-                >
-                  <tab.icon className="h-4 w-4 shrink-0" />
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
             {/* Report Content */}
-            <div className="flex-1 overflow-y-auto p-10 bg-slate-50 dark:bg-background">
-              <div className="max-w-4xl mx-auto bg-white dark:bg-card border shadow-md p-10 rounded-sm min-h-[800px]">
+            <div className="flex-1 overflow-y-auto p-10 bg-slate-50 dark:bg-background print:p-0">
+              <div id="report-content" className="max-w-4xl mx-auto bg-white dark:bg-card border shadow-md p-10 rounded-sm min-h-[800px] print:shadow-none print:border-none print:m-0">
                 
                 {/* Cover Header */}
                 <div className="border-b-2 border-indigo-600 pb-6 mb-8">
@@ -355,10 +398,10 @@ export default function GenericResearchModule({ type, label, context }: Props) {
                   </div>
                 </div>
 
-                {/* Tab Contents */}
-                {activeTab === "executive" && (
-                  <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div>
+                {/* Full Report Sections */}
+                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 mt-12 page-break-before">
+                  <h2 className="text-2xl font-black mb-6 text-indigo-900 border-b-2 border-indigo-200 pb-2">Executive Summary</h2>
+                  <div>
                       <h3 className="text-lg font-bold border-b pb-2 mb-4 text-slate-800 dark:text-slate-200">Overall Assessment</h3>
                       <p className="text-sm leading-relaxed">{reportData.executiveSummary?.assessment}</p>
                     </div>
@@ -386,11 +429,10 @@ export default function GenericResearchModule({ type, label, context }: Props) {
                       </ul>
                     </div>
                   </div>
-                )}
 
-                {activeTab === "technical" && (
-                  <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="bg-muted/20 p-5 rounded-lg border">
+                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 mt-16 page-break-before">
+                  <h2 className="text-2xl font-black mb-6 text-indigo-900 border-b-2 border-indigo-200 pb-2">Technical Analysis</h2>
+                  <div className="bg-muted/20 p-5 rounded-lg border">
                       <h3 className="text-xs font-bold text-muted-foreground uppercase mb-2">Original User Input</h3>
                       <p className="text-sm font-mono whitespace-pre-wrap text-foreground/80">{input}</p>
                     </div>
@@ -407,11 +449,10 @@ export default function GenericResearchModule({ type, label, context }: Props) {
                       <p className="text-sm leading-relaxed">{reportData.technicalAnalysis?.effects}</p>
                     </div>
                   </div>
-                )}
 
-                {activeTab === "strategy" && (
-                  <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <h3 className="text-lg font-bold border-b pb-2 mb-4">Query Traceability</h3>
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 mt-16 page-break-before">
+                  <h2 className="text-2xl font-black mb-6 text-indigo-900 border-b-2 border-indigo-200 pb-2">Search Strategy</h2>
+                  <h3 className="text-lg font-bold border-b pb-2 mb-4">Query Traceability</h3>
                     <div className="border rounded overflow-hidden">
                       <table className="w-full text-sm text-left">
                         <thead className="bg-muted text-muted-foreground text-xs uppercase font-bold">
@@ -435,11 +476,10 @@ export default function GenericResearchModule({ type, label, context }: Props) {
                       </table>
                     </div>
                   </div>
-                )}
 
-                {activeTab === "deep" && (
-                  <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <h3 className="text-lg font-bold border-b pb-2 mb-6">Feature Mapping & Prior Art Comparison</h3>
+                <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 mt-16 page-break-before">
+                  <h2 className="text-2xl font-black mb-6 text-indigo-900 border-b-2 border-indigo-200 pb-2">Deep Comparison</h2>
+                  <h3 className="text-lg font-bold border-b pb-2 mb-6">Feature Mapping & Prior Art Comparison</h3>
                     {reportData.deepComparison?.map((doc: any, i: number) => (
                       <div key={i} className="border rounded-xl overflow-hidden shadow-sm">
                         <div className="bg-slate-100 dark:bg-slate-900 p-4 border-b">
@@ -478,11 +518,10 @@ export default function GenericResearchModule({ type, label, context }: Props) {
                       </div>
                     ))}
                   </div>
-                )}
 
-                {activeTab === "references" && (
-                  <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <h3 className="text-lg font-bold border-b pb-2 mb-4">Cited References</h3>
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 mt-16 page-break-before">
+                  <h2 className="text-2xl font-black mb-6 text-indigo-900 border-b-2 border-indigo-200 pb-2">References</h2>
+                  <h3 className="text-lg font-bold border-b pb-2 mb-4">Cited References</h3>
                     <ul className="space-y-4">
                       {reportData.references?.map((ref: any, i: number) => (
                         <li key={i} className="bg-background border p-4 rounded-lg shadow-sm flex gap-4">
@@ -502,7 +541,6 @@ export default function GenericResearchModule({ type, label, context }: Props) {
                       ))}
                     </ul>
                   </div>
-                )}
 
                 {/* Legal Disclaimer Footer */}
                 <div className="mt-16 pt-6 border-t border-dashed">

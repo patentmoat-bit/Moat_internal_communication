@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyToken } from "@/lib/jwt";
 import { cookies } from "next/headers";
-
-// The only bucket every real caller of this endpoint uses (designer/, patent-drafter/,
-// patent-analyst/ document pages). This previously accepted ANY client-supplied bucket
-// name and, if it didn't already exist, created it on the fly as PUBLIC via the admin
-// client — an authenticated user of any role could spin up arbitrary public storage
-// buckets and write to any path in them, including paths that collide with other
-// features' buckets, entirely bypassing storage RLS.
-const ALLOWED_BUCKET = "patent_documents";
+import { SecureFileStorageService } from "@/lib/security/fileupload/SecureFileStorageService";
 
 async function getAuthUser() {
   const cookieStore = await cookies();
@@ -25,36 +17,27 @@ export async function POST(req: NextRequest) {
 
     const formData = await req.formData();
     const file = formData.get("file") as File;
-    const bucket = formData.get("bucket") as string;
-    const path = formData.get("path") as string;
+    const documentId = formData.get("document_id") as string || "temp_doc";
 
-    if (!file || !bucket || !path) {
+    if (!file) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    if (bucket !== ALLOWED_BUCKET) {
-      return NextResponse.json({ error: "Invalid bucket." }, { status: 400 });
-    }
-    if (path.includes("..") || path.startsWith("/")) {
-      return NextResponse.json({ error: "Invalid path." }, { status: 400 });
-    }
-
-    const supabase = createAdminClient();
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+    const ext = file.name.split('.').pop() || 'bin';
 
-    const { error } = await supabase.storage.from(bucket).upload(path, buffer, {
-      contentType: file.type,
-      upsert: true,
-    });
+    // Store the file securely using the SecureFileStorageService
+    const { storagePath } = await SecureFileStorageService.storeFile(
+      buffer,
+      documentId,
+      ext,
+      file.type
+    );
 
-    if (error) {
-      console.error("Upload API storage error:", error);
-      return NextResponse.json({ error: "Upload failed." }, { status: 500 });
-    }
-
-    const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path);
-    return NextResponse.json({ success: true, url: urlData.publicUrl });
+    // Return the internal storage path as the 'url' so the frontend can save it.
+    // The download endpoint knows how to serve these paths securely.
+    return NextResponse.json({ success: true, url: storagePath });
   } catch (e: any) {
     console.error("Upload API Error:", e);
     return NextResponse.json({ error: "Internal server error." }, { status: 500 });

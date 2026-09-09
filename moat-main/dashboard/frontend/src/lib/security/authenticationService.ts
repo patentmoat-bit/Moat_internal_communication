@@ -389,14 +389,14 @@ export class EnterpriseAuthenticationService {
         // Generate and store new secret without enabling MFA
         const { secret, uri } = await this.mfaEnrollmentService.initializeEnrollment(user.id, cleanEmail);
         const QRCode = require('qrcode');
-        qrCodeSvg = await QRCode.toString(uri, { type: 'svg', width: 120, margin: 1, color: { dark: '#000000', light: '#ffffff' } });
+        qrCodeSvg = await QRCode.toString(uri, { type: 'svg', width: 200, margin: 2, color: { dark: '#000000', light: '#ffffff' } });
       } else {
         // Reuse existing unconfirmed secret
         const secret = EncryptionService.decrypt(enrollment.encryptedSecret);
         if (secret) {
           const QRCode = require('qrcode');
           const uri = `otpauth://totp/MOAT:${encodeURIComponent(cleanEmail)}?secret=${secret}&issuer=MOAT`;
-          qrCodeSvg = await QRCode.toString(uri, { type: 'svg', width: 120, margin: 1, color: { dark: '#000000', light: '#ffffff' } });
+          qrCodeSvg = await QRCode.toString(uri, { type: 'svg', width: 200, margin: 2, color: { dark: '#000000', light: '#ffffff' } });
         }
       }
     }

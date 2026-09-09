@@ -10,6 +10,7 @@ import { VersionHistoryTable } from "@/components/documents/VersionHistoryTable"
 import { CommentThread } from "@/components/documents/CommentThread";
 import { createClient } from "@/lib/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { apiFetch } from "@/lib/apiFetch";
 
 export default function DesignerDocumentsPage() {
   const { toast } = useToast();
@@ -60,7 +61,7 @@ export default function DesignerDocumentsPage() {
 
   const fetchDocuments = async () => {
     try {
-      const res = await fetch("/api/documents");
+      const res = await apiFetch("/api/documents");
       const data = await res.json();
       if (data.success) {
         // Filter to only show documents assigned to design team workflows
@@ -80,7 +81,7 @@ export default function DesignerDocumentsPage() {
 
   const fetchDocDetails = async (id: string) => {
     try {
-      const res = await fetch(`/api/documents/${id}`);
+      const res = await apiFetch(`/api/documents/${id}`);
       const data = await res.json();
       if (data.success) {
         setSelectedDoc(data.data);
@@ -93,7 +94,7 @@ export default function DesignerDocumentsPage() {
   const transitionStatus = async (newStatus: string) => {
     if (!selectedDoc) return;
     try {
-      const res = await fetch(`/api/documents/${selectedDoc.id}/transition`, {
+      const res = await apiFetch(`/api/documents/${selectedDoc.id}/transition`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ new_status: newStatus }),
@@ -123,7 +124,7 @@ export default function DesignerDocumentsPage() {
       formData.append("bucket", "patent_documents");
       formData.append("path", path);
 
-      const uploadRes = await fetch("/api/upload", {
+      const uploadRes = await apiFetch("/api/upload", {
         method: "POST",
         body: formData,
       });
@@ -137,7 +138,7 @@ export default function DesignerDocumentsPage() {
         mime_type: file.type,
       };
 
-      const res = await fetch(`/api/documents/${selectedDoc.id}/versions`, {
+      const res = await apiFetch(`/api/documents/${selectedDoc.id}/versions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(versionData),
@@ -158,7 +159,7 @@ export default function DesignerDocumentsPage() {
 
   const handleDownloadVersion = async (version: any) => {
     try {
-      const res = await fetch(`/api/documents/${selectedDoc.id}/download`, {
+      const res = await apiFetch(`/api/documents/${selectedDoc.id}/download`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ version_id: version.id }),
@@ -192,7 +193,7 @@ export default function DesignerDocumentsPage() {
   const handleAddComment = async (text: string) => {
     if (!selectedDoc) return;
     try {
-      await fetch(`/api/documents/${selectedDoc.id}/comments`, {
+      await apiFetch(`/api/documents/${selectedDoc.id}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ comment_text: text }),

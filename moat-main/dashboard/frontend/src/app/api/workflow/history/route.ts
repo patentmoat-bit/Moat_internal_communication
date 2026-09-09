@@ -22,14 +22,27 @@ export async function GET(req: NextRequest) {
 
     const supabase = createAdminClient();
 
-    // Fetch workflow history entries
-    const { data: history, error } = await supabase
-      .from("workflow_history")
+    // Fetch workflow history entries from activity_logs
+    const { data: logs, error } = await supabase
+      .from("activity_logs")
       .select("*")
-      .eq("resource_id", projectId)
+      .eq("entity_id", projectId)
+      .eq("entity_type", "project")
       .order("created_at", { ascending: true });
 
     if (error) throw error;
+
+    const history = logs
+      ?.filter((log) => log.metadata?.new_status || log.action?.includes("STATUS"))
+      .map((log) => ({
+        id: log.id,
+        resource_id: log.entity_id,
+        old_status: log.metadata?.old_status || null,
+        new_status: log.metadata?.new_status || log.message?.split("to ")?.[1] || "Unknown",
+        changed_by: log.actor_id,
+        created_at: log.created_at,
+        metadata: log.metadata,
+      }));
 
     // Enrich with user names
     const enrichedHistory = [];

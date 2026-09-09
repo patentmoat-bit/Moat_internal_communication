@@ -35,6 +35,8 @@ export async function GET() {
     const { data, error } = await supabase
       .from("inventions")
       .select("id, title, description, status, tags, metadata, created_at, updated_at, user_id, assigned_to, patent_number, due_date, technical_field")
+      .neq("status", "sticky_note")
+      .neq("status", "user_priority")
       .order("updated_at", { ascending: false });
 
     if (error) throw error;

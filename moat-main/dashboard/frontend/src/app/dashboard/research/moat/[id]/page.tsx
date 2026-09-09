@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, use } from "react";
 import Link from "next/link";
+import { apiFetch } from "@/lib/apiFetch";
 import {
   ArrowLeft, CheckCircle2, Circle, Clock, FileText, Activity, Search,
   Cpu, Target, User, BarChart2, Calendar, FileDown, Layers, BrainCircuit
@@ -45,7 +46,7 @@ export default function ProjectWorkspacePage({ params }: { params: Promise<{ id:
 
   const fetchProject = useCallback(async () => {
     try {
-      const res = await fetch(`/api/moat/${id}`);
+      const res = await apiFetch(`/api/moat/${id}`);
       if (res.ok) {
         const data = await res.json();
         setProject(data);
@@ -64,7 +65,7 @@ export default function ProjectWorkspacePage({ params }: { params: Promise<{ id:
   const triggerEvent = async (eventType: string, message: string) => {
     setPublishing(true);
     try {
-      await fetch('/api/workflow/events', {
+      await apiFetch('/api/workflow/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

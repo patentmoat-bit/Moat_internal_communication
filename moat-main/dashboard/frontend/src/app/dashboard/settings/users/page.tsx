@@ -36,6 +36,7 @@ export default function UserManagementPage() {
   const [department, setDepartment] = useState("");
   const [status, setStatus] = useState("Active");
   const [errorMsg, setErrorMsg] = useState("");
+  const [newPassword, setNewPassword] = useState("");
 
   const fetchUsers = async () => {
     try {
@@ -109,6 +110,7 @@ export default function UserManagementPage() {
     setRole(user.role);
     setDepartment(user.department);
     setStatus(user.status);
+    setNewPassword("");
     setErrorMsg("");
     setIsEditModalOpen(true);
   };
@@ -129,7 +131,7 @@ export default function UserManagementPage() {
       const res = await fetch(`/api/users/${editingUserId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, role, department, status }),
+        body: JSON.stringify({ name, email, role, department, status, ...(newPassword ? { newPassword } : {}) }),
       });
 
       const data = await res.json();
@@ -558,6 +560,17 @@ export default function UserManagementPage() {
                     <option value="Active">Active</option>
                     <option value="Inactive">Inactive</option>
                   </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">New Password <span className="normal-case font-normal text-muted-foreground/60">(optional — leave blank to keep current)</span></label>
+                  <input 
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password..."
+                    className="w-full bg-background border border-border rounded-xl px-4 py-2 text-sm text-foreground focus:outline-none focus:border-[#c9a84c]/50"
+                  />
                 </div>
 
                 <div className="pt-4 flex justify-end gap-3">

@@ -8,9 +8,11 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { DocumentTimeline } from "@/components/documents/DocumentTimeline";
 import { VersionHistoryTable } from "@/components/documents/VersionHistoryTable";
+import { FileManager } from "@/components/documents/FileManager";
 import { CommentThread } from "@/components/documents/CommentThread";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/apiFetch";
 
 export default function AnalystDocumentsPage() {
   const { user } = useAuthStore();
@@ -19,7 +21,6 @@ export default function AnalystDocumentsPage() {
   const [selectedDoc, setSelectedDoc] = useState<any | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [newTitle, setNewTitle] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
   const router = useRouter();
   const [isUploading, setIsUploading] = useState(false);
@@ -76,7 +77,7 @@ export default function AnalystDocumentsPage() {
 
   const fetchDocuments = async () => {
     try {
-      const res = await fetch("/api/documents");
+      const res = await apiFetch("/api/documents");
       if (handleApiError(res, "Failed to load documents")) return;
       const data = await res.json();
       if (data.success) {
@@ -92,7 +93,7 @@ export default function AnalystDocumentsPage() {
   const createDraft = async () => {
     if (!newTitle) return;
     try {
-      const res = await fetch("/api/documents", {
+      const res = await apiFetch("/api/documents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: newTitle }),
@@ -112,68 +113,96 @@ export default function AnalystDocumentsPage() {
     }
   };
 
-  const uploadVersion = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !e.target.files[0] || !selectedDoc) return;
-    const file = e.target.files[0];
+  const uploadVersions = async (files: File[], folder: string = "") => {
+    if (!files || files.length === 0 || !selectedDoc) return;
     setIsUploading(true);
-    
+
+    let uploadedCount = 0;
+
     try {
-      const ext = file.name.split(".").pop();
-      const path = `drafts/${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${ext}`;
-      
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("bucket", "patent_documents");
-      formData.append("path", path);
+      await Promise.all(files.map(async (file) => {
+        const ext = file.name.split(".").pop();
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("document_id", selectedDoc.id);
 
-      const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
-      const uploadData = await uploadRes.json();
-      
-      if (!uploadData.success) throw new Error(uploadData.error || "Upload failed");
-      
-      const versionPayload = {
-        file_name: file.name,
-        file_url: uploadData.url,
-        file_size: file.size,
-        mime_type: file.type,
-      };
+        const uploadRes = await apiFetch("/api/upload", { method: "POST", body: formData });
+        const uploadData = await uploadRes.json();
 
-      const res = await fetch(`/api/documents/${selectedDoc.id}/versions`, {
+        if (!uploadData.success) throw new Error(uploadData.error || "Upload failed");
+
+        const secureFileUrl = folder ? `${uploadData.url}?folder=${encodeURIComponent(folder)}` : uploadData.url;
+
+        const versionPayload = {
+          file_name: file.name,
+          file_url: secureFileUrl,
+          file_size: file.size,
+          mime_type: file.type,
+        };
+
+        const res = await apiFetch(`/api/documents/${selectedDoc.id}/versions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(versionPayload),
+        });
+
+        if (res.ok) {
+          const resData = await res.json();
+          if (resData.success) {
+            uploadedCount++;
+          }
+        }
+      }));
+
+      if (uploadedCount > 0) {
+        toast({ title: "Success", description: `${uploadedCount} file(s) uploaded successfully.` });
+        transitionStatus("Uploaded by Patent Analyst");
+        fetchDocDetails(selectedDoc.id);
+      } else {
+        toast({ title: "Validation Error", description: "Unable to save documents. Please try again.", variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Upload Failed", description: "Unable to upload documents to storage. Please verify file sizes and formats.", variant: "destructive" });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleFolderCreate = async (folderName: string, parentPath: string) => {
+    if (!selectedDoc) return;
+    const fullPath = parentPath ? `${parentPath}/${folderName}` : folderName;
+
+    // We create a zero-byte .folder marker file to persist the folder in the DB
+    // since the database schema lacks a native folders table or column.
+    const secureFileUrl = `folder://?folder=${encodeURIComponent(fullPath)}`;
+
+    const versionPayload = {
+      file_name: ".folder",
+      file_url: secureFileUrl,
+      file_size: 0,
+      mime_type: "application/x-folder",
+    };
+
+    try {
+      await apiFetch(`/api/documents/${selectedDoc.id}/versions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(versionPayload),
       });
-
-      if (handleApiError(res, "Failed to add version")) return;
-
-      const resData = await res.json();
-      if (resData.success) {
-        toast({ title: "Success", description: "Version uploaded successfully." });
-        transitionStatus("Uploaded by Patent Analyst");
-        fetchDocDetails(selectedDoc.id);
-      } else {
-         toast({ title: "Validation Error", description: "Unable to save this document version. Your previous version is safe. Please try again.", variant: "destructive" });
-      }
-    } catch (err: any) {
-      toast({ title: "Upload Failed", description: "Unable to upload document to storage. Please verify file size and format.", variant: "destructive" });
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      fetchDocDetails(selectedDoc.id);
+    } catch (err) {
+      console.error("Failed to create folder:", err);
     }
   };
 
   const fetchDocDetails = async (id: string | undefined) => {
     if (!id) return;
     try {
-      const res = await fetch(`/api/documents/${id}?_t=${Date.now()}`, { cache: "no-store" });
+      const res = await apiFetch(`/api/documents/${id}?_t=${Date.now()}`, { cache: "no-store" });
       if (handleApiError(res, "Failed to load details")) return;
-      
+
       const data = await res.json();
       if (data.success) {
-        if (data.data && data.data.document_versions && data.data.document_versions.length > 0) {
-          const sorted = [...data.data.document_versions].sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-          data.data.document_versions = [sorted[0]]; 
-        }
         setSelectedDoc(data.data);
       }
     } catch (e) {
@@ -184,7 +213,7 @@ export default function AnalystDocumentsPage() {
   const transitionStatus = async (newStatus: string) => {
     if (!selectedDoc) return;
     try {
-      const res = await fetch(`/api/documents/${selectedDoc.id}/transition`, {
+      const res = await apiFetch(`/api/documents/${selectedDoc.id}/transition`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ new_status: newStatus, current_status: selectedDoc.status }), // Concurrency check
@@ -204,7 +233,7 @@ export default function AnalystDocumentsPage() {
   const handleAddComment = async (text: string) => {
     if (!selectedDoc) return;
     try {
-      const res = await fetch(`/api/documents/${selectedDoc.id}/comments`, {
+      const res = await apiFetch(`/api/documents/${selectedDoc.id}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ comment_text: text }),
@@ -235,14 +264,14 @@ export default function AnalystDocumentsPage() {
 
   const handleDownloadVersion = async (version: any) => {
     try {
-      const res = await fetch(`/api/documents/${selectedDoc.id}/download`, {
+      const res = await apiFetch(`/api/documents/${selectedDoc.id}/download`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ version_id: version.id }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || "Failed to get download link");
-      
+
       const link = document.createElement("a");
       link.href = data.downloadUrl || version.file_url;
       link.setAttribute("download", version.file_name || "download");
@@ -256,14 +285,14 @@ export default function AnalystDocumentsPage() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto flex gap-6">
+    <div className="p-6 w-full flex gap-6">
       {/* Left Sidebar - List */}
-      <div className="w-1/3 flex flex-col gap-4">
+      <div className="w-1/4 flex flex-col gap-3">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-bold">Document Drafts</h2>
-          <Button size="sm" onClick={() => setIsCreating(true)}><Plus className="w-4 h-4" /></Button>
+          <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wider">Document Drafts</h2>
+          <Button size="icon" variant="outline" className="h-6 w-6" onClick={() => setIsCreating(true)}><Plus className="w-3 h-3" /></Button>
         </div>
-        
+
         {isCreating && (
           <div className="p-4 border rounded-lg bg-gray-50 flex flex-col gap-2">
             <Input placeholder="Document Title..." value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
@@ -274,27 +303,27 @@ export default function AnalystDocumentsPage() {
           </div>
         )}
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1.5">
           {isLoading ? (
-            <div className="p-4 text-center text-sm text-gray-500">Loading documents...</div>
+            <div className="p-3 text-center text-xs text-gray-500">Loading...</div>
           ) : documents.length === 0 ? (
-            <div className="p-8 text-center border border-dashed rounded-lg text-gray-400 bg-gray-50">
-              No document drafts found. Click + to start a new project.
+            <div className="p-4 text-center border border-dashed rounded-lg text-xs text-gray-400 bg-gray-50">
+              No drafts yet. Click + to start.
             </div>
           ) : (
             documents.map((doc) => (
-              <div 
-                key={doc.id} 
-                className={`p-4 border rounded-lg cursor-pointer transition-colors ${selectedDoc?.id === doc.id ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-400 bg-white'}`}
+              <div
+                key={doc.id}
+                className={`px-3 py-2.5 border rounded-lg cursor-pointer transition-colors ${selectedDoc?.id === doc.id ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-300 bg-white'}`}
                 onClick={() => {
                   fetchDocDetails(doc.id);
                   setActiveTab("overview");
                 }}
               >
-                <h3 className="font-semibold text-gray-900">{doc.title}</h3>
-                <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
-                  <span className="px-2 py-1 bg-gray-200 rounded-full">{doc.status}</span>
-                  <span>{new Date(doc.updated_at).toLocaleDateString()}</span>
+                <h3 className="font-semibold text-xs text-gray-900 truncate" title={doc.title}>{doc.title}</h3>
+                <div className="flex items-center gap-1.5 mt-1 text-[10px] text-gray-400">
+                  <span className="px-1.5 py-0.5 bg-gray-100 rounded-full truncate max-w-[100px]">{doc.status}</span>
+                  <span className="shrink-0">{new Date(doc.updated_at).toLocaleDateString()}</span>
                 </div>
               </div>
             ))
@@ -303,7 +332,7 @@ export default function AnalystDocumentsPage() {
       </div>
 
       {/* Right Content - Detail */}
-      <div className="w-2/3 flex flex-col h-full">
+      <div className="w-3/4 flex flex-col h-full">
         {selectedDoc ? (
           <div className="flex flex-col gap-6 bg-white p-6 rounded-xl border shadow-sm flex-1">
             <div className="flex justify-between items-start">
@@ -318,7 +347,7 @@ export default function AnalystDocumentsPage() {
                 </h1>
                 <p className="text-gray-500 mt-1 text-sm">Project ID: {selectedDoc.id}</p>
               </div>
-              
+
               <div className="flex gap-2">
                 {(selectedDoc.status === "Draft Created" || selectedDoc.status === "Uploaded by Patent Analyst" || selectedDoc.status === "Draft") && (
                   <Button onClick={() => transitionStatus("Pending Design Review")} className="bg-purple-600 hover:bg-purple-700">
@@ -337,13 +366,13 @@ export default function AnalystDocumentsPage() {
             <DocumentTimeline currentStatus={selectedDoc.status} />
 
             <div className="flex gap-6 border-b mt-2">
-              <button 
+              <button
                 className={`pb-2 px-1 font-bold text-sm ${activeTab === 'overview' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
                 onClick={() => setActiveTab('overview')}
               >
                 Overview & Feedback
               </button>
-              <button 
+              <button
                 className={`pb-2 px-1 font-bold text-sm flex items-center gap-2 ${activeTab === 'uploads' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
                 onClick={() => setActiveTab('uploads')}
               >
@@ -374,84 +403,14 @@ export default function AnalystDocumentsPage() {
             )}
 
             {activeTab === "uploads" && (
-              <div className="flex gap-6 h-full min-h-[400px]">
-                {/* Folders Sidebar */}
-                <div className="w-1/4 border-r pr-4 flex flex-col gap-4">
-                  <div className="flex justify-between items-center">
-                    <h4 className="font-bold text-sm text-gray-700 uppercase tracking-wider">Folders</h4>
-                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setIsAddingFolder(true)}>
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  
-                  {isAddingFolder && (
-                    <div className="flex flex-col gap-2 mb-2">
-                      <Input 
-                        size={1} 
-                        className="h-8 text-xs" 
-                        placeholder="Folder name" 
-                        value={newFolderName}
-                        onChange={e => setNewFolderName(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && handleAddFolder()}
-                      />
-                      <div className="flex gap-1 justify-end">
-                        <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => setIsAddingFolder(false)}>Cancel</Button>
-                        <Button size="sm" className="h-6 text-xs px-2 bg-blue-600" onClick={handleAddFolder}>Add</Button>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex flex-col gap-1">
-                    {folders.map(folder => (
-                      <button 
-                        key={folder}
-                        onClick={() => setSelectedFolder(folder)}
-                        className={`text-left text-sm px-3 py-2 rounded-md transition-colors ${selectedFolder === folder ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-100'}`}
-                      >
-                        {folder}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Uploads Area */}
-                <div className="w-3/4 flex flex-col gap-6 pl-2">
-                  <div className="flex justify-between items-end">
-                    <div>
-                      <h3 className="font-bold text-lg">{selectedFolder}</h3>
-                      <p className="text-xs text-gray-500">Manage files in this directory.</p>
-                    </div>
-                    <div>
-                      <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        className="hidden" 
-                        onChange={uploadVersion} 
-                        accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.zip"
-                      />
-                      <Button 
-                        onClick={() => fileInputRef.current?.click()} 
-                        disabled={isUploading || ["CEO Approval Pending", "CEO Approved", "Sent for CEO Approval", "Approved"].includes(selectedDoc.status)}
-                        className="bg-blue-600 hover:bg-blue-700"
-                        size="sm"
-                      >
-                        <Upload className="w-4 h-4 mr-2" />
-                        {isUploading ? "Uploading..." : "Upload Document"}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div>
-                    {(!selectedDoc.document_versions || selectedDoc.document_versions.length === 0) ? (
-                      <div className="p-8 text-center text-gray-400 border border-dashed rounded-lg bg-gray-50">
-                        No versions uploaded yet. Upload a file to see history.
-                      </div>
-                    ) : (
-                      <VersionHistoryTable versions={selectedDoc.document_versions} onDownload={handleDownloadVersion} />
-                    )}
-                  </div>
-                </div>
-              </div>
+              <FileManager
+                versions={selectedDoc.document_versions || []}
+                isUploading={isUploading}
+                isLocked={["CEO Approval Pending", "CEO Approved", "Sent for CEO Approval", "Approved"].includes(selectedDoc.status)}
+                onUpload={uploadVersions}
+                onDownload={handleDownloadVersion}
+                onFolderCreate={handleFolderCreate}
+              />
             )}
           </div>
         ) : (

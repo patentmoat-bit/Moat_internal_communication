@@ -12,7 +12,7 @@ export class MFAEnrollmentService {
     // Generate a unique secret
     const newSecret = twofactor.generateSecret({ name: "MOAT", account: email });
     const plaintextSecret = newSecret.secret;
-    const uri = newSecret.uri;
+    const uri = `otpauth://totp/MOAT:${encodeURIComponent(email)}?secret=${plaintextSecret}&issuer=MOAT`;
 
     // Encrypt and persist the secret, but do NOT set mfa_enabled to true yet
     const encryptedSecret = EncryptionService.encrypt(plaintextSecret);

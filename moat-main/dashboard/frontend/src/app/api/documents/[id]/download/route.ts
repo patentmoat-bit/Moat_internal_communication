@@ -61,9 +61,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const { createAdminClient } = require("@/lib/supabase/admin");
       const supabaseAdmin = createAdminClient();
       
+      let bucket = "patent_documents";
+      if (storagePath.startsWith("projects/")) {
+        bucket = "moat_secure_documents";
+      }
+      
       const { data: signedData, error: signError } = await supabaseAdmin.storage
-        .from("patent_documents")
-        .createSignedUrl(storagePath, 300); // 5 minutes temporary access
+        .from(bucket)
+        .createSignedUrl(storagePath, 300, { download: version.file_name || true }); // 5 minutes temporary access
 
       if (signError) {
         console.warn("Could not generate signed URL:", signError.message);
@@ -83,8 +88,48 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       console.warn("Could not log download to Supabase:", logError.message);
     }
 
+    if (downloadUrl === version.file_url && !downloadUrl.startsWith("http")) {
+      downloadUrl = `/api/documents/${resolvedParams.id}/download?path=${encodeURIComponent(storagePath)}`;
+    }
+
     return NextResponse.json({ success: true, downloadUrl, message: "Temporary signed URL generated." });
   } catch (err: any) {
     return await GlobalExceptionHandler.handle(err);
+  }
+}
+
+import { SecureFileStorageService } from "@/lib/security/fileupload/SecureFileStorageService";
+
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const user = await getAuthUser(req);
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const { searchParams } = new URL(req.url);
+    const storagePath = searchParams.get("path");
+
+    if (!storagePath) {
+      return NextResponse.json({ error: "Missing required path." }, { status: 400 });
+    }
+
+    const fileBuffer = await SecureFileStorageService.retrieveFile(storagePath);
+    if (!fileBuffer) {
+      return NextResponse.json({ error: "File not found." }, { status: 404 });
+    }
+    
+    // Guess extension
+    const ext = storagePath.split('.').pop() || "bin";
+
+    return new NextResponse(new Uint8Array(fileBuffer), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/octet-stream",
+        "Content-Disposition": `attachment; filename="download.${ext}"`,
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"
+      }
+    });
+  } catch (err: any) {
+    console.error("[Fallback Download GET] Error:", err);
+    return NextResponse.json({ error: "Server error streaming file." }, { status: 500 });
   }
 }

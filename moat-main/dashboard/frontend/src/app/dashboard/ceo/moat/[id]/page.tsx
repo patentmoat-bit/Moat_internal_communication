@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, use } from "react";
 import Link from "next/link";
+import { apiFetch } from "@/lib/apiFetch";
 import {
   ArrowLeft, CheckCircle2, Activity, Search, Target, User, BarChart2, Calendar, FileDown, Layers, FileText, Check, X, Clock,
   Upload, Download, Share2
@@ -51,7 +52,7 @@ export default function CeoProjectWorkspacePage({ params }: { params: Promise<{ 
 
   const fetchProject = useCallback(async () => {
     try {
-      const res = await fetch(`/api/moat/${id}`);
+      const res = await apiFetch(`/api/moat/${id}`);
       if (res.ok) {
         const data = await res.json();
         setProject(data);
@@ -70,7 +71,7 @@ export default function CeoProjectWorkspacePage({ params }: { params: Promise<{ 
   const triggerEvent = async (eventType: string, message: string) => {
     setPublishing(true);
     try {
-      await fetch('/api/workflow/events', {
+      await apiFetch('/api/workflow/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -313,7 +314,7 @@ function ProjectSearchesPanel({ projectId }: { projectId: string }) {
 
   const fetchQueries = useCallback(async () => {
     try {
-      const res = await fetch(`/api/research-projects/${projectId}/searches`);
+      const res = await apiFetch(`/api/research-projects/${projectId}/searches`);
       if (res.ok) {
         const json = await res.json();
         setQueries(json.data || []);
@@ -331,7 +332,7 @@ function ProjectSearchesPanel({ projectId }: { projectId: string }) {
 
   const removeQuery = async (searchId: string) => {
     try {
-      await fetch(`/api/research-projects/${projectId}/searches/${searchId}`, { method: 'DELETE' });
+      await apiFetch(`/api/research-projects/${projectId}/searches/${searchId}`, { method: 'DELETE' });
       fetchQueries();
     } catch (e) {
       console.error(e);
@@ -340,7 +341,7 @@ function ProjectSearchesPanel({ projectId }: { projectId: string }) {
 
   const executeQuery = async (searchId: string) => {
     try {
-      await fetch(`/api/research-projects/${projectId}/searches/${searchId}/execute`, {
+      await apiFetch(`/api/research-projects/${projectId}/searches/${searchId}/execute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ results: [{ id: "MOCK-1", relevance_score: 95 }] }) // Mock for demo

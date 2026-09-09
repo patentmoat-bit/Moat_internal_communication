@@ -4,6 +4,7 @@ import { verifyToken } from "@/lib/jwt";
 import { cookies } from "next/headers";
 import { appRoleToEnterpriseRole } from "@/lib/roleIntelligence";
 import { AuditLogService } from "@/lib/security/auditLogService";
+import { validatePasswordPolicy } from "@/lib/security/passwordPolicy";
 
 // Authentication Helper
 async function getAuthUser() {
@@ -30,10 +31,18 @@ export async function PUT(
 
     const resolvedParams = await params;
     const { id } = resolvedParams;
-    const { name, email, role, department, status } = await request.json();
+    const { name, email, role, department, status, newPassword } = await request.json();
 
     if (!name || !email || !role) {
       return NextResponse.json({ detail: "Name, email, and role are required." }, { status: 400 });
+    }
+
+    // Validate new password if provided
+    if (newPassword) {
+      const policyCheck = validatePasswordPolicy(newPassword);
+      if (!policyCheck.valid) {
+        return NextResponse.json({ detail: policyCheck.errors.join(" ") }, { status: 400 });
+      }
     }
 
     const supabase = createAdminClient();
@@ -49,16 +58,29 @@ export async function PUT(
       return NextResponse.json({ detail: `Role '${role}' not found in database.` }, { status: 400 });
     }
 
-    // Update User
+    // Update password in Supabase Auth if provided
+    if (newPassword) {
+      const { error: authUpdateError } = await supabase.auth.admin.updateUserById(id, {
+        password: newPassword,
+      });
+      if (authUpdateError) {
+        console.error("Error updating password:", authUpdateError);
+        return NextResponse.json({ detail: `Failed to update password: ${authUpdateError.message}` }, { status: 500 });
+      }
+    }
+
+    // Update User profile
     const { error: updateError } = await supabase
       .from("users")
       .update({
         name,
         email,
+        role,
         role_id: roleData.id,
         department: department || "General",
         status: status || "Active",
-        is_active: status === "Active"
+        is_active: status === "Active",
+        updated_at: new Date().toISOString()
       })
       .eq("id", id);
 

@@ -1,0 +1,158 @@
+# Defaults describe the pilot topology in MOAT_SYSTEM_DESIGN.md §9 and §10.
+# Replica floors and ceilings here are bounded experiment settings, NOT
+# measured capacity -- they are starting points for load testing on declared
+# hardware, and phase 2 exists to replace them with measured numbers.
+
+global:
+  # Every service runs the same digest, promoted from staging. Never a tag:
+  # a moving tag means two replicas can silently run different code.
+  imageRegistry: registry.local/moat
+  imagePullPolicy: IfNotPresent
+  environment: production
+
+image:
+  api:
+    repository: moat-api
+    digest: ""          # sha256:... set by CI at promotion time
+    tag: "0.1.0"        # fallback for local testing only
+  web:
+    repository: moat-web
+    digest: ""
+    tag: "0.1.0"
+
+api:
+  replicas:
+    min: 2
+    max: 12
+  resources:
+    requests: { cpu: 250m, memory: 512Mi }
+    limits:   { memory: 1Gi }          # no CPU limit: throttling a latency
+                                       # sensitive service makes p99 worse
+  autoscaling:
+    targetCPUUtilizationPercentage: 70
+
+web:
+  replicas:
+    min: 2
+    max: 8
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits:   { memory: 512Mi }
+  autoscaling:
+    targetCPUUtilizationPercentage: 70
+
+dispatcher:
+  # Exactly one logical dispatcher is not required -- leases make concurrent
+  # dispatchers safe -- but two is enough for availability and keeps the
+  # claim contention low.
+  replicas: 2
+  resources:
+    requests: { cpu: 50m, memory: 192Mi }
+    limits:   { memory: 384Mi }
+
+# One deployment per task queue. Separate scaling is the whole point: a
+# 500-page OCR backlog must not delay an interactive prior-art search.
+workers:
+  - name: ai-interactive
+    queue: moat-ai-interactive
+    jobKind: analysis
+    concurrency: 2
+    minReplicas: 1        # floor of 1, not 0: scale-to-zero needs a proven
+    maxReplicas: 8        # external demand signal first (design doc §9)
+    targetBacklog: 3
+    resources:
+      requests: { cpu: 500m, memory: 1Gi }
+      limits:   { memory: 2Gi }
+  - name: ocr
+    queue: moat-ocr
+    jobKind: extraction
+    concurrency: 2
+    minReplicas: 1
+    maxReplicas: 12
+    targetBacklog: 4
+    resources:
+      requests: { cpu: 1, memory: 2Gi }
+      limits:   { memory: 4Gi }
+    nodeSelector:
+      moat.io/pool: cpu-heavy
+  - name: index
+    queue: moat-index
+    jobKind: indexing
+    concurrency: 2
+    minReplicas: 1
+    maxReplicas: 8
+    targetBacklog: 10
+    resources:
+      requests: { cpu: 500m, memory: 1Gi }
+      limits:   { memory: 2Gi }
+  - name: export
+    queue: moat-export
+    jobKind: export
+    concurrency: 1
+    minReplicas: 1
+    maxReplicas: 4
+    targetBacklog: 5
+    resources:
+      requests: { cpu: 250m, memory: 512Mi }
+      limits:   { memory: 1Gi }
+
+gateway:
+  enabled: true
+  className: envoy
+  hostname: moat.example.com
+  # Applied at the edge so an abusive client is rejected before it reaches a
+  # pod. Tenant-level limits are enforced separately, in the application.
+  rateLimit:
+    requestsPerSecond: 100
+    burst: 200
+  maxRequestBodyBytes: 110100480   # 105 MiB: the 100 MiB upload cap plus
+                                   # multipart overhead
+  timeouts:
+    request: 30s
+    # SSE streams are long-lived by design and must not be cut at the
+    # ordinary request timeout.
+    stream: 960s
+
+postgres:
+  # CloudNativePG. Three instances across three zones; see §10.
+  instances: 3
+  storage:
+    size: 100Gi
+    storageClass: fast-ssd
+  # One synchronous standby: a committed write survives losing the primary.
+  # Raising this past the number of healthy standbys pauses writes -- that is
+  # the durability/availability trade being made explicitly.
+  synchronousReplicas: 1
+  backup:
+    enabled: true
+    destinationPath: s3://moat-backups/postgres
+    retentionPolicy: "30d"
+    # WAL archiving is what makes the 15-minute RPO target achievable.
+    walArchive: true
+
+opensearch:
+  replicas: 3
+  heapSize: 4g
+  storage:
+    size: 200Gi
+
+valkey:
+  replicas: 3
+
+observability:
+  serviceMonitor: true
+  scrapeInterval: 15s
+
+networkPolicy:
+  enabled: true
+
+podDisruptionBudget:
+  enabled: true
+
+secrets:
+  # Names of ExternalSecret-managed Kubernetes secrets. Values never appear in
+  # this chart or in source control.
+  database: moat-database
+  objectStore: moat-object-store
+  identity: moat-identity
+  session: moat-session

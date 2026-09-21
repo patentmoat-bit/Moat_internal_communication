@@ -1,0 +1,125 @@
+{{- if .Values.gateway.enabled }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    {{- include "moat.labels" . | nindent 4 }}
+spec:
+  gatewayClassName: {{ .Values.gateway.className }}
+  listeners:
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: {{ .Values.gateway.hostname | quote }}
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - { kind: Secret, name: {{ .Release.Name }}-tls }
+      allowedRoutes:
+        namespaces: { from: Same }
+    - name: http
+      protocol: HTTP
+      port: 80
+      hostname: {{ .Values.gateway.hostname | quote }}
+      allowedRoutes:
+        namespaces: { from: Same }
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ .Release.Name }}-redirect
+spec:
+  parentRefs:
+    - { name: {{ .Release.Name }}, sectionName: http }
+  rules:
+    # Plain HTTP never reaches the application. Session cookies are Secure, so
+    # an http request could not authenticate anyway -- it would just fail
+    # confusingly instead of redirecting.
+    - filters:
+        - type: RequestRedirect
+          requestRedirect: { scheme: https, statusCode: 301 }
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  parentRefs:
+    - { name: {{ .Release.Name }}, sectionName: https }
+  hostnames: [{{ .Values.gateway.hostname | quote }}]
+  rules:
+    # SSE first: these connections are long-lived by design and must not be
+    # cut at the ordinary request timeout.
+    - matches:
+        - path: { type: PathPrefix, value: /api/v1/events }
+      timeouts:
+        request: {{ .Values.gateway.timeouts.stream }}
+        backendRequest: {{ .Values.gateway.timeouts.stream }}
+      backendRefs:
+        - { name: {{ .Release.Name }}-api, port: 8000 }
+
+    # Operational endpoints are never exposed publicly: /api/metrics would
+    # disclose tenant activity volumes to anyone who asked.
+    - matches:
+        - path: { type: PathPrefix, value: /api/metrics }
+        - path: { type: PathPrefix, value: /api/docs }
+      filters:
+        - type: RequestRedirect
+          requestRedirect: { statusCode: 404 }
+
+    - matches:
+        - path: { type: PathPrefix, value: /api }
+      timeouts:
+        request: {{ .Values.gateway.timeouts.request }}
+      backendRefs:
+        - { name: {{ .Release.Name }}-api, port: 8000 }
+
+    - matches:
+        - path: { type: PathPrefix, value: / }
+      backendRefs:
+        - { name: {{ .Release.Name }}-web, port: 3000 }
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: {{ .Release.Name }}-limits
+spec:
+  targetRefs:
+    - { group: gateway.networking.k8s.io, kind: HTTPRoute, name: {{ .Release.Name }} }
+  rateLimit:
+    type: Global
+    global:
+      rules:
+        # Per-client edge protection. Tenant-level fairness is enforced in the
+        # application, where tenancy is actually known -- an IP is not a tenant.
+        - clientSelectors:
+            - sourceCIDR: { value: 0.0.0.0/0, type: Distinct }
+          limit:
+            requests: {{ .Values.gateway.rateLimit.requestsPerSecond }}
+            unit: Second
+  # Retries are enabled only for idempotent methods and only at this boundary.
+  # Two retry owners on one path multiply load exactly when the system is least
+  # able to absorb it.
+  retry:
+    numRetries: 1
+    retryOn:
+      httpStatusCodes: [503]
+      triggers: ["connect-failure", "reset"]
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: ClientTrafficPolicy
+metadata:
+  name: {{ .Release.Name }}-client
+spec:
+  targetRefs:
+    - { group: gateway.networking.k8s.io, kind: Gateway, name: {{ .Release.Name }} }
+  connection:
+    # Bounds how much a single client can hold open, and how large a body it
+    # can send. The upload cap plus multipart overhead is the ceiling.
+    bufferLimit: {{ .Values.gateway.maxRequestBodyBytes }}
+  timeout:
+    http:
+      requestReceivedTimeout: 30s
+      idleTimeout: 300s
+{{- end }}

@@ -1,0 +1,149 @@
+@import "tailwindcss";
+@import "@moat/ui/tokens.css";
+
+/* The design system lives outside this app, so tell Tailwind to scan it. */
+@source "../../../../packages/ui/src";
+
+/* --------------------------------------------------------------------------
+   Map MOAT tokens onto Tailwind utilities.
+   `inline` keeps the utility pointing at the CSS variable, so switching
+   theme at runtime re-colours everything without regenerating classes.
+   -------------------------------------------------------------------------- */
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-sunken: var(--surface-sunken);
+  --color-raised: var(--surface-raised);
+  --color-hover: var(--surface-hover);
+
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+
+  --color-ink: var(--ink);
+  --color-muted: var(--ink-muted);
+  --color-faint: var(--ink-faint);
+  --color-on-accent: var(--ink-on-accent);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-active: var(--accent-active);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-line: var(--accent-line);
+  --color-accent-text: var(--accent-text);
+
+  --color-positive: var(--positive);
+  --color-positive-soft: var(--positive-soft);
+  --color-caution: var(--caution);
+  --color-caution-soft: var(--caution-soft);
+  --color-critical: var(--critical);
+  --color-critical-soft: var(--critical-soft);
+
+  --font-sans: var(--font-ui, ui-sans-serif), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: var(--font-document, ui-serif), ui-serif, Georgia, "Times New Roman", serif;
+  --font-mono: var(--font-numeric, ui-monospace), ui-monospace, "SF Mono", Menlo, monospace;
+
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+
+  --ease-moat: var(--ease);
+}
+
+/* --------------------------------------------------------------------------
+   Base
+   -------------------------------------------------------------------------- */
+@layer base {
+  * {
+    border-color: var(--line);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-ui, ui-sans-serif), ui-sans-serif, system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv05" 1, "cv11" 1;
+  }
+
+  /* Document voice. Headings and legal prose are serif; UI chrome is not. */
+  .font-document {
+    font-family: var(--font-document, ui-serif), ui-serif, Georgia, serif;
+    font-feature-settings: "onum" 1;
+  }
+
+  /* Tabular numerals everywhere a number sits in a column or updates live,
+     so digits stop jittering. */
+  .numeric {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  ::selection {
+    background-color: var(--accent-soft);
+    color: var(--accent-text);
+  }
+
+  /* One focus treatment for the entire app. */
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    border-radius: var(--radius-xs);
+  }
+
+  /* Quiet scrollbars -- chrome should not compete with content. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-strong) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--line-strong);
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: var(--radius-full);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--ink-faint);
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  /* Reading column for document surfaces (IDF body, specification, claims). */
+  .measure {
+    max-width: var(--measure);
+  }
+
+  /* Hairline that survives both themes at any zoom. */
+  .rule {
+    border-top: 1px solid var(--line);
+  }
+}

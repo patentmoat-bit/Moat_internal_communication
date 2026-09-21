@@ -1,8 +1,0 @@
-{
-  "provider": "Microsoft Graph (Office 365)",
-  "tenantId": "REPLACE_WITH_AZURE_TENANT_ID",
-  "clientId": "REPLACE_WITH_AZURE_CLIENT_ID",
-  "clientSecret": "********_SECURED_IN_ENV_********",
-  "fromName": "MOAT Alerts",
-  "fromEmail": "info@rezilyens.com"
-}

@@ -1,0 +1,141 @@
+{{- range .Values.workers }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $.Release.Name }}-worker-{{ .name }}
+  labels:
+    {{- include "moat.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: worker
+    moat.io/queue: {{ .queue }}
+spec:
+  replicas: {{ .minReplicas }}
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ $.Release.Name }}
+      moat.io/queue: {{ .queue }}
+  template:
+    metadata:
+      labels:
+        {{- include "moat.labels" $ | nindent 8 }}
+        app.kubernetes.io/component: worker
+        moat.io/queue: {{ .queue }}
+    spec:
+      {{- with .nodeSelector }}
+      # CPU-bound queues get their own node pool so a long OCR run cannot
+      # steal CPU from latency-sensitive work.
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      # Long enough for the longest bounded activity to finish. A worker
+      # killed mid-activity is safe -- the work retries -- but finishing is
+      # cheaper than redoing.
+      terminationGracePeriodSeconds: 120
+      containers:
+        - name: worker
+          image: {{ include "moat.image" (dict "root" $ "component" "api") }}
+          imagePullPolicy: {{ $.Values.global.imagePullPolicy }}
+          securityContext:
+            {{- include "moat.securityContext" $ | nindent 12 }}
+          command: ["python", "-m", "moat_api.workers.main"]
+          args: ["--queue", {{ .queue | quote }}, "--concurrency", {{ .concurrency | quote }}]
+          env:
+            {{- include "moat.env" $ | nindent 12 }}
+          resources:
+            {{- toYaml .resources | nindent 12 }}
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        # Extraction writes scratch files; bounded so a malicious document
+        # cannot fill the node's disk.
+        - name: tmp
+          emptyDir: { sizeLimit: 2Gi }
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ $.Release.Name }}-worker-{{ .name }}
+spec:
+  scaleTargetRef:
+    name: {{ $.Release.Name }}-worker-{{ .name }}
+  # Floor of 1, never 0. Scale-to-zero requires a demand signal that is
+  # provably delivered while no replica exists; this one is published by the
+  # API from its own tables, so it keeps working -- but that is worth proving
+  # under load before relying on it (design doc §9).
+  minReplicaCount: {{ .minReplicas }}
+  maxReplicaCount: {{ .maxReplicas }}
+  pollingInterval: 15
+  cooldownPeriod: 300
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 300
+          policies:
+            - { type: Pods, value: 1, periodSeconds: 60 }
+  triggers:
+    # Scales on the application's own pending-job gauge. A generic broker-depth
+    # metric would not distinguish this queue's backlog from any other's, and
+    # Temporal exposes no equivalent per-queue depth.
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus-operated.observability:9090
+        metricName: moat_jobs_pending
+        query: sum(moat_jobs_pending{kind="{{ .jobKind }}"})
+        threshold: {{ .targetBacklog | quote }}
+    # Backlog AGE as well as depth: a small queue that is not draining is a
+    # problem a depth threshold alone never notices.
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus-operated.observability:9090
+        metricName: moat_jobs_oldest_pending_seconds
+        query: max(moat_jobs_oldest_pending_seconds{kind="{{ .jobKind }}"})
+        threshold: "120"
+{{- if $.Values.podDisruptionBudget.enabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ $.Release.Name }}-worker-{{ .name }}
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ $.Release.Name }}
+      moat.io/queue: {{ .queue }}
+{{- end }}
+---
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-dispatcher
+  labels:
+    {{- include "moat.labels" . | nindent 4 }}
+    app.kubernetes.io/component: dispatcher
+spec:
+  replicas: {{ .Values.dispatcher.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: dispatcher
+  template:
+    metadata:
+      labels:
+        {{- include "moat.labels" . | nindent 8 }}
+        app.kubernetes.io/component: dispatcher
+    spec:
+      topologySpreadConstraints:
+        {{- include "moat.topologySpread" (dict "component" "dispatcher") | nindent 8 }}
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: dispatcher
+          image: {{ include "moat.image" (dict "root" . "component" "api") }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          securityContext:
+            {{- include "moat.securityContext" . | nindent 12 }}
+          command: ["python", "-m", "moat_api.workers.dispatcher"]
+          env:
+            {{- include "moat.env" . | nindent 12 }}
+          resources:
+            {{- toYaml .Values.dispatcher.resources | nindent 12 }}

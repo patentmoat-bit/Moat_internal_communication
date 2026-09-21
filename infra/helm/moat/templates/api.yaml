@@ -1,0 +1,160 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-api
+  labels:
+    {{- include "moat.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  replicas: {{ .Values.api.replicas.min }}
+  revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      # Never drop below the current replica count during a rollout: capacity
+      # must not dip while a deploy is in progress.
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: api
+  template:
+    metadata:
+      labels:
+        {{- include "moat.labels" . | nindent 8 }}
+        app.kubernetes.io/component: api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: /api/metrics
+    spec:
+      securityContext:
+        fsGroup: 10001
+      topologySpreadConstraints:
+        {{- include "moat.topologySpread" (dict "component" "api") | nindent 8 }}
+      # Long enough for in-flight requests and open SSE streams to finish; the
+      # preStop sleep gives the load balancer time to stop sending new ones
+      # before the process starts refusing them.
+      terminationGracePeriodSeconds: 45
+      containers:
+        - name: api
+          image: {{ include "moat.image" (dict "root" . "component" "api") }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          securityContext:
+            {{- include "moat.securityContext" . | nindent 12 }}
+          ports:
+            - { name: http, containerPort: 8000 }
+          env:
+            {{- include "moat.env" . | nindent 12 }}
+          resources:
+            {{- toYaml .Values.api.resources | nindent 12 }}
+          # Liveness checks only that the process is alive. If it depended on
+          # PostgreSQL, a database blip would restart every pod at once and
+          # turn a brief outage into a long one.
+          livenessProbe:
+            httpGet: { path: /api/health, port: http }
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          # Readiness decides whether this replica gets traffic, and knows the
+          # difference between essential and degraded dependencies.
+          readinessProbe:
+            httpGet: { path: /api/ready, port: http }
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          startupProbe:
+            httpGet: { path: /api/health, port: http }
+            periodSeconds: 3
+            failureThreshold: 30
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "8"]
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        # The root filesystem is read-only, so anything needing scratch space
+        # gets an explicit, size-bounded emptyDir.
+        - name: tmp
+          emptyDir: { sizeLimit: 512Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-api
+  labels:
+    {{- include "moat.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  type: ClusterIP
+  ports:
+    - { name: http, port: 8000, targetPort: http }
+  selector:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: api
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ .Release.Name }}-api
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ .Release.Name }}-api
+  minReplicas: {{ .Values.api.replicas.min }}
+  maxReplicas: {{ .Values.api.replicas.max }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.api.autoscaling.targetCPUUtilizationPercentage }}
+  behavior:
+    scaleUp:
+      # React quickly to load, but not to a single noisy scrape.
+      stabilizationWindowSeconds: 30
+      policies:
+        - { type: Percent, value: 100, periodSeconds: 30 }
+    scaleDown:
+      # Slow down: shedding replicas during a lull only to need them again a
+      # minute later costs more than the capacity saved.
+      stabilizationWindowSeconds: 300
+      policies:
+        - { type: Percent, value: 25, periodSeconds: 60 }
+{{- if .Values.podDisruptionBudget.enabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ .Release.Name }}-api
+spec:
+  # Keeps voluntary disruption (node drains, cluster upgrades) from taking the
+  # service below its floor.
+  minAvailable: {{ .Values.api.replicas.min }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: api
+{{- end }}
+{{- if .Values.observability.serviceMonitor }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ .Release.Name }}-api
+  labels:
+    {{- include "moat.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: api
+  endpoints:
+    - port: http
+      path: /api/metrics
+      interval: {{ .Values.observability.scrapeInterval }}
+{{- end }}

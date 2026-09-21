@@ -1,0 +1,137 @@
+{{- if .Values.networkPolicy.enabled }}
+# Default deny. Every allowed path below is stated explicitly, so a new
+# component cannot reach the database or the internet by accident.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-default-deny
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-api
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: api
+  policyTypes: [Ingress, Egress]
+  ingress:
+    # Only the gateway and the web tier may call the API. Nothing else in the
+    # cluster can reach it directly.
+    - from:
+        - podSelector:
+            matchLabels: { app.kubernetes.io/component: web }
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: envoy-gateway-system }
+      ports:
+        - { protocol: TCP, port: 8000 }
+    # Prometheus scrapes /api/metrics over the cluster network only.
+    - from:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: observability }
+      ports:
+        - { protocol: TCP, port: 8000 }
+  egress:
+    - to:
+        - podSelector:
+            matchLabels: { app.kubernetes.io/component: pgbouncer }
+      ports: [{ protocol: TCP, port: 6432 }]
+    - to:
+        - podSelector:
+            matchLabels: { app.kubernetes.io/name: opensearch }
+      ports: [{ protocol: TCP, port: 9200 }]
+    - to:
+        - podSelector:
+            matchLabels: { app.kubernetes.io/name: seaweedfs }
+      ports: [{ protocol: TCP, port: 8333 }]
+    - to:
+        - podSelector:
+            matchLabels: { app.kubernetes.io/name: temporal }
+      ports: [{ protocol: TCP, port: 7233 }]
+    - to:
+        - podSelector:
+            matchLabels: { app.kubernetes.io/name: valkey }
+      ports: [{ protocol: TCP, port: 6379 }]
+    # DNS, or none of the above resolves.
+    - to:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: kube-system }
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+    # Identity provider, for OIDC discovery and token exchange.
+    - to:
+        - podSelector:
+            matchLabels: { app.kubernetes.io/name: keycloak }
+      ports: [{ protocol: TCP, port: 8080 }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-workers
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: worker
+  policyTypes: [Ingress, Egress]
+  # No ingress at all: workers poll outward for tasks and are never called.
+  ingress: []
+  egress:
+    - to:
+        - podSelector:
+            matchLabels: { app.kubernetes.io/component: pgbouncer }
+      ports: [{ protocol: TCP, port: 6432 }]
+    - to:
+        - podSelector:
+            matchLabels: { app.kubernetes.io/name: temporal }
+      ports: [{ protocol: TCP, port: 7233 }]
+    - to:
+        - podSelector:
+            matchLabels: { app.kubernetes.io/name: seaweedfs }
+      ports: [{ protocol: TCP, port: 8333 }]
+    - to:
+        - podSelector:
+            matchLabels: { app.kubernetes.io/name: opensearch }
+      ports: [{ protocol: TCP, port: 9200 }]
+    - to:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: kube-system }
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+# Note the absence of a general internet egress rule for workers. Document
+# parsers must not fetch remote resources: a PDF that can make outbound
+# requests is an exfiltration channel for unfiled disclosures (design doc §8).
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-web
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: web
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: envoy-gateway-system }
+      ports: [{ protocol: TCP, port: 3000 }]
+  egress:
+    - to:
+        - podSelector:
+            matchLabels: { app.kubernetes.io/component: api }
+      ports: [{ protocol: TCP, port: 8000 }]
+    - to:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: kube-system }
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+{{- end }}

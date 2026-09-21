@@ -1,0 +1,307 @@
+{
+  "title": "MOAT \u2014 service health",
+  "uid": "moat-service-health",
+  "tags": [
+    "moat"
+  ],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": {
+    "from": "now-3h",
+    "to": "now"
+  },
+  "schemaVersion": 39,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Request rate by outcome",
+      "type": "timeseries",
+      "description": "429s from admission control are counted as 4xx. They are the system working; only 5xx counts against the availability SLO.",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(moat_http_requests_total{status=~\"2..\"}[5m]))",
+          "legendFormat": "2xx success",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(moat_http_requests_total{status=~\"4..\"}[5m]))",
+          "legendFormat": "4xx client",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(rate(moat_http_requests_total{status=~\"5..\"}[5m]))",
+          "legendFormat": "5xx server",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Latency percentiles (SLO: p95 < 500ms)",
+      "type": "timeseries",
+      "description": "SSE streams are excluded: they are long-lived by design and would swamp the distribution.",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(moat_http_request_seconds_bucket{route!~\"/api/v1/events.*\"}[5m])) by (le))",
+          "legendFormat": "p50",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(moat_http_request_seconds_bucket{route!~\"/api/v1/events.*\"}[5m])) by (le))",
+          "legendFormat": "p95",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(moat_http_request_seconds_bucket{route!~\"/api/v1/events.*\"}[5m])) by (le))",
+          "legendFormat": "p99",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Job backlog depth",
+      "type": "timeseries",
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 7,
+        "w": 12,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "moat_jobs_pending",
+          "legendFormat": "{{kind}} pending",
+          "refId": "A"
+        },
+        {
+          "expr": "moat_jobs_running",
+          "legendFormat": "{{kind}} running",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Backlog AGE (the signal that matters)",
+      "type": "timeseries",
+      "description": "A short queue that is not draining is the failure a depth threshold never notices. KEDA scales on this as well as depth.",
+      "gridPos": {
+        "x": 12,
+        "y": 7,
+        "w": 12,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "moat_jobs_oldest_pending_seconds",
+          "legendFormat": "{{kind}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Outbox \u2014 committed work awaiting dispatch",
+      "type": "timeseries",
+      "description": "If this climbs, the product looks healthy while nothing actually happens. Pages at 5 minutes.",
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 12,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "moat_outbox_pending",
+          "legendFormat": "undelivered events",
+          "refId": "A"
+        },
+        {
+          "expr": "moat_outbox_oldest_seconds",
+          "legendFormat": "oldest (seconds)",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Dependency availability",
+      "type": "timeseries",
+      "description": "Only postgres is essential. Search or object storage at 0 means degraded, not down.",
+      "gridPos": {
+        "x": 12,
+        "y": 14,
+        "w": 12,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "moat_dependency_up",
+          "legendFormat": "{{dependency}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Admission rejections (429) \u2014 not errors",
+      "type": "timeseries",
+      "description": "Per-tenant caps refusing work before accepting it. Sustained rejection means capacity or caps need revisiting, not that something is broken.",
+      "gridPos": {
+        "x": 0,
+        "y": 21,
+        "w": 12,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum by (kind, reason) (rate(moat_admission_rejections_total[5m]))",
+          "legendFormat": "{{kind}} / {{reason}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Retrieval outcomes",
+      "type": "timeseries",
+      "description": "'unavailable' and 'empty' are different outcomes and must never be conflated: one means search did not run, the other means it ran and found nothing.",
+      "gridPos": {
+        "x": 12,
+        "y": 21,
+        "w": 12,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum by (outcome) (rate(moat_search_queries_total[5m]))",
+          "legendFormat": "{{outcome}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "In-flight requests",
+      "type": "timeseries",
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 12,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "moat_http_in_flight",
+          "legendFormat": "concurrent",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}

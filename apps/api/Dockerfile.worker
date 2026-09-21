@@ -1,0 +1,13 @@
+# syntax=docker/dockerfile:1.7
+# Temporal worker and outbox dispatcher. Same image content as the API by
+# design -- identical code, different entrypoint -- so a deploy can never
+# leave workers running a different version of the domain logic than the API.
+
+FROM moat-api:latest AS runtime
+
+USER 10001:10001
+
+# Overridden per deployment:
+#   workers:    python -m moat_api.workers.main --queue moat-ocr --concurrency 2
+#   dispatcher: python -m moat_api.workers.dispatcher
+CMD ["python", "-m", "moat_api.workers.main", "--queue", "moat-ai-interactive"]

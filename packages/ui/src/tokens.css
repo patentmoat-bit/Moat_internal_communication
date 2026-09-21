@@ -1,0 +1,208 @@
+/* ==========================================================================
+   MOAT design tokens
+   Direction: document-first. Warm paper ground, deep "moat" teal accent,
+   serif for document voice, border-driven surfaces (almost no shadow).
+   Light is the primary theme; dark is a full peer, not an afterthought.
+
+   Theme resolution, in order:
+     :root                                     -> light (complete palette)
+     @media (prefers-color-scheme: dark)       -> dark, unless user forced light
+     :root[data-theme="dark"]                  -> dark, forced
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* ---- Raw palette ------------------------------------------------------ */
+
+  /* Warm paper: the ground. Never pure white -- pure white reads clinical
+     and makes long legal text harsher to scan. */
+  --paper-50:  #fdfcfa;
+  --paper-100: #f8f6f2;
+  --paper-200: #f0ede7;
+  --paper-300: #e4e0d8;
+  --paper-400: #d3cec4;
+
+  /* Warm ink: the text ramp. Warmed to sit correctly on paper. */
+  --ink-950: #16150f;
+  --ink-900: #1e1d18;
+  --ink-800: #33312b;
+  --ink-700: #4a4741;
+  --ink-600: #6b6760;
+  --ink-500: #8a857c;
+  --ink-400: #a8a39a;
+
+  /* Moat: deep teal-blue. Water around the castle. One accent, used sparingly.
+     Distinctive against the generic SaaS indigo, and reads serious. */
+  --moat-950: #07222e;
+  --moat-900: #0b3244;
+  --moat-800: #114459;
+  --moat-700: #175a74;   /* primary accent, light theme */
+  --moat-600: #1f7292;
+  --moat-500: #2f8cad;
+  --moat-400: #5aaac6;
+  --moat-300: #93c8db;
+  --moat-200: #c4e0ea;
+  --moat-100: #e0eff5;
+  --moat-50:  #f0f7fa;
+
+  /* Status: muted and earthy, so a single red actually means something.
+     Saturated alert colors everywhere is how a dashboard stops being read. */
+  --positive-700: #2c6146;
+  --positive-500: #3f8a63;
+  --positive-100: #dfeee6;
+
+  --caution-700: #8a5d14;
+  --caution-500: #b7811f;
+  --caution-100: #f6ecd7;
+
+  --critical-700: #8f2f2c;
+  --critical-500: #b8433f;
+  --critical-100: #f6e1e0;
+
+  /* ---- Semantic surfaces ------------------------------------------------ */
+  --canvas:        var(--paper-100);  /* app background */
+  --surface:       #ffffff;           /* cards, panels, editor sheet */
+  --surface-sunken: var(--paper-200); /* wells, inset areas, code blocks */
+  --surface-raised: #ffffff;          /* popovers, dialogs, command palette */
+  --surface-hover:  var(--paper-100);
+
+  --line:        var(--paper-300);    /* default hairline */
+  --line-strong: var(--paper-400);    /* emphasized divider, input border */
+
+  /* ---- Semantic text ---------------------------------------------------- */
+  --ink:        var(--ink-900);       /* primary body + headings */
+  --ink-muted:  var(--ink-600);       /* secondary, labels, metadata */
+  --ink-faint:  var(--ink-500);       /* timestamps, hints, placeholders */
+  --ink-on-accent: #ffffff;
+
+  /* ---- Accent ----------------------------------------------------------- */
+  --accent:        var(--moat-700);
+  --accent-hover:  var(--moat-800);
+  --accent-active: var(--moat-900);
+  --accent-soft:   var(--moat-100);   /* tinted background */
+  --accent-line:   var(--moat-200);
+  --accent-text:   var(--moat-800);   /* accent text on paper, AA at 14px */
+
+  /* ---- Status semantics ------------------------------------------------- */
+  --positive:      var(--positive-700);
+  --positive-soft: var(--positive-100);
+  --caution:       var(--caution-700);
+  --caution-soft:  var(--caution-100);
+  --critical:      var(--critical-700);
+  --critical-soft: var(--critical-100);
+
+  /* ---- Focus ------------------------------------------------------------ */
+  /* Focus must be visible on paper, on accent, and on dark. Two-tone ring. */
+  --focus-ring:   var(--moat-600);
+  --focus-offset: var(--surface);
+
+  /* ---- Elevation -------------------------------------------------------- */
+  /* Deliberately restrained. Structure comes from hairlines, not drop shadow. */
+  --shadow-sm: 0 1px 2px rgb(22 21 15 / 0.05);
+  --shadow-md: 0 2px 4px rgb(22 21 15 / 0.05), 0 4px 12px rgb(22 21 15 / 0.06);
+  --shadow-lg: 0 8px 24px rgb(22 21 15 / 0.10), 0 2px 6px rgb(22 21 15 / 0.06);
+
+  /* ---- Shape ------------------------------------------------------------ */
+  /* Low radii. Document tools should not look like a consumer app. */
+  --radius-xs: 3px;
+  --radius-sm: 5px;
+  --radius-md: 7px;
+  --radius-lg: 10px;
+  --radius-full: 999px;
+
+  /* ---- Layout ----------------------------------------------------------- */
+  --sidebar-w: 244px;
+  --topbar-h: 52px;
+  --measure: 68ch;          /* max line length for document reading */
+
+  /* ---- Motion ----------------------------------------------------------- */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --dur-fast: 100ms;
+  --dur: 160ms;
+}
+
+/* -------------------------------------------------------------------------
+   Dark theme. Warm-neutral, not blue-black: it has to sit beside the same
+   teal accent without turning the whole UI into one cold hue.
+   ------------------------------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --canvas:         #151412;
+    --surface:        #1c1b18;
+    --surface-sunken: #111110;
+    --surface-raised: #232220;
+    --surface-hover:  #252320;
+
+    --line:        #302e2a;
+    --line-strong: #423f39;
+
+    --ink:        #ece9e3;
+    --ink-muted:  #a9a49b;
+    --ink-faint:  #837e75;
+    --ink-on-accent: #06212d;
+
+    --accent:        var(--moat-400);
+    --accent-hover:  var(--moat-300);
+    --accent-active: var(--moat-200);
+    --accent-soft:   #12303d;
+    --accent-line:   #1c4759;
+    --accent-text:   var(--moat-300);
+
+    --positive:      #74bc95;
+    --positive-soft: #163024;
+    --caution:       #e0b463;
+    --caution-soft:  #352916;
+    --critical:      #e58b85;
+    --critical-soft: #3a1e1c;
+
+    --focus-ring:   var(--moat-400);
+    --focus-offset: var(--surface);
+
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.40);
+    --shadow-md: 0 2px 4px rgb(0 0 0 / 0.36), 0 4px 12px rgb(0 0 0 / 0.44);
+    --shadow-lg: 0 8px 28px rgb(0 0 0 / 0.55), 0 2px 6px rgb(0 0 0 / 0.40);
+  }
+}
+
+/* Forced dark -- must repeat so the in-app toggle wins in both directions. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --canvas:         #151412;
+  --surface:        #1c1b18;
+  --surface-sunken: #111110;
+  --surface-raised: #232220;
+  --surface-hover:  #252320;
+
+  --line:        #302e2a;
+  --line-strong: #423f39;
+
+  --ink:        #ece9e3;
+  --ink-muted:  #a9a49b;
+  --ink-faint:  #837e75;
+  --ink-on-accent: #06212d;
+
+  --accent:        var(--moat-400);
+  --accent-hover:  var(--moat-300);
+  --accent-active: var(--moat-200);
+  --accent-soft:   #12303d;
+  --accent-line:   #1c4759;
+  --accent-text:   var(--moat-300);
+
+  --positive:      #74bc95;
+  --positive-soft: #163024;
+  --caution:       #e0b463;
+  --caution-soft:  #352916;
+  --critical:      #e58b85;
+  --critical-soft: #3a1e1c;
+
+  --focus-ring:   var(--moat-400);
+  --focus-offset: var(--surface);
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.40);
+  --shadow-md: 0 2px 4px rgb(0 0 0 / 0.36), 0 4px 12px rgb(0 0 0 / 0.44);
+  --shadow-lg: 0 8px 28px rgb(0 0 0 / 0.55), 0 2px 6px rgb(0 0 0 / 0.40);
+}

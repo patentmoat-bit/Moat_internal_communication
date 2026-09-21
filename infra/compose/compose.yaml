@@ -1,0 +1,309 @@
+# MOAT local development stack.
+#
+# Implements the selected stack in MOAT_SYSTEM_DESIGN.md §2 as a single-node
+# development environment. It is explicitly NOT a demonstration of the HA
+# topology in §10 -- one Postgres, one OpenSearch node and one SeaweedFS
+# server prove wiring and behaviour, never availability.
+#
+# Image tags are pinned to versions that existed when this file was written.
+# Phase 0 verifies the compatibility matrix and replaces these with digests.
+#
+# Profiles -- Postgres, PgBouncer and Valkey always start:
+#   docker compose up -d                      core datastores only
+#   docker compose --profile search   up -d   + OpenSearch
+#   docker compose --profile identity up -d   + Keycloak
+#   docker compose --profile workflow up -d   + Temporal and its UI
+#   docker compose --profile objects  up -d   + SeaweedFS S3
+#   docker compose --profile full     up -d   everything
+
+name: moat
+
+x-restart: &restart
+  restart: unless-stopped
+
+services:
+  # ---------------------------------------------------------------- records --
+  postgres:
+    <<: *restart
+    image: postgres:18.6-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_SUPERUSER}
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
+      POSTGRES_DB: postgres
+      MOAT_DB_OWNER_PASSWORD: ${MOAT_DB_OWNER_PASSWORD}
+      MOAT_DB_APP_PASSWORD: ${MOAT_DB_APP_PASSWORD}
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      # scram-sha-256 in development too, so PgBouncer auth is exercised
+      # the same way it will be in production.
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    command:
+      - postgres
+      # Deliberately small: the pooler owns the connection budget (§9),
+      # so an app that leaks connections fails here instead of in staging.
+      - -c
+      - max_connections=200
+      - -c
+      - shared_buffers=256MB
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - ./postgres-init/00-entrypoint.sh:/docker-entrypoint-initdb.d/00-entrypoint.sh:ro
+      - ./postgres-init/01-roles-and-databases.sql:/opt/moat/01-roles-and-databases.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_SUPERUSER} -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  pgbouncer:
+    <<: *restart
+    image: edoburu/pgbouncer:v1.25.2-p0
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${MOAT_DB}
+      DB_USER: ${MOAT_DB_APP_USER}
+      DB_PASSWORD: ${MOAT_DB_APP_PASSWORD}
+      AUTH_TYPE: scram-sha-256
+      # Transaction mode: required for the pooling ratio, and the reason the
+      # application must not rely on session state (§2).
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 1000
+      # Aggregate server connections stay well inside the 200 Postgres budget,
+      # leaving headroom for migrations, Temporal and operations (§9).
+      DEFAULT_POOL_SIZE: 20
+      RESERVE_POOL_SIZE: 5
+      RESERVE_POOL_TIMEOUT: 3
+      QUERY_WAIT_TIMEOUT: 15
+      ADMIN_USERS: ${POSTGRES_SUPERUSER}
+    ports:
+      - "${PGBOUNCER_PORT}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U ${MOAT_DB_APP_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ------------------------------------------------------------------ cache --
+  valkey:
+    <<: *restart
+    image: valkey/valkey:9.0-alpine
+    command:
+      # No persistence on purpose. Valkey holds nothing that cannot be
+      # recomputed from Postgres (§10) -- if losing it breaks correctness,
+      # that is a bug to find in development.
+      - valkey-server
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+      - --maxmemory
+      - 256mb
+      - --maxmemory-policy
+      - allkeys-lru
+    ports:
+      - "${VALKEY_PORT}:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  # ----------------------------------------------------------------- search --
+  opensearch:
+    <<: *restart
+    image: opensearchproject/opensearch:3.8.0
+    profiles: [search, full]
+    environment:
+      discovery.type: single-node
+      cluster.name: moat-dev
+      node.name: moat-dev-1
+      bootstrap.memory_lock: "true"
+      OPENSEARCH_JAVA_OPTS: -Xms1g -Xmx1g
+      OPENSEARCH_INITIAL_ADMIN_PASSWORD: ${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
+      # Development only. Staging and production run the security plugin --
+      # tenant isolation is enforced by the API in either case (§5).
+      DISABLE_SECURITY_PLUGIN: "true"
+    ulimits:
+      memlock: { soft: -1, hard: -1 }
+      nofile: { soft: 65536, hard: 65536 }
+    ports:
+      - "${OPENSEARCH_PORT}:9200"
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+
+  # ---------------------------------------------------------------- objects --
+  seaweedfs:
+    <<: *restart
+    image: chrislusf/seaweedfs:4.46
+    profiles: [objects, full]
+    # -ip must be the name other components resolve: without it the volume
+    # server advertises an address the master cannot reach, registers nothing,
+    # and every write fails with "no writable volumes".
+    command: >
+      server
+      -ip=seaweedfs
+      -dir=/data
+      -master.volumeSizeLimitMB=64
+      -volume.max=0
+      -filer
+      -s3
+      -s3.port=8333
+    ports:
+      - "${SEAWEED_S3_PORT}:8333"
+      - "${SEAWEED_FILER_PORT}:8888"
+      - "${SEAWEED_MASTER_PORT}:9333"
+    volumes:
+      - seaweedfs-data:/data
+    healthcheck:
+      # Must use the advertised name, not localhost: -ip=seaweedfs binds the
+      # master to that address, so localhost inside the container is refused.
+      test: ["CMD-SHELL", "wget -q -O- http://seaweedfs:9333/cluster/status || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  # --------------------------------------------------------------- identity --
+  keycloak:
+    <<: *restart
+    image: quay.io/keycloak/keycloak:26.7.3
+    profiles: [identity, full]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # start-dev is development only: no TLS, no production hostname checks.
+    command: ["start-dev", "--http-port=8080"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${KEYCLOAK_DB}
+      KC_DB_USERNAME: ${KEYCLOAK_DB_USER}
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "${KEYCLOAK_PORT}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '\"status\": \"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  # --------------------------------------------------------------- workflow --
+  temporal:
+    <<: *restart
+    image: temporalio/auto-setup:1.29.7
+    profiles: [workflow, full]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_SEEDS: postgres
+      POSTGRES_USER: ${POSTGRES_SUPERUSER}
+      POSTGRES_PWD: ${POSTGRES_SUPERUSER_PASSWORD}
+      # Workflow persistence is its own database with its own lifecycle;
+      # it is backed up separately from application records (§10).
+      DBNAME: temporal
+      VISIBILITY_DBNAME: temporal_visibility
+    ports:
+      - "${TEMPORAL_PORT}:7233"
+    healthcheck:
+      test: ["CMD", "temporal", "operator", "cluster", "health", "--address", "temporal:7233"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  temporal-ui:
+    <<: *restart
+    image: temporalio/ui:2.54.0
+    profiles: [workflow, full]
+    depends_on:
+      temporal:
+        condition: service_started
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_CORS_ORIGINS: http://localhost:3000
+    ports:
+      - "${TEMPORAL_UI_PORT}:8080"
+
+  # ------------------------------------------------------------------ export --
+  gotenberg:
+    <<: *restart
+    image: gotenberg/gotenberg:8.36.0
+    profiles: [export, full]
+    # Conversion runs LibreOffice, which is a large attack surface. It gets no
+    # network access of its own and a hard per-request timeout, so a malicious
+    # document cannot call out or hang a worker indefinitely.
+    command:
+      - gotenberg
+      - --api-timeout=60s
+      - --libreoffice-disable-routes=false
+      - --chromium-disable-javascript=true
+      - --chromium-allow-list=file:///tmp/.*
+    ports:
+      - "${GOTENBERG_PORT:-3002}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  # ----------------------------------------------------------- observability --
+  prometheus:
+    <<: *restart
+    image: prom/prometheus:v3.7.3
+    profiles: [observability, full]
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d
+      - --web.enable-lifecycle
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      # Same alert expressions the Helm chart ships, so local and production
+      # cannot drift apart.
+      - ./observability/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  grafana:
+    <<: *restart
+    image: grafana/grafana:12.3.1
+    profiles: [observability, full]
+    depends_on: [prometheus]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-dev_grafana_pw}
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_USERS_DEFAULT_THEME: light
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+
+volumes:
+  postgres-data:
+  prometheus-data:
+  grafana-data:
+  opensearch-data:
+  seaweedfs-data:

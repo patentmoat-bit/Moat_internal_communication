@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-migrate-{{ .Release.Revision }}
+  labels:
+    {{- include "moat.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrate
+  annotations:
+    # Runs before the new application version is rolled out. Combined with
+    # expand/contract migrations (add compatible schema, deploy, backfill,
+    # remove later), this lets old and new code run against the same schema
+    # during the rollout -- which they do, briefly, in any rolling update.
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 900
+  template:
+    metadata:
+      labels:
+        {{- include "moat.labels" . | nindent 8 }}
+        app.kubernetes.io/component: migrate
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: {{ include "moat.image" (dict "root" . "component" "api") }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          securityContext:
+            {{- include "moat.securityContext" . | nindent 12 }}
+          # Migrations connect as the schema owner, directly to PostgreSQL.
+          # The pooled application DSN cannot create schema, and transaction
+          # pooling breaks the advisory lock Alembic relies on.
+          command: ["alembic", "upgrade", "head"]
+          env:
+            {{- include "moat.env" . | nindent 12 }}
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { memory: 512Mi }

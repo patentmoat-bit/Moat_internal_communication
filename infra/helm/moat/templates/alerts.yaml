@@ -1,0 +1,93 @@
+{{- if .Values.observability.serviceMonitor }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ .Release.Name }}-slo
+  labels:
+    {{- include "moat.labels" . | nindent 4 }}
+spec:
+  groups:
+    - name: moat.availability
+      interval: 30s
+      rules:
+        # System-caused 503s count against availability; 429s from admission
+        # control do not. Conflating them would hide an outage behind
+        # "the limiter is working" (design doc §11).
+        - alert: MoatApiErrorBudgetBurn
+          expr: |
+            (
+              sum(rate(moat_http_requests_total{status=~"5.."}[5m]))
+              /
+              sum(rate(moat_http_requests_total[5m]))
+            ) > 0.01
+          for: 10m
+          labels: { severity: page }
+          annotations:
+            summary: "API 5xx rate above 1% for 10 minutes"
+            description: "Burning the 99.9% monthly availability budget."
+
+        - alert: MoatApiLatencySLO
+          expr: |
+            histogram_quantile(
+              0.95,
+              sum(rate(moat_http_request_seconds_bucket{route!~"/api/v1/events.*"}[5m])) by (le)
+            ) > 0.5
+          for: 10m
+          labels: { severity: ticket }
+          annotations:
+            summary: "p95 API latency above the 500ms SLO"
+
+        - alert: MoatEssentialDependencyDown
+          expr: moat_dependency_up{dependency="postgres"} == 0
+          for: 2m
+          labels: { severity: page }
+          annotations:
+            summary: "PostgreSQL unreachable from the API"
+            description: "Mutations are failing. No edit or approval is being accepted."
+
+        - alert: MoatSearchDegraded
+          expr: moat_dependency_up{dependency="opensearch"} == 0
+          for: 5m
+          labels: { severity: ticket }
+          annotations:
+            summary: "Search unavailable -- product degraded, not down"
+            description: >
+              Drafting and review still work. Prior-art search reports
+              unavailable rather than returning zero results.
+
+    - name: moat.work
+      interval: 30s
+      rules:
+        # Backlog AGE, not depth. A short queue that is not draining is the
+        # failure a depth threshold never notices.
+        - alert: MoatJobBacklogStale
+          expr: max by (kind) (moat_jobs_oldest_pending_seconds) > 900
+          for: 5m
+          labels: { severity: ticket }
+          annotations:
+            summary: "{{`{{ $labels.kind }}`}} jobs waiting over 15 minutes"
+            description: "Workers are not keeping up, or are not running at all."
+
+        # The outbox is the seam between a committed change and the work it
+        # triggers. If it stalls, the product looks healthy while nothing
+        # actually happens.
+        - alert: MoatOutboxStalled
+          expr: moat_outbox_oldest_seconds > 300
+          for: 5m
+          labels: { severity: page }
+          annotations:
+            summary: "Outbox events undelivered for over 5 minutes"
+            description: >
+              Accepted work is not being dispatched. Check the dispatcher
+              deployment and Temporal reachability.
+
+        - alert: MoatAdmissionSaturated
+          expr: sum(rate(moat_admission_rejections_total[10m])) > 0.5
+          for: 15m
+          labels: { severity: ticket }
+          annotations:
+            summary: "Tenants are being refused work sustainedly"
+            description: >
+              Not an error -- the caps are doing their job. It means capacity
+              or the per-tenant caps need revisiting.
+{{- end }}

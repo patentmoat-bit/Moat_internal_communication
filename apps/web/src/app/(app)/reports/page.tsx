@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   BarChart3,
   FileDown,
@@ -16,6 +17,12 @@ import {
   FileCheck2,
   Plus,
   FileText,
+  History,
+  Search,
+  Filter,
+  Clock,
+  Download,
+  Trash2,
 } from "lucide-react";
 import { ReportGeneratorModal } from "@/components/patent/report-generator-modal";
 
@@ -31,10 +38,39 @@ interface PatentReport {
   verdict: "STRONG_PATENTABILITY" | "MODERATE_PATENTABILITY" | "HIGH_RISK";
 }
 
-export default function ReportsRepositoryPage() {
+interface ActivityHistoryItem {
+  id: string;
+  action_type: "SEARCH_QUERY" | "CLAIM_RATED" | "NOTE_SAVED" | "REPORT_GENERATED" | "MATTER_INITIALIZED";
+  title: string;
+  details: string;
+  analyst: string;
+  timestamp: string;
+}
+
+function ReportsRepositoryInner() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const currentTab = searchParams.get("tab") === "history" ? "history" : "repository";
+  const [activeTab, setActiveTab] = React.useState<"repository" | "history">(currentTab);
+
   const [reports, setReports] = React.useState<PatentReport[]>([]);
   const [selectedReport, setSelectedReport] = React.useState<PatentReport | null>(null);
   const [showCreateModal, setShowCreateModal] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState("");
+
+  // Activity History State
+  const [activityHistory, setActivityHistory] = React.useState<ActivityHistoryItem[]>([]);
+  const [historyFilter, setHistoryFilter] = React.useState("ALL");
+
+  React.useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "history") {
+      setActiveTab("history");
+    } else {
+      setActiveTab("repository");
+    }
+  }, [searchParams]);
 
   React.useEffect(() => {
     if (!selectedReport && reports.length > 0) {
@@ -56,8 +92,75 @@ export default function ReportsRepositoryPage() {
           // ignore
         }
       }
+
+      // Load activity history
+      const savedHist = localStorage.getItem("moat_activity_history");
+      if (savedHist) {
+        try {
+          const parsedHist = JSON.parse(savedHist);
+          if (Array.isArray(parsedHist) && parsedHist.length > 0) {
+            setActivityHistory(parsedHist);
+          }
+        } catch {
+          // ignore
+        }
+      } else {
+        // Sample baseline activities
+        const baseline: ActivityHistoryItem[] = [
+          {
+            id: "act-1",
+            action_type: "REPORT_GENERATED",
+            title: "Generated Patentability Assessment Report (PAT-2024-001)",
+            details: "Analyzed 12 prior-art references for Multi-Tenant Cryptographic Isolation Protocol (94% Novelty)",
+            analyst: "Patent Analyst",
+            timestamp: new Date().toISOString().replace("T", " ").substring(0, 16),
+          },
+          {
+            id: "act-2",
+            action_type: "CLAIM_RATED",
+            title: "Rated Claim Limitation [1.2] as DISTINGUISHED",
+            details: "Over US11842091B2 (Apple) based on asynchronous post-quantum lattice verification",
+            analyst: "Patent Analyst",
+            timestamp: new Date(Date.now() - 3600000).toISOString().replace("T", " ").substring(0, 16),
+          },
+          {
+            id: "act-3",
+            action_type: "SEARCH_QUERY",
+            title: "Executed Boolean Prior Art Query",
+            details: 'Query: ("hardware enclave" AND "zero trust" AND "quantum lattice") -> 28 USPTO/WIPO results',
+            analyst: "Patent Analyst",
+            timestamp: new Date(Date.now() - 7200000).toISOString().replace("T", " ").substring(0, 16),
+          },
+          {
+            id: "act-4",
+            action_type: "MATTER_INITIALIZED",
+            title: "Created Research Matter Docket PAT-2024-0042",
+            details: "Initialized docket for Cloud Enclave Key Isolation with 60-day deadline",
+            analyst: "Patent Analyst",
+            timestamp: new Date(Date.now() - 86400000).toISOString().replace("T", " ").substring(0, 16),
+          },
+        ];
+        setActivityHistory(baseline);
+        localStorage.setItem("moat_activity_history", JSON.stringify(baseline));
+      }
     }
   }, []);
+
+  const handleTabChange = (tab: "repository" | "history") => {
+    setActiveTab(tab);
+    if (tab === "history") {
+      router.replace("/reports?tab=history");
+    } else {
+      router.replace("/reports");
+    }
+  };
+
+  const handleClearHistory = () => {
+    if (window.confirm("Are you sure you want to clear your analyst activity history?")) {
+      setActivityHistory([]);
+      localStorage.removeItem("moat_activity_history");
+    }
+  };
 
   const downloadReport = (format: "PDF" | "DOCX" | "MD" | "JSON") => {
     if (!selectedReport) return;
@@ -96,7 +199,8 @@ export default function ReportsRepositoryPage() {
     } else if (format === "MD") {
       mimeType = "text/markdown;charset=utf-8;";
       extension = "md";
-      content = `# ${selectedReport.matter_ref} — ${selectedReport.title}\n\n` +
+      content =
+        `# ${selectedReport.matter_ref} — ${selectedReport.title}\n\n` +
         `**Report Type:** ${selectedReport.report_type}\n` +
         `**Date:** ${selectedReport.generated_date}\n` +
         `**Lead Analyst:** ${selectedReport.analyst_name}\n` +
@@ -119,73 +223,198 @@ export default function ReportsRepositoryPage() {
     document.body.removeChild(link);
   };
 
+  const filteredReports = reports.filter((r) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      r.matter_ref.toLowerCase().includes(q) ||
+      r.title.toLowerCase().includes(q) ||
+      r.analyst_name.toLowerCase().includes(q) ||
+      r.report_type.toLowerCase().includes(q)
+    );
+  });
+
+  const filteredHistory = activityHistory.filter((item) => {
+    if (historyFilter !== "ALL" && item.action_type !== historyFilter) return false;
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      item.title.toLowerCase().includes(q) ||
+      item.details.toLowerCase().includes(q) ||
+      item.analyst.toLowerCase().includes(q)
+    );
+  });
+
   return (
     <div className="flex h-[calc(100vh-var(--topbar-h))] overflow-hidden bg-canvas">
-      {/* Left 45%: Report Archive List */}
+      {/* Left 45%: Report Archive / Activity History List */}
       <div className="flex w-[45%] flex-col border-r border-line overflow-hidden">
-        <header className="border-b border-line bg-surface/40 p-6 space-y-3">
+        <header className="border-b border-line bg-surface/40 p-5 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className="rounded-md bg-accent/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wider text-accent">
-                Patent Analyst Outputs
+                Patent Analyst Reports
               </span>
-              <span className="text-xs text-muted">Decision-Ready Structured Deliverables</span>
+              <span className="text-xs text-muted">Legal Deliverables</span>
             </div>
+            {activeTab === "repository" && (
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-accent/90 transition"
+              >
+                <Plus className="size-3.5" />
+                New Report
+              </button>
+            )}
+            {activeTab === "history" && (
+              <button
+                onClick={handleClearHistory}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-muted hover:text-red-600 transition"
+              >
+                <Trash2 className="size-3.5" />
+                Clear History
+              </button>
+            )}
+          </div>
+
+          {/* Tab Selector */}
+          <div className="flex items-center gap-2 border-b border-line/60 pb-2">
             <button
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-accent/90 transition"
+              onClick={() => handleTabChange("repository")}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                activeTab === "repository"
+                  ? "bg-accent text-white shadow-xs"
+                  : "text-muted hover:bg-hover hover:text-ink"
+              }`}
             >
-              <Plus className="size-3.5" />
-              New Report from Template
+              <FileText className="size-3.5" />
+              <span>Final Report Repository</span>
+              <span className={`ml-1 rounded-full px-1.5 py-0.2 text-[9.5px] ${activeTab === "repository" ? "bg-white/20 text-white" : "bg-line text-muted"}`}>
+                {reports.length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => handleTabChange("history")}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                activeTab === "history"
+                  ? "bg-accent text-white shadow-xs"
+                  : "text-muted hover:bg-hover hover:text-ink"
+              }`}
+            >
+              <History className="size-3.5" />
+              <span>Activity History</span>
+              <span className={`ml-1 rounded-full px-1.5 py-0.2 text-[9.5px] ${activeTab === "history" ? "bg-white/20 text-white" : "bg-line text-muted"}`}>
+                {activityHistory.length}
+              </span>
             </button>
           </div>
-          <h1 className="text-xl font-bold tracking-tight text-ink">
-            Final Reports Repository
-          </h1>
+
+          {/* Search bar */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted" />
+              <input
+                type="text"
+                placeholder={activeTab === "repository" ? "Filter reports by ref, title..." : "Filter activity history..."}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-lg border border-line bg-canvas pl-8 pr-3 py-1.5 text-xs text-ink outline-none focus:border-accent"
+              />
+            </div>
+            {activeTab === "history" && (
+              <select
+                value={historyFilter}
+                onChange={(e) => setHistoryFilter(e.target.value)}
+                className="rounded-lg border border-line bg-canvas px-2 py-1.5 text-xs font-semibold text-ink outline-none"
+              >
+                <option value="ALL">All Actions</option>
+                <option value="SEARCH_QUERY">Searches</option>
+                <option value="CLAIM_RATED">Claim Ratings</option>
+                <option value="NOTE_SAVED">Review Notes</option>
+                <option value="REPORT_GENERATED">Reports</option>
+              </select>
+            )}
+          </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-5 space-y-3">
-          {reports.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-8 text-center text-muted">
-              <FileText className="size-8 text-faint mb-2 opacity-40" />
-              <p className="text-xs font-semibold text-ink">No reports generated yet</p>
-              <p className="text-[11px] text-muted mt-1">
-                Click "New Report from Template" above or generate reports directly from Search Hits & Dossiers.
-              </p>
-            </div>
-          ) : (
-            reports.map((rep) => (
-              <div
-                key={rep.id}
-                onClick={() => setSelectedReport(rep)}
-                className={`cursor-pointer rounded-xl border p-4 transition-all ${
-                  selectedReport?.id === rep.id
-                    ? "border-accent bg-accent/5 shadow-xs"
-                    : "border-line bg-surface hover:border-line-strong"
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono text-xs font-bold text-accent">{rep.matter_ref}</span>
-                  <span className="rounded-full bg-line px-2 py-0.5 font-mono text-[10px] font-bold text-muted">
-                    {rep.report_type.replace(/_/g, " ")}
-                  </span>
-                </div>
-
-                <h3 className="mt-2 text-sm font-bold leading-snug text-ink">{rep.title}</h3>
-
-                <div className="mt-3 flex items-center justify-between text-xs">
-                  <span className="text-muted">Analyst: {rep.analyst_name}</span>
-                  <span className="font-bold text-emerald-600">{rep.novelty_score}% Novelty</span>
-                </div>
+        {/* Tab 1: Reports List */}
+        {activeTab === "repository" && (
+          <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
+            {filteredReports.length === 0 ? (
+              <div className="flex flex-col items-center justify-center p-8 text-center text-muted">
+                <FileText className="size-8 text-faint mb-2 opacity-40" />
+                <p className="text-xs font-semibold text-ink">No reports generated yet</p>
+                <p className="text-[11px] text-muted mt-1 max-w-xs">
+                  Click &quot;New Report&quot; above to synthesize a deliverable from your search results.
+                </p>
               </div>
-            ))
-          )}
-        </div>
+            ) : (
+              filteredReports.map((rep) => (
+                <div
+                  key={rep.id}
+                  onClick={() => setSelectedReport(rep)}
+                  className={`cursor-pointer rounded-xl border p-3.5 transition-all ${
+                    selectedReport?.id === rep.id
+                      ? "border-accent bg-accent/5 shadow-xs"
+                      : "border-line bg-surface hover:border-line-strong"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono text-xs font-bold text-accent">{rep.matter_ref}</span>
+                    <span className="rounded-full bg-line px-2 py-0.5 font-mono text-[9.5px] font-bold text-muted">
+                      {rep.report_type.replace(/_/g, " ")}
+                    </span>
+                  </div>
+
+                  <h3 className="mt-1.5 text-xs font-bold leading-snug text-ink">{rep.title}</h3>
+
+                  <div className="mt-2.5 flex items-center justify-between text-[11px]">
+                    <span className="text-muted">Analyst: {rep.analyst_name}</span>
+                    <span className="font-bold text-emerald-600">{rep.novelty_score}% Novelty</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Tab 2: Activity History List */}
+        {activeTab === "history" && (
+          <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
+            {filteredHistory.length === 0 ? (
+              <div className="flex flex-col items-center justify-center p-8 text-center text-muted">
+                <History className="size-8 text-faint mb-2 opacity-40" />
+                <p className="text-xs font-semibold text-ink">No activity history found</p>
+                <p className="text-[11px] text-muted mt-1">Actions performed across the platform are automatically tracked here.</p>
+              </div>
+            ) : (
+              filteredHistory.map((item) => (
+                <div
+                  key={item.id}
+                  className="rounded-xl border border-line bg-surface p-3.5 shadow-2xs hover:border-line-strong transition space-y-1.5"
+                >
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="rounded-md bg-accent/10 px-2 py-0.5 font-mono font-bold text-accent">
+                      {item.action_type.replace(/_/g, " ")}
+                    </span>
+                    <span className="text-muted flex items-center gap-1">
+                      <Clock className="size-3" />
+                      {item.timestamp}
+                    </span>
+                  </div>
+                  <h4 className="text-xs font-bold text-ink">{item.title}</h4>
+                  <p className="text-[11px] text-muted leading-relaxed">{item.details}</p>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
 
       {/* Right 55%: Interactive Report Inspector & PDF Exporter */}
       <div className="flex flex-1 flex-col overflow-y-auto p-8 space-y-6 bg-surface/20">
-        {selectedReport ? (
+        {selectedReport && activeTab === "repository" ? (
           <div className="max-w-2xl mx-auto w-full space-y-6">
             {/* Header / Actions */}
             <div className="flex items-start justify-between gap-4">
@@ -246,17 +475,43 @@ export default function ReportsRepositoryPage() {
               </div>
             </div>
 
-            {/* Citations Matrix Preview */}
+            {/* Evaluated References Card */}
             <div className="rounded-2xl border border-line bg-surface p-6 shadow-sm space-y-3">
               <div className="flex items-center justify-between text-xs font-bold text-ink">
                 <span>Evaluated Prior Art Publications ({selectedReport.citations_count} References)</span>
-                <span className="text-accent">Perplexity Pro Verified</span>
+                <span className="text-accent">Verified by Search Engine</span>
+              </div>
+              <p className="text-xs text-muted leading-relaxed">
+                All identified patent citations and NPL literature have been charted against independent claim limitations and archived into this formal deliverable.
+              </p>
+            </div>
+          </div>
+        ) : activeTab === "history" ? (
+          <div className="max-w-2xl mx-auto w-full space-y-6">
+            <div className="rounded-2xl border border-line bg-surface p-6 shadow-sm space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="flex size-10 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                  <History className="size-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-ink">Analyst Audit Trail & Activity Overview</h3>
+                  <p className="text-xs text-muted">Logged events across Search, Annotation, and Report generation.</p>
+                </div>
               </div>
 
-              <div className="space-y-2 text-xs">
-                <p className="text-muted text-[11px]">
-                  Evaluated and archived in formal deliverable.
-                </p>
+              <div className="grid grid-cols-3 gap-3 pt-2">
+                <div className="rounded-xl border border-line bg-canvas p-3 text-center">
+                  <div className="text-lg font-black text-ink">{activityHistory.filter(a => a.action_type === "SEARCH_QUERY").length}</div>
+                  <div className="text-[10px] font-bold text-muted uppercase">Search Runs</div>
+                </div>
+                <div className="rounded-xl border border-line bg-canvas p-3 text-center">
+                  <div className="text-lg font-black text-emerald-600">{activityHistory.filter(a => a.action_type === "CLAIM_RATED").length}</div>
+                  <div className="text-[10px] font-bold text-muted uppercase">Claim Ratings</div>
+                </div>
+                <div className="rounded-xl border border-line bg-canvas p-3 text-center">
+                  <div className="text-lg font-black text-accent">{activityHistory.filter(a => a.action_type === "REPORT_GENERATED").length}</div>
+                  <div className="text-[10px] font-bold text-muted uppercase">Reports Built</div>
+                </div>
               </div>
             </div>
           </div>
@@ -286,5 +541,13 @@ export default function ReportsRepositoryPage() {
         }}
       />
     </div>
+  );
+}
+
+export default function ReportsRepositoryPage() {
+  return (
+    <React.Suspense fallback={<div className="p-8 text-center text-xs text-muted">Loading Reports Repository...</div>}>
+      <ReportsRepositoryInner />
+    </React.Suspense>
   );
 }

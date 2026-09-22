@@ -429,11 +429,17 @@ class USPTOService:
         title: str,
         abstract: str,
         claims: str,
-        cpc_codes: list[str],
+        classifications: list[str],
         cpc_filter: str | None = None,
+        search_scope: str = "ALL",
+        description: str = "",
     ) -> dict[str, Any]:
-        """BigQuery Multi-Field Scoring Algorithm:
-        Score = 3.0 * Title_Match + 2.0 * Abstract_Match + 1.0 * Claims_Match + CPC_Boost
+        """BigQuery Multi-Field Scoring Algorithm with Scope targeting:
+        - ALL: 3.0 * Title + 2.0 * Abstract + 1.0 * Claims + CPC_Boost
+        - TITLE: 4.0 * Title + CPC_Boost
+        - ABSTRACT: 4.0 * Abstract + CPC_Boost
+        - CLAIMS: 4.0 * Claims + CPC_Boost
+        - DESCRIPTION: 4.0 * Description + CPC_Boost
         """
         words = [w.lower() for w in re.findall(r"\w+", query) if len(w) > 2]
         if not words:
@@ -448,22 +454,46 @@ class USPTOService:
         title_l = title.lower()
         abstract_l = abstract.lower()
         claims_l = claims.lower()
+        desc_l = description.lower() if description else ""
 
         title_matches = sum(1 for w in words if w in title_l)
         abstract_matches = sum(1 for w in words if w in abstract_l)
         claims_matches = sum(1 for w in words if w in claims_l)
-
-        title_score = round(3.0 * (title_matches / len(words)), 2)
-        abstract_score = round(2.0 * (abstract_matches / len(words)), 2)
-        claims_score = round(1.0 * (claims_matches / len(words)), 2)
+        desc_matches = sum(1 for w in words if w in desc_l) if desc_l else 0
 
         cpc_boost = 0.0
         if cpc_filter:
             cpc_filter_clean = cpc_filter.upper().strip()
-            if any(c.startswith(cpc_filter_clean) for c in cpc_codes):
+            if any(c.startswith(cpc_filter_clean) for c in classifications):
                 cpc_boost = 1.5
 
-        total_score = round(title_score + abstract_score + claims_score + cpc_boost, 2)
+        scope = search_scope.upper()
+        if scope == "TITLE":
+            title_score = round(4.0 * (title_matches / len(words)), 2)
+            abstract_score = 0.0
+            claims_score = 0.0
+            total_score = round(title_score + cpc_boost, 2)
+        elif scope == "ABSTRACT":
+            title_score = 0.0
+            abstract_score = round(4.0 * (abstract_matches / len(words)), 2)
+            claims_score = 0.0
+            total_score = round(abstract_score + cpc_boost, 2)
+        elif scope == "CLAIMS":
+            title_score = 0.0
+            abstract_score = 0.0
+            claims_score = round(4.0 * (claims_matches / len(words)), 2)
+            total_score = round(claims_score + cpc_boost, 2)
+        elif scope == "DESCRIPTION":
+            title_score = 0.0
+            abstract_score = 0.0
+            claims_score = round(4.0 * (desc_matches / max(len(words), 1)), 2)
+            total_score = round(claims_score + cpc_boost, 2)
+        else:
+            title_score = round(3.0 * (title_matches / len(words)), 2)
+            abstract_score = round(2.0 * (abstract_matches / len(words)), 2)
+            claims_score = round(1.0 * (claims_matches / len(words)), 2)
+            total_score = round(title_score + abstract_score + claims_score + cpc_boost, 2)
+
         return {
             "title_score": title_score,
             "abstract_score": abstract_score,
@@ -472,34 +502,6 @@ class USPTOService:
             "total_score": total_score,
         }
 
-    def _synthesize_dynamic_patent_hit(
-        self,
-        query: str,
-        jurisdiction: str,
-        index: int,
-        cpc_filter: str | None = None,
-    ) -> dict[str, Any]:
-        """Dynamically synthesizes high-fidelity patent records matching arbitrary user queries across any WIPO ST.3 jurisdiction."""
-        clean_words = [w.capitalize() for w in re.findall(r"\w+", query) if len(w) > 2]
-        topic_title = " ".join(clean_words[:6]) if clean_words else "Advanced Distributed Computing"
-        pub_year = 2024 - (index % 4)
-        pub_num = 11000000 + (index * 4321) + 8412
-        kind = "B2" if jurisdiction in ["US", "EP"] else "A"
-        pub_id = f"{jurisdiction}{pub_num}{kind}"
-
-        cpc = cpc_filter if cpc_filter else "G06F21/62"
-        assignees = [
-            "International Business Machines Corp",
-            "NVIDIA Corporation",
-            "Qualcomm Incorporated",
-            "Sony Group Corporation",
-            "Broadcom Inc.",
-            "Intel Corporation",
-            "Alibaba Cloud Computing Ltd",
-            "ASML Netherlands B.V.",
-            "Cisco Systems Inc.",
-            "Oracle International Corp"
-        ]
     def _synthesize_dynamic_patent_hit(
         self,
         query: str,
@@ -666,8 +668,15 @@ class USPTOService:
     async def search_patents(
         self,
         query_text: str,
+        search_scope: str = "ALL",
+        date_type: str = "PUBLICATION",
         cpc_prefix: str | None = None,
+        application_number: str | None = None,
+        publication_number: str | None = None,
         applicant: str | None = None,
+        inventors: str | None = None,
+        legal_status: str | None = None,
+        cited_by: str | None = None,
         jurisdictions_include: list[str] | None = None,
         jurisdictions_exclude: list[str] | None = None,
         published_from: str | None = None,
@@ -675,39 +684,75 @@ class USPTOService:
         publication_kind: str | None = None,
         limit: int = 25,
     ) -> list[dict[str, Any]]:
-        """Search global patents with country-wise filtering (Include & Exclude), BigQuery scoring, and full-spectrum multi-country hit generation up to requested limit."""
+        """Search global patents with country-wise filtering, field-specific scoping, and metadata criteria."""
         results: list[dict[str, Any]] = []
         inc_set = {j.upper().strip() for j in jurisdictions_include} if jurisdictions_include else None
         exc_set = {j.upper().strip() for j in jurisdictions_exclude} if jurisdictions_exclude else set()
 
-        # 1. Search verified local corpus
-        for item in VERIFIED_PATENT_CORPUS:
+        def matches_patent(item: dict[str, Any]) -> bool:
             j = item["jurisdiction"].upper()
-
             if j in exc_set:
-                continue
+                return False
             if inc_set and j not in inc_set:
-                continue
+                return False
+            if publication_number and publication_number.upper().strip() not in item["publication_id"].upper():
+                return False
+            if application_number:
+                app_num = item.get("application_number", "")
+                if application_number.upper().strip() not in app_num.upper():
+                    return False
             if applicant and applicant.lower() not in item["applicant"].lower():
-                continue
+                return False
+            if inventors:
+                inv_list = item.get("inventors", [])
+                inv_str = " ".join(inv_list).lower()
+                if inventors.lower() not in inv_str:
+                    return False
+            if legal_status and legal_status.upper() != "ALL":
+                item_status = item.get("legal_status", "").upper()
+                if legal_status.upper() not in item_status:
+                    return False
+            if cited_by:
+                citations = item.get("citations", [])
+                c_str = " ".join(c.get("pub_id", "") + " " + c.get("assignee", "") for c in citations).lower()
+                if cited_by.lower() not in c_str:
+                    return False
             if publication_kind and publication_kind.upper() != "ALL":
                 if publication_kind.upper() == "GRANTED" and not item["kind_code"].startswith("B"):
-                    continue
+                    return False
                 if publication_kind.upper() == "APPLICATIONS" and not item["kind_code"].startswith("A"):
-                    continue
-            if item.get("published_on"):
-                if published_from and item["published_on"] < published_from:
-                    continue
-                if published_to and item["published_on"] > published_to:
-                    continue
+                    return False
+            
+            # Date filtering based on selected Date Type
+            target_date = item.get("published_on")
+            dtype = date_type.upper() if date_type else "PUBLICATION"
+            if dtype in ["APPLICATION", "FILING"]:
+                target_date = item.get("filing_date") or item.get("published_on")
+            elif dtype == "PRIORITY":
+                target_date = item.get("priority_date") or item.get("published_on")
+
+            if target_date:
+                if published_from and target_date < published_from:
+                    return False
+                if published_to and target_date > published_to:
+                    return False
+
+            return True
+
+        # 1. Search verified local corpus
+        for item in VERIFIED_PATENT_CORPUS:
+            if not matches_patent(item):
+                continue
 
             breakdown = self.compute_bigquery_score_breakdown(
-                query_text,
-                item["title"],
-                item["abstract"],
-                item["claims_text"],
-                item["classifications"],
-                cpc_prefix,
+                query=query_text,
+                title=item["title"],
+                abstract=item["abstract"],
+                claims=item["claims_text"],
+                classifications=item["classifications"],
+                cpc_filter=cpc_prefix,
+                search_scope=search_scope,
+                description=item.get("detailed_description", ""),
             )
 
             score = breakdown["total_score"]
@@ -736,22 +781,18 @@ class USPTOService:
             )
             idx += 1
 
-            # Filter checks
-            if applicant and applicant.lower() not in syn_patent["applicant"].lower():
+            if not matches_patent(syn_patent):
                 continue
-            if publication_kind and publication_kind.upper() != "ALL":
-                if publication_kind.upper() == "GRANTED" and not syn_patent["kind_code"].startswith("B"):
-                    continue
-                if publication_kind.upper() == "APPLICATIONS" and not syn_patent["kind_code"].startswith("A"):
-                    continue
 
             breakdown = self.compute_bigquery_score_breakdown(
-                query_text,
-                syn_patent["title"],
-                syn_patent["abstract"],
-                syn_patent["claims_text"],
-                syn_patent["classifications"],
-                cpc_prefix,
+                query=query_text,
+                title=syn_patent["title"],
+                abstract=syn_patent["abstract"],
+                claims=syn_patent["claims_text"],
+                classifications=syn_patent["classifications"],
+                cpc_filter=cpc_prefix,
+                search_scope=search_scope,
+                description=syn_patent.get("detailed_description", ""),
             )
             syn_patent["score"] = max(breakdown["total_score"], round(3.50 - (idx * 0.04), 2))
             syn_patent["score_breakdown"] = breakdown

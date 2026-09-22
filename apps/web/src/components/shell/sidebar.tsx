@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
   ChevronsUpDown,
   Check,
@@ -60,14 +60,34 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
   );
 }
 
-export function Sidebar() {
+function SidebarInner() {
   const { currentRole, currentUser, profile, users, switchUser } = useActiveRole();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
   const menuRef = React.useRef<HTMLDivElement>(null);
 
-  const isActive = (href: string) => pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
+  const isActive = (href: string) => {
+    if (href.includes("?")) {
+      const [path, query] = href.split("?");
+      if (pathname !== path) return false;
+      const targetParams = new URLSearchParams(query);
+      for (const [k, v] of targetParams.entries()) {
+        if (searchParams.get(k) !== v) return false;
+      }
+      return true;
+    }
+    // If no query parameters in target href, check if current path equals href
+    if (pathname === href) {
+      // If the target href has no query param, but the URL has tab or mode that belongs to a specific sub-nav, don't falsely highlight base if a sub-nav is active
+      if (searchParams.get("tab") || searchParams.get("mode")) {
+        return false;
+      }
+      return true;
+    }
+    return false;
+  };
 
   React.useEffect(() => {
     function onPointerDown(event: PointerEvent) {
@@ -208,6 +228,21 @@ export function Sidebar() {
         </button>
       </div>
     </nav>
+  );
+}
+
+export function Sidebar() {
+  return (
+    <React.Suspense
+      fallback={
+        <nav
+          aria-label="Primary"
+          className="flex h-full w-[var(--sidebar-w)] shrink-0 flex-col border-r border-line bg-canvas"
+        />
+      }
+    >
+      <SidebarInner />
+    </React.Suspense>
   );
 }
 

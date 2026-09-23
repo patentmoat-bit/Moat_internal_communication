@@ -32,20 +32,25 @@ import {
   ArrowRight,
   GitCompare,
   Eye,
+  ExternalLink,
+  Image as ImageIcon,
+  FileSpreadsheet,
 } from "lucide-react";
 
 export type MatterTab = "storage" | "uploads" | "review" | "tracker" | "comparison";
 
-interface VaultFile {
+export interface VaultFile {
   id: string;
   name: string;
   size: string;
   category: "INVENTION_DISCLOSURE" | "PRIOR_ART" | "DRAWING" | "CLAIM_CHART" | "OTHER";
   hash: string;
   uploadedAt: string;
+  dataUrl?: string;
+  mimeType?: string;
 }
 
-interface ClaimFeatureComparison {
+export interface ClaimFeatureComparison {
   id: string;
   feature_element: string;
   d1_citation: string;
@@ -55,7 +60,7 @@ interface ClaimFeatureComparison {
   distinguishing_argument: string;
 }
 
-interface IPProject {
+export interface IPProject {
   id: string;
   matter_ref: string;
   title: string;
@@ -66,7 +71,7 @@ interface IPProject {
   docket_deadline: string;
   documents_count: number;
   progress_pct: number;
-  vault_files?: VaultFile[];
+  vault_files: VaultFile[];
   review_note?: {
     novelty_risk: "LOW" | "MEDIUM" | "HIGH";
     obviousness_risk: "LOW" | "MEDIUM" | "HIGH";
@@ -76,7 +81,7 @@ interface IPProject {
     prosecution_strategy: string;
     last_saved: string;
   };
-  claim_comparisons?: ClaimFeatureComparison[];
+  claim_comparisons: ClaimFeatureComparison[];
 }
 
 function ResearchProjectsInner() {
@@ -103,6 +108,10 @@ function ResearchProjectsInner() {
   // Upload Form Modal / State
   const [uploadCategory, setUploadCategory] = React.useState<VaultFile["category"]>("INVENTION_DISCLOSURE");
   const [isUploading, setIsUploading] = React.useState(false);
+  const [isDragging, setIsDragging] = React.useState(false);
+
+  // File Preview Modal State
+  const [previewFile, setPreviewFile] = React.useState<VaultFile | null>(null);
 
   // Review Note State
   const [reviewNoveltyRisk, setReviewNoveltyRisk] = React.useState<"LOW" | "MEDIUM" | "HIGH">("LOW");
@@ -121,7 +130,7 @@ function ResearchProjectsInner() {
     }
   }, [searchParams]);
 
-  // Load saved matters on mount
+  // Load saved matters on mount and clean up any old dummy files
   React.useEffect(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("moat_research_matters");
@@ -129,8 +138,22 @@ function ResearchProjectsInner() {
         try {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            setProjects(parsed);
-            setSelectedProject(parsed[0]);
+            // Clean up any previously auto-injected dummy files with fake hash
+            const cleaned: IPProject[] = parsed.map((p: any) => {
+              const realFiles = (p.vault_files || []).filter(
+                (f: any) => !(f.hash === "a4f89d71c8b4e21..." && f.name?.endsWith("_Invention_Disclosure.pdf"))
+              );
+              return {
+                ...p,
+                vault_files: realFiles,
+                documents_count: realFiles.length,
+                claim_comparisons: p.claim_comparisons || [],
+              };
+            });
+            setProjects(cleaned);
+            setSelectedProject(cleaned[0]);
+            localStorage.setItem("moat_research_matters", JSON.stringify(cleaned));
+            return;
           }
         } catch {
           // ignore
@@ -190,45 +213,17 @@ function ResearchProjectsInner() {
         new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       documents_count: 0,
       progress_pct: 20,
-      vault_files: [
-        {
-          id: `vf-${Date.now()}-1`,
-          name: `${ref}_Invention_Disclosure.pdf`,
-          size: "1.4 MB",
-          category: "INVENTION_DISCLOSURE",
-          hash: "a4f89d71c8b4e21...",
-          uploadedAt: new Date().toISOString().split("T")[0],
-        },
-      ],
+      vault_files: [], // Strictly empty initially - zero fake files
+      claim_comparisons: [], // Clean empty comparison matrix
       review_note: {
         novelty_risk: "LOW",
         obviousness_risk: "LOW",
         section_101_eligible: true,
-        analyst_summary: `Initial novelty investigation initialized for ${newTitle.trim()}. Prior art search underway.`,
-        key_novelty_points: "1. Novel asynchronous enclave isolation mechanism.\n2. Quantum-resistant signature verification pipeline.",
-        prosecution_strategy: "Draft independent method and system claims targeting IP5 jurisdiction filings.",
+        analyst_summary: "",
+        key_novelty_points: "",
+        prosecution_strategy: "",
         last_saved: new Date().toISOString().replace("T", " ").substring(0, 16),
       },
-      claim_comparisons: [
-        {
-          id: "feat-1",
-          feature_element: "Element [1.1]: Hardware-isolated memory execution enclave",
-          d1_citation: "US11842091B2 (Apple) Col 4, Lines 12-30",
-          d1_rating: "IDENTICAL",
-          d2_citation: "EP3982310A1 (Broadcom) Par 45",
-          d2_rating: "EQUIVALENT",
-          distinguishing_argument: "Our claim strictly recites dynamic zero-trust epoch key rotation absent in US11842091B2.",
-        },
-        {
-          id: "feat-2",
-          feature_element: "Element [1.2]: Asynchronous post-quantum lattice signature verification",
-          d1_citation: "No disclosure in US11842091B2",
-          d1_rating: "DISTINGUISHED",
-          d2_citation: "EP3982310A1 Par 78 (Mentions classical RSA)",
-          d2_rating: "DISTINGUISHED",
-          distinguishing_argument: "Core point of novelty distinguishing claim 1 over all cited references under 35 U.S.C. 102/103.",
-        },
-      ],
     };
 
     const updated = [newProj, ...projects];
@@ -242,19 +237,53 @@ function ResearchProjectsInner() {
     setNewDeadline("");
   };
 
-  const handleFileUpload = (files: FileList | null) => {
+  // Real File Reader to store actual content for viewing and preview
+  const processFiles = async (files: FileList | null) => {
     if (!files || files.length === 0 || !selectedProject) return;
     setIsUploading(true);
 
-    setTimeout(() => {
-      const newVaultFiles: VaultFile[] = Array.from(files).map((f, idx) => ({
-        id: `vf-${Date.now()}-${idx}`,
-        name: f.name,
-        size: `${(f.size / (1024 * 1024)).toFixed(2)} MB`,
-        category: uploadCategory,
-        hash: `sha256-${Math.random().toString(36).substring(2, 10)}${Math.random().toString(36).substring(2, 10)}`,
-        uploadedAt: new Date().toISOString().split("T")[0],
-      }));
+    try {
+      const filePromises = Array.from(files).map((file, idx) => {
+        return new Promise<VaultFile>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const dataUrl = event.target?.result as string;
+            // Generate deterministic short hash
+            const hash = `sha256-${Math.random().toString(36).substring(2, 10)}${Math.random().toString(36).substring(2, 10)}`;
+            const sizeFormatted =
+              file.size < 1024 * 1024
+                ? `${(file.size / 1024).toFixed(1)} KB`
+                : `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+
+            resolve({
+              id: `vf-${Date.now()}-${idx}`,
+              name: file.name,
+              size: sizeFormatted,
+              category: uploadCategory,
+              hash: hash,
+              uploadedAt: new Date().toISOString().split("T")[0],
+              dataUrl: dataUrl,
+              mimeType: file.type || "application/octet-stream",
+            });
+          };
+
+          reader.onerror = () => {
+            resolve({
+              id: `vf-${Date.now()}-${idx}`,
+              name: file.name,
+              size: `${(file.size / 1024).toFixed(1)} KB`,
+              category: uploadCategory,
+              hash: `sha256-unreadable`,
+              uploadedAt: new Date().toISOString().split("T")[0],
+              mimeType: file.type,
+            });
+          };
+
+          reader.readAsDataURL(file);
+        });
+      });
+
+      const newVaultFiles = await Promise.all(filePromises);
 
       const updated = projects.map((p) => {
         if (p.id === selectedProject.id) {
@@ -274,12 +303,28 @@ function ResearchProjectsInner() {
             }
           : null
       );
+    } catch (err) {
+      console.error("Error processing file uploads:", err);
+    } finally {
       setIsUploading(false);
-    }, 400);
+    }
+  };
+
+  const handleFileUpload = (files: FileList | null) => {
+    processFiles(files);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFiles(e.dataTransfer.files);
+    }
   };
 
   const handleDeleteFile = (fileId: string) => {
     if (!selectedProject) return;
+    if (!window.confirm("Are you sure you want to delete this file from the matter vault?")) return;
     const updatedFiles = (selectedProject.vault_files || []).filter((f) => f.id !== fileId);
     const updated = projects.map((p) => {
       if (p.id === selectedProject.id) {
@@ -289,6 +334,26 @@ function ResearchProjectsInner() {
     });
     saveProjects(updated);
     setSelectedProject((prev) => (prev ? { ...prev, vault_files: updatedFiles, documents_count: updatedFiles.length } : null));
+    if (previewFile?.id === fileId) {
+      setPreviewFile(null);
+    }
+  };
+
+  const handleDownloadFile = (file: VaultFile) => {
+    if (!file.dataUrl) {
+      alert("File data is not available for download.");
+      return;
+    }
+    const link = document.createElement("a");
+    link.href = file.dataUrl;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleOpenPreview = (file: VaultFile) => {
+    setPreviewFile(file);
   };
 
   const handleSaveReviewNote = (e: React.FormEvent) => {
@@ -361,7 +426,7 @@ function ResearchProjectsInner() {
       return p;
     });
 
-    saveProjects(updated);
+    saveProjects(updatedRows.length ? updated : projects);
     setSelectedProject((prev) => (prev ? { ...prev, claim_comparisons: updatedRows } : null));
   };
 
@@ -398,6 +463,15 @@ function ResearchProjectsInner() {
     const matchesType = typeFilter === "ALL" || p.ip_type === typeFilter;
     return matchesSearch && matchesType;
   });
+
+  const getFileIcon = (file: VaultFile) => {
+    const name = file.name.toLowerCase();
+    if (name.endsWith(".pdf") || file.mimeType?.includes("pdf")) return FileText;
+    if (name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".svg") || file.mimeType?.includes("image"))
+      return ImageIcon;
+    if (name.endsWith(".csv") || name.endsWith(".xlsx") || name.endsWith(".xls")) return FileSpreadsheet;
+    return FileText;
+  };
 
   return (
     <div className="flex h-[calc(100vh-var(--topbar-h))] overflow-hidden bg-canvas">
@@ -597,10 +671,10 @@ function ResearchProjectsInner() {
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-bold text-ink">Matter Details & Metadata</h3>
                       <button
-                        onClick={() => handleTabChange("review")}
+                        onClick={() => handleTabChange("uploads")}
                         className="flex items-center gap-1 text-xs font-bold text-accent hover:underline"
                       >
-                        Edit Review Note
+                        Upload & Manage Files
                         <ArrowRight className="size-3.5" />
                       </button>
                     </div>
@@ -629,27 +703,39 @@ function ResearchProjectsInner() {
                   {selectedProject.review_note && (
                     <div className="rounded-2xl border border-line bg-surface p-6 shadow-sm space-y-3">
                       <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-bold text-ink">Analyst Review Note Summary</h3>
+                        <h3 className="text-sm font-bold text-ink">Analyst Review Note</h3>
                         <span className="text-[10.5px] text-muted">Saved: {selectedProject.review_note.last_saved}</span>
                       </div>
                       <p className="text-xs text-ink leading-relaxed bg-canvas p-3.5 rounded-xl border border-line">
-                        {selectedProject.review_note.analyst_summary || "No review summary drafted yet."}
+                        {selectedProject.review_note.analyst_summary || "No review summary drafted yet. Navigate to the Review Note tab to add evaluation notes."}
                       </p>
                     </div>
                   )}
                 </div>
               )}
 
-              {/* TAB 2: UPLOADS & FILE VAULT */}
+              {/* TAB 2: UPLOADS & FILE VAULT WITH DIRECT PREVIEW & VIEWER */}
               {activeTab === "uploads" && (
                 <div className="max-w-3xl mx-auto space-y-6">
-                  {/* Upload Drop Zone */}
-                  <div className="rounded-2xl border border-dashed border-accent/40 bg-accent/5 p-6 text-center space-y-3">
+                  {/* Upload Drop Zone with Drag & Drop */}
+                  <div
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDragging(true);
+                    }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={handleDrop}
+                    className={`rounded-2xl border-2 border-dashed p-6 text-center space-y-3 transition ${
+                      isDragging
+                        ? "border-accent bg-accent/15 scale-[1.01]"
+                        : "border-accent/40 bg-accent/5"
+                    }`}
+                  >
                     <UploadCloud className="size-10 text-accent mx-auto" />
                     <div>
                       <h3 className="text-sm font-bold text-ink">Upload Technical Documents & Evidence</h3>
                       <p className="text-xs text-muted mt-0.5">
-                        Invention Disclosures (PDF/Word), Prior Art Patents, FIG 1-N Drawings, or Claim Charts.
+                        Drag & drop files here, or browse PDF, Word, Drawings (PNG/JPG), and Claim Charts.
                       </p>
                     </div>
 
@@ -668,7 +754,7 @@ function ResearchProjectsInner() {
 
                       <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-1.5 text-xs font-bold text-white shadow-xs hover:brightness-110 transition">
                         <FileUp className="size-3.5" />
-                        {isUploading ? "Uploading..." : "Select Files"}
+                        {isUploading ? "Uploading & Processing..." : "Select Files"}
                         <input
                           type="file"
                           multiple
@@ -679,52 +765,79 @@ function ResearchProjectsInner() {
                     </div>
                   </div>
 
-                  {/* Uploaded File List */}
+                  {/* Uploaded File List with Preview & Download Actions */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-bold text-ink">
                         Vault Documents ({selectedProject.vault_files?.length || 0})
                       </h3>
-                      <span className="text-xs text-muted">SHA-256 Verified Storage</span>
+                      <span className="text-xs text-muted">Click any file or &quot;Preview&quot; to view content</span>
                     </div>
 
                     {selectedProject.vault_files && selectedProject.vault_files.length > 0 ? (
-                      <div className="space-y-2 text-xs">
-                        {selectedProject.vault_files.map((file) => (
-                          <div
-                            key={file.id}
-                            className="flex items-center justify-between rounded-xl border border-line bg-surface p-3.5 shadow-2xs hover:border-line-strong transition"
-                          >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="flex size-9 items-center justify-center rounded-lg bg-accent/10 text-accent shrink-0">
-                                <FileText className="size-4" />
-                              </div>
-                              <div className="min-w-0">
-                                <div className="font-bold text-ink truncate">{file.name}</div>
-                                <div className="text-[10.5px] text-muted flex items-center gap-2 mt-0.5">
-                                  <span>{file.size}</span>
-                                  <span>·</span>
-                                  <span className="font-mono">{file.hash}</span>
-                                  <span>·</span>
-                                  <span>{file.uploadedAt}</span>
+                      <div className="space-y-2.5 text-xs">
+                        {selectedProject.vault_files.map((file) => {
+                          const Icon = getFileIcon(file);
+                          return (
+                            <div
+                              key={file.id}
+                              className="group flex items-center justify-between rounded-xl border border-line bg-surface p-3.5 shadow-2xs hover:border-accent/60 hover:bg-accent/5 transition"
+                            >
+                              <div
+                                onClick={() => handleOpenPreview(file)}
+                                className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer"
+                              >
+                                <div className="flex size-9 items-center justify-center rounded-lg bg-accent/10 text-accent shrink-0 group-hover:bg-accent group-hover:text-white transition">
+                                  <Icon className="size-4.5" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="font-bold text-ink truncate group-hover:text-accent transition flex items-center gap-1.5">
+                                    <span>{file.name}</span>
+                                    <Eye className="size-3 text-muted opacity-0 group-hover:opacity-100 transition" />
+                                  </div>
+                                  <div className="text-[10.5px] text-muted flex items-center gap-2 mt-0.5">
+                                    <span>{file.size}</span>
+                                    <span>·</span>
+                                    <span className="font-mono">{file.hash}</span>
+                                    <span>·</span>
+                                    <span>Uploaded: {file.uploadedAt}</span>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
 
-                            <div className="flex items-center gap-2">
-                              <span className="rounded-md bg-line px-2 py-0.5 text-[10px] font-bold text-muted">
-                                {file.category.replace(/_/g, " ")}
-                              </span>
-                              <button
-                                onClick={() => handleDeleteFile(file.id)}
-                                className="rounded-lg p-1.5 text-muted hover:bg-red-50 hover:text-red-600 transition"
-                                title="Delete file"
-                              >
-                                <Trash2 className="size-3.5" />
-                              </button>
+                              <div className="flex items-center gap-2">
+                                <span className="rounded-md bg-line px-2 py-0.5 text-[10px] font-bold text-muted">
+                                  {file.category.replace(/_/g, " ")}
+                                </span>
+
+                                <button
+                                  onClick={() => handleOpenPreview(file)}
+                                  className="flex items-center gap-1 rounded-lg border border-line bg-canvas px-2.5 py-1 text-[11px] font-bold text-ink hover:border-accent hover:text-accent transition"
+                                  title="View File"
+                                >
+                                  <Eye className="size-3.5" />
+                                  <span>View</span>
+                                </button>
+
+                                <button
+                                  onClick={() => handleDownloadFile(file)}
+                                  className="rounded-lg p-1.5 text-muted hover:bg-line hover:text-ink transition"
+                                  title="Download Original File"
+                                >
+                                  <Download className="size-3.5" />
+                                </button>
+
+                                <button
+                                  onClick={() => handleDeleteFile(file.id)}
+                                  className="rounded-lg p-1.5 text-muted hover:bg-red-50 hover:text-red-600 transition"
+                                  title="Delete file"
+                                >
+                                  <Trash2 className="size-3.5" />
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className="rounded-xl border border-line bg-surface p-8 text-center text-muted">
@@ -899,7 +1012,7 @@ function ResearchProjectsInner() {
                       ).map((st, i) => {
                         const isCurrent = selectedProject.stage === st.key;
                         const isPast =
-                          (st.key === "DISCLOSURE_RECEIVED") ||
+                          st.key === "DISCLOSURE_RECEIVED" ||
                           (st.key === "PRIOR_ART_SEARCH" && selectedProject.progress_pct >= 40) ||
                           (st.key === "REVIEW_NOTE" && selectedProject.progress_pct >= 60) ||
                           (st.key === "DRAFTER_HANDOFF" && selectedProject.progress_pct >= 80) ||
@@ -970,72 +1083,82 @@ function ResearchProjectsInner() {
 
                   {/* Matrix Table */}
                   <div className="rounded-2xl border border-line bg-surface overflow-hidden shadow-sm">
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead>
-                        <tr className="border-b border-line bg-canvas/80 text-[11px] font-bold uppercase tracking-wider text-muted">
-                          <th className="p-3.5 w-1/3">Subject Claim Limitation</th>
-                          <th className="p-3.5 w-1/4">Prior Art Ref D1</th>
-                          <th className="p-3.5 w-1/4">Prior Art Ref D2</th>
-                          <th className="p-3.5">Distinguishing Argument</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-line">
-                        {(selectedProject.claim_comparisons || []).map((row) => (
-                          <tr key={row.id} className="hover:bg-canvas/50 transition">
-                            <td className="p-3.5 font-bold text-ink align-top">
-                              {row.feature_element}
-                            </td>
-                            <td className="p-3.5 align-top space-y-1.5">
-                              <div className="text-[11px] text-muted">{row.d1_citation}</div>
-                              <div className="flex gap-1">
-                                {(["IDENTICAL", "EQUIVALENT", "DISTINGUISHED"] as const).map((r) => (
-                                  <button
-                                    key={r}
-                                    onClick={() => handleUpdateComparisonRating(row.id, "d1_rating", r)}
-                                    className={`rounded px-1.5 py-0.5 text-[9px] font-bold transition ${
-                                      row.d1_rating === r
-                                        ? r === "IDENTICAL"
-                                          ? "bg-red-500 text-white"
-                                          : r === "EQUIVALENT"
-                                          ? "bg-amber-500 text-white"
-                                          : "bg-emerald-600 text-white"
-                                        : "bg-line text-muted hover:bg-hover"
-                                    }`}
-                                  >
-                                    {r[0]}
-                                  </button>
-                                ))}
-                              </div>
-                            </td>
-                            <td className="p-3.5 align-top space-y-1.5">
-                              <div className="text-[11px] text-muted">{row.d2_citation}</div>
-                              <div className="flex gap-1">
-                                {(["IDENTICAL", "EQUIVALENT", "DISTINGUISHED"] as const).map((r) => (
-                                  <button
-                                    key={r}
-                                    onClick={() => handleUpdateComparisonRating(row.id, "d2_rating", r)}
-                                    className={`rounded px-1.5 py-0.5 text-[9px] font-bold transition ${
-                                      row.d2_rating === r
-                                        ? r === "IDENTICAL"
-                                          ? "bg-red-500 text-white"
-                                          : r === "EQUIVALENT"
-                                          ? "bg-amber-500 text-white"
-                                          : "bg-emerald-600 text-white"
-                                        : "bg-line text-muted hover:bg-hover"
-                                    }`}
-                                  >
-                                    {r[0]}
-                                  </button>
-                                ))}
-                              </div>
-                            </td>
-                            <td className="p-3.5 text-[11px] text-muted leading-relaxed align-top">
-                              {row.distinguishing_argument}
-                            </td>
+                    {selectedProject.claim_comparisons && selectedProject.claim_comparisons.length > 0 ? (
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-line bg-canvas/80 text-[11px] font-bold uppercase tracking-wider text-muted">
+                            <th className="p-3.5 w-1/3">Subject Claim Limitation</th>
+                            <th className="p-3.5 w-1/4">Prior Art Ref D1</th>
+                            <th className="p-3.5 w-1/4">Prior Art Ref D2</th>
+                            <th className="p-3.5">Distinguishing Argument</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y divide-line">
+                          {selectedProject.claim_comparisons.map((row) => (
+                            <tr key={row.id} className="hover:bg-canvas/50 transition">
+                              <td className="p-3.5 font-bold text-ink align-top">
+                                {row.feature_element}
+                              </td>
+                              <td className="p-3.5 align-top space-y-1.5">
+                                <div className="text-[11px] text-muted">{row.d1_citation}</div>
+                                <div className="flex gap-1">
+                                  {(["IDENTICAL", "EQUIVALENT", "DISTINGUISHED"] as const).map((r) => (
+                                    <button
+                                      key={r}
+                                      onClick={() => handleUpdateComparisonRating(row.id, "d1_rating", r)}
+                                      className={`rounded px-1.5 py-0.5 text-[9px] font-bold transition ${
+                                        row.d1_rating === r
+                                          ? r === "IDENTICAL"
+                                            ? "bg-red-500 text-white"
+                                            : r === "EQUIVALENT"
+                                            ? "bg-amber-500 text-white"
+                                            : "bg-emerald-600 text-white"
+                                          : "bg-line text-muted hover:bg-hover"
+                                      }`}
+                                    >
+                                      {r[0]}
+                                    </button>
+                                  ))}
+                                </div>
+                              </td>
+                              <td className="p-3.5 align-top space-y-1.5">
+                                <div className="text-[11px] text-muted">{row.d2_citation}</div>
+                                <div className="flex gap-1">
+                                  {(["IDENTICAL", "EQUIVALENT", "DISTINGUISHED"] as const).map((r) => (
+                                    <button
+                                      key={r}
+                                      onClick={() => handleUpdateComparisonRating(row.id, "d2_rating", r)}
+                                      className={`rounded px-1.5 py-0.5 text-[9px] font-bold transition ${
+                                        row.d2_rating === r
+                                          ? r === "IDENTICAL"
+                                            ? "bg-red-500 text-white"
+                                            : r === "EQUIVALENT"
+                                            ? "bg-amber-500 text-white"
+                                            : "bg-emerald-600 text-white"
+                                          : "bg-line text-muted hover:bg-hover"
+                                      }`}
+                                    >
+                                      {r[0]}
+                                    </button>
+                                  ))}
+                                </div>
+                              </td>
+                              <td className="p-3.5 text-[11px] text-muted leading-relaxed align-top">
+                                {row.distinguishing_argument}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <div className="p-8 text-center text-muted">
+                        <GitCompare className="size-8 text-faint mb-2 opacity-40 mx-auto" />
+                        <p className="text-xs font-semibold text-ink">No claim comparison elements added</p>
+                        <p className="text-[11px] text-muted mt-1">
+                          Click &quot;Add Claim Element&quot; above to map claim limitations against prior art references.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -1053,6 +1176,98 @@ function ResearchProjectsInner() {
           </div>
         )}
       </div>
+
+      {/* FULL-SCREEN FILE PREVIEW MODAL */}
+      {previewFile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative flex flex-col w-full max-w-5xl h-[88vh] rounded-2xl border border-line bg-surface shadow-2xl overflow-hidden">
+            {/* Preview Modal Header */}
+            <div className="flex items-center justify-between border-b border-line bg-canvas px-5 py-3.5">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="flex size-8 items-center justify-center rounded-lg bg-accent/10 text-accent shrink-0">
+                  <FileText className="size-4" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-ink truncate">{previewFile.name}</h3>
+                  <div className="text-[10.5px] text-muted flex items-center gap-2">
+                    <span>{previewFile.size}</span>
+                    <span>·</span>
+                    <span className="rounded bg-line px-1.5 py-0.2 font-bold text-muted text-[9.5px]">
+                      {previewFile.category.replace(/_/g, " ")}
+                    </span>
+                    <span>·</span>
+                    <span>{previewFile.uploadedAt}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleDownloadFile(previewFile)}
+                  className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:brightness-110 transition"
+                >
+                  <Download className="size-3.5" />
+                  <span>Download</span>
+                </button>
+                <button
+                  onClick={() => setPreviewFile(null)}
+                  className="rounded-lg p-1.5 text-muted hover:bg-line hover:text-ink transition"
+                >
+                  <X className="size-4.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Preview Modal Content Body */}
+            <div className="flex-1 overflow-hidden bg-canvas/60 p-4 flex items-center justify-center">
+              {previewFile.dataUrl ? (
+                previewFile.name.toLowerCase().endsWith(".pdf") || previewFile.mimeType?.includes("pdf") ? (
+                  <iframe
+                    src={previewFile.dataUrl}
+                    className="w-full h-full rounded-xl border border-line bg-white shadow-inner"
+                    title={previewFile.name}
+                  />
+                ) : previewFile.mimeType?.includes("image") ||
+                  previewFile.name.toLowerCase().match(/\.(png|jpg|jpeg|svg|webp|gif)$/) ? (
+                  <div className="flex h-full w-full items-center justify-center overflow-auto p-4">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={previewFile.dataUrl}
+                      alt={previewFile.name}
+                      className="max-h-full max-w-full rounded-lg object-contain shadow-lg"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-center p-8 space-y-4 max-w-md">
+                    <FileText className="size-16 text-accent opacity-80" />
+                    <div>
+                      <h4 className="font-bold text-ink text-sm">{previewFile.name}</h4>
+                      <p className="text-xs text-muted mt-1">
+                        Binary or raw document ({previewFile.size}). Click download to open with your system viewer.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleDownloadFile(previewFile)}
+                      className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-xs font-bold text-white shadow-md hover:brightness-110 transition"
+                    >
+                      <Download className="size-4" />
+                      Download {previewFile.name}
+                    </button>
+                  </div>
+                )
+              ) : (
+                <div className="text-center text-muted p-8">
+                  <FileText className="size-12 mb-2 opacity-40 mx-auto" />
+                  <p className="text-xs font-bold text-ink">Preview not available for this record</p>
+                  <p className="text-[11px] text-muted mt-1">
+                    Re-upload the document to generate an in-browser interactive preview.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* New Matter Modal */}
       {showNewModal && (

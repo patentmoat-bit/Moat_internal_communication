@@ -35,7 +35,9 @@ import {
   ExternalLink,
   Image as ImageIcon,
   FileSpreadsheet,
+  FileCheck,
 } from "lucide-react";
+import mammoth from "mammoth";
 
 export type MatterTab = "storage" | "uploads" | "review" | "tracker" | "comparison";
 
@@ -112,6 +114,58 @@ function ResearchProjectsInner() {
 
   // File Preview Modal State
   const [previewFile, setPreviewFile] = React.useState<VaultFile | null>(null);
+  const [docxHtml, setDocxHtml] = React.useState<string>("");
+  const [isConvertingDocx, setIsConvertingDocx] = React.useState<boolean>(false);
+
+  // Convert DOCX files to clean HTML when opened
+  React.useEffect(() => {
+    if (!previewFile?.dataUrl) {
+      setDocxHtml("");
+      setIsConvertingDocx(false);
+      return;
+    }
+
+    const isDocx =
+      previewFile.name.toLowerCase().endsWith(".docx") ||
+      previewFile.name.toLowerCase().endsWith(".doc") ||
+      previewFile.mimeType?.includes("word") ||
+      previewFile.mimeType?.includes("officedocument");
+
+    if (isDocx) {
+      setIsConvertingDocx(true);
+      setDocxHtml("");
+      try {
+        const base64Parts = previewFile.dataUrl.split(",");
+        const base64Data = base64Parts.length > 1 ? base64Parts[1] : base64Parts[0];
+        const binaryString = window.atob(base64Data);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+
+        mammoth
+          .convertToHtml({ arrayBuffer: bytes.buffer })
+          .then((result) => {
+            setDocxHtml(result.value);
+          })
+          .catch((err) => {
+            console.error("Mammoth DOCX conversion error:", err);
+            setDocxHtml("<p class='text-red-500'>Unable to parse Word document formatting.</p>");
+          })
+          .finally(() => {
+            setIsConvertingDocx(false);
+          });
+      } catch (e) {
+        console.error("DOCX parsing exception:", e);
+        setIsConvertingDocx(false);
+        setDocxHtml("");
+      }
+    } else {
+      setDocxHtml("");
+      setIsConvertingDocx(false);
+    }
+  }, [previewFile]);
 
   // Review Note State
   const [reviewNoveltyRisk, setReviewNoveltyRisk] = React.useState<"LOW" | "MEDIUM" | "HIGH">("LOW");
@@ -1227,6 +1281,37 @@ function ResearchProjectsInner() {
                     className="w-full h-full rounded-xl border border-line bg-white shadow-inner"
                     title={previewFile.name}
                   />
+                ) : previewFile.name.toLowerCase().endsWith(".docx") ||
+                  previewFile.name.toLowerCase().endsWith(".doc") ||
+                  previewFile.mimeType?.includes("word") ||
+                  previewFile.mimeType?.includes("officedocument") ? (
+                  <div className="w-full h-full overflow-y-auto p-4 sm:p-6 bg-canvas/80">
+                    <div className="max-w-4xl mx-auto rounded-2xl border border-line bg-white text-slate-900 shadow-2xl p-8 sm:p-12 font-sans space-y-4 min-h-[60vh]">
+                      <div className="flex items-center justify-between border-b border-slate-200 pb-3 text-xs text-slate-500 font-mono">
+                        <span className="font-bold uppercase tracking-wider text-accent flex items-center gap-1.5">
+                          <FileText className="size-3.5" />
+                          Word Document (.docx) Interactive Reader
+                        </span>
+                        <span>{previewFile.size}</span>
+                      </div>
+
+                      {isConvertingDocx ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
+                          <div className="size-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+                          <p className="text-xs font-bold text-slate-700">Converting Word Document to Interactive Layout...</p>
+                        </div>
+                      ) : docxHtml ? (
+                        <div
+                          className="prose prose-slate max-w-none text-[13.5px] leading-relaxed text-slate-800 space-y-3 [&_h1]:text-2xl [&_h1]:font-black [&_h1]:text-slate-900 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-slate-900 [&_h3]:text-lg [&_h3]:font-bold [&_p]:leading-relaxed [&_table]:w-full [&_table]:border-collapse [&_table]:my-4 [&_th]:border [&_th]:border-slate-300 [&_th]:p-2 [&_th]:bg-slate-100 [&_th]:font-bold [&_td]:border [&_td]:border-slate-200 [&_td]:p-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_strong]:font-bold [&_em]:italic"
+                          dangerouslySetInnerHTML={{ __html: docxHtml }}
+                        />
+                      ) : (
+                        <div className="text-center py-12 text-slate-500">
+                          <p className="text-xs font-semibold">Empty document or unformatted Word content.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 ) : previewFile.mimeType?.includes("image") ||
                   previewFile.name.toLowerCase().match(/\.(png|jpg|jpeg|svg|webp|gif)$/) ? (
                   <div className="flex h-full w-full items-center justify-center overflow-auto p-4">

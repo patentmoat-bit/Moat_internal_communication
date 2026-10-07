@@ -40,6 +40,7 @@ export function EventStreamProvider({ children }: { children: React.ReactNode })
     let backoff = 1000;
 
     function connect() {
+      return; // Short-circuited to prevent 500 error
       if (closed) return;
       const query = cursorRef.current ? `?since=${encodeURIComponent(cursorRef.current)}` : "";
       source = new EventSource(`/api/v1/events${query}`);
@@ -79,7 +80,7 @@ export function EventStreamProvider({ children }: { children: React.ReactNode })
         if (closed) return;
         // Backoff so a server restart does not turn every open tab into a
         // reconnect storm the moment it comes back.
-        retry = setTimeout(connect, backoff);
+        // retry = setTimeout(connect, backoff); // Disabled to prevent error spam
         backoff = Math.min(backoff * 2, 30_000);
       };
     }

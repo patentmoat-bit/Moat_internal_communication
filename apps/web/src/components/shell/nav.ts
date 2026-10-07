@@ -32,7 +32,11 @@ import {
   Compass,
   History,
   Image as ImageIcon,
-} from "lucide-react";
+  Newspaper,
+  CheckSquare,
+  CalendarClock,
+  LayoutDashboard,
+  Activity} from "lucide-react";
 import type { RoleType } from "@/components/auth/role-context";
 
 export interface NavItem {
@@ -142,12 +146,28 @@ export const ROLE_NAVIGATIONS: Record<RoleType, NavGroup[]> = {
   ],
 
   CEO: [
+    
+    {
+      label: "Executive",
+      items: [
+        { href: "/dashboard/ceo", label: "Dashboard", icon: LayoutDashboard },
+      ],
+    },
     {
       label: "Executive Oversight",
       items: [
         { href: "/portfolio", label: "Strategic IP Portfolio", icon: Shield },
         { href: "/intelligence", label: "IP Intelligence Suite", icon: Sparkles },
-        { href: "/portfolio", label: "1-Click Filing Approvals", icon: CheckCircle },
+        { href: "/portfolio?tab=approvals", label: "1-Click Filing Approvals", icon: CheckCircle },
+      ],
+    },
+    {
+      label: "Innovation",
+      items: [
+        { href: "/inventions/new", label: "New Ideas", icon: Lightbulb },
+        { href: "/portfolio/pipeline", label: "Pipeline", icon: Layers },
+        { href: "/portfolio/opportunities", label: "Opportunities", icon: Compass },
+        { href: "/inventions", label: "Workspace", icon: Briefcase },
       ],
     },
     {
@@ -159,9 +179,31 @@ export const ROLE_NAVIGATIONS: Record<RoleType, NavGroup[]> = {
       ],
     },
     {
+      label: "IP News & Intelligence",
+      items: [
+        { href: "/dashboard/ceo/news", label: "IP News & Intelligence", icon: Newspaper },
+      ],
+    },
+    {
       label: "Decisions & Actions",
       items: [
+        { href: "/dashboard/ceo/approvals", label: "Approvals", icon: CheckSquare },
+        { href: "/dashboard/ceo/docket", label: "Docket", icon: CalendarClock },
         { href: "/inbox", label: "Executive Command Inbox", icon: Inbox },
+      ],
+    },
+    {
+      label: "Reports",
+      items: [
+        { href: "/dashboard/ceo/reports/executive", label: "Executive Reports", icon: FileText },
+        { href: "/dashboard/ceo/reports/innovation", label: "Innovation Reports", icon: Lightbulb },
+        { href: "/dashboard/ceo/reports/portfolio", label: "Portfolio Reports", icon: Briefcase },
+      ],
+    },
+    {
+      label: "Activity",
+      items: [
+        { href: "/dashboard/ceo/activity", label: "Activity History", icon: Activity },
       ],
     },
   ],

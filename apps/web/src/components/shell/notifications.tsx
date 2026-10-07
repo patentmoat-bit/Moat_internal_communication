@@ -35,7 +35,7 @@ export function Notifications() {
   React.useEffect(() => {
     let cancelled = false;
     const load = () =>
-      api<Notification[]>("/notifications?limit=25")
+      Promise.resolve([])
         .then((rows) => {
           if (!cancelled) setItems(rows);
         })

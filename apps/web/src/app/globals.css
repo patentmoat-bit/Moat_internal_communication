@@ -11,6 +11,16 @@
    -------------------------------------------------------------------------- */
 @theme inline {
   --color-canvas: var(--canvas);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--ink);
+  --color-background: var(--canvas);
+  --color-foreground: var(--ink);
+  --color-border: var(--line);
+  --color-input: var(--line);
+  --color-muted: var(--surface-sunken);
+  --color-muted-foreground: var(--ink-muted);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--ink-on-accent);
   --color-surface: var(--surface);
   --color-sunken: var(--surface-sunken);
   --color-raised: var(--surface-raised);

@@ -38,9 +38,60 @@ interface ChatMessage {
   time: string;
 }
 
+const DEFAULT_INBOX_ITEMS: InboxItem[] = [
+  {
+    id: "inb-1",
+    type: "APPROVAL_REQUEST",
+    title: "USPTO 1-Click Filing Signoff Required: MAT-2026-081",
+    sender_role: "PATENT_ANALYST",
+    sender_name: "Elena Rostova",
+    matter_ref: "MAT-2026-081",
+    timestamp: "10 mins ago",
+    is_read: false,
+    priority: "HIGH",
+    description: "Quantum-Resistant Lattice Key Exchange specification and Claim Tree passed all Section 101/102/103 checks. Ready for immediate executive signoff.",
+  },
+  {
+    id: "inb-2",
+    type: "APPROVAL_REQUEST",
+    title: "Statutory Fee Docket Authorization: MAT-2026-094",
+    sender_role: "FINANCE",
+    sender_name: "Sarah Jenkins",
+    matter_ref: "MAT-2026-094",
+    timestamp: "1 hour ago",
+    is_read: false,
+    priority: "HIGH",
+    description: "Estimated USPTO statutory filing and attorney disbursement of $12,200 requires executive budget clearance.",
+  },
+  {
+    id: "inb-3",
+    type: "ASSIGNMENT",
+    title: "Claim Tree Architecture Milestone Reached: MAT-2026-102",
+    sender_role: "PATENT_DRAFTER",
+    sender_name: "David Chen",
+    matter_ref: "MAT-2026-102",
+    timestamp: "3 hours ago",
+    is_read: true,
+    priority: "NORMAL",
+    description: "Independent claim 1 and 17 dependent claims completed. Awaiting executive signoff to advance from Claim to Protect stage.",
+  },
+  {
+    id: "inb-4",
+    type: "DEADLINE",
+    title: "Stage Gate Review: Cryogenic Superconducting Cell MAT-2026-128",
+    sender_role: "PATENT_ANALYST",
+    sender_name: "Dr. Jennifer Wu",
+    matter_ref: "MAT-2026-128",
+    timestamp: "Yesterday",
+    is_read: true,
+    priority: "NORMAL",
+    description: "Continuous 72-hour Josephson junction testbench logs verified. Ready to advance to Architect stage.",
+  },
+];
+
 export default function CommandInboxPage() {
   const [activeFilter, setActiveFilter] = React.useState<string>("ALL");
-  const [items, setItems] = React.useState<InboxItem[]>([]);
+  const [items, setItems] = React.useState<InboxItem[]>(DEFAULT_INBOX_ITEMS);
   const [chatMessages, setChatMessages] = React.useState<ChatMessage[]>([]);
   const [newChatText, setNewChatText] = React.useState("");
 
@@ -52,6 +103,8 @@ export default function CommandInboxPage() {
           const parsed = JSON.parse(savedItems);
           if (Array.isArray(parsed) && parsed.length > 0) {
             setItems(parsed);
+          } else {
+            setItems(DEFAULT_INBOX_ITEMS);
           }
         } catch {
           // ignore

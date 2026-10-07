@@ -13,10 +13,13 @@ const nextConfig: NextConfig = {
 
   async rewrites() {
     // Proxy the API through the web origin so the session cookie is
-    // first-party. Without this the cookie is cross-site, which means fighting
-    // SameSite=None + Secure in development for no benefit. In production the
-    // gateway routes /api to the same place.
-    return [{ source: "/api/:path*", destination: `${API_ORIGIN}/api/:path*` }];
+    // first-party. Using fallback ensures local App Router API endpoints
+    // (such as /api/ip-news/[id]) are served locally first before proxying.
+    return {
+      fallback: [
+        { source: "/api/:path*", destination: `${API_ORIGIN}/api/:path*` },
+      ],
+    };
   },
 };
 

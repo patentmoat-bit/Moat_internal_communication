@@ -15,12 +15,18 @@ const API_ORIGIN = process.env.MOAT_API_ORIGIN ?? "http://127.0.0.1:8000";
 export async function serverApi<T>(path: string): Promise<T | null> {
   const cookieHeader = (await cookies()).toString();
 
-  const response = await fetch(`${API_ORIGIN}/api/v1${path}`, {
-    headers: { cookie: cookieHeader },
-    cache: "no-store",
-  });
+  try {
+    const response = await fetch(`${API_ORIGIN}/api/v1${path}`, {
+      headers: { cookie: cookieHeader },
+      cache: "no-store",
+    });
 
-  if (!response.ok) return null;
-  if (response.status === 204) return null;
-  return (await response.json()) as T;
+    if (!response.ok) return null;
+    if (response.status === 204) return null;
+    return (await response.json()) as T;
+  } catch (error) {
+    // If the backend is down (e.g., ECONNREFUSED), catch the error and return null
+    // This prevents the entire page from crashing during Server-Side Rendering
+    return null;
+  }
 }

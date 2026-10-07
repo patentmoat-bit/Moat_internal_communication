@@ -72,16 +72,70 @@ export const ROLE_CONFIGS: Record<RoleType, RoleProfile> = {
 // Backward-compatible alias for existing components
 export const ROLE_PROFILES = ROLE_CONFIGS;
 
-const DEFAULT_ADMIN: PlatformUser = {
-  id: "usr-admin",
-  name: "Organization Admin",
-  email: "admin@moat.ai",
-  role: "ADMIN",
-  department: "Administration & Security",
-  status: "ACTIVE",
-  createdAt: new Date().toISOString().split("T")[0],
-  avatarTone: "rose",
-};
+export const DEFAULT_USERS: PlatformUser[] = [
+  {
+    id: "usr-ceo",
+    name: "Dr. Marcus Vance",
+    email: "marcus.vance@moat.ai",
+    role: "CEO",
+    department: "Executive Leadership & Strategy",
+    status: "ACTIVE",
+    createdAt: "2026-01-01",
+    avatarTone: "amber",
+  },
+  {
+    id: "usr-admin",
+    name: "Organization Admin",
+    email: "admin@moat.ai",
+    role: "ADMIN",
+    department: "Administration & Security",
+    status: "ACTIVE",
+    createdAt: "2026-01-01",
+    avatarTone: "rose",
+  },
+  {
+    id: "usr-analyst",
+    name: "Elena Rostova",
+    email: "elena.rostova@moat.ai",
+    role: "PATENT_ANALYST",
+    department: "Patent Research & Prior Art",
+    status: "ACTIVE",
+    createdAt: "2026-01-05",
+    avatarTone: "purple",
+  },
+  {
+    id: "usr-drafter",
+    name: "David Chen",
+    email: "david.chen@moat.ai",
+    role: "PATENT_DRAFTER",
+    department: "Patent Engineering & Claims",
+    status: "ACTIVE",
+    createdAt: "2026-01-10",
+    avatarTone: "blue",
+  },
+  {
+    id: "usr-design",
+    name: "Aria Thorne",
+    email: "aria.thorne@moat.ai",
+    role: "DESIGN_TEAM",
+    department: "Illustration & Technical Drawings",
+    status: "ACTIVE",
+    createdAt: "2026-01-12",
+    avatarTone: "emerald",
+  },
+  {
+    id: "usr-finance",
+    name: "Sarah Jenkins",
+    email: "sarah.jenkins@moat.ai",
+    role: "FINANCE",
+    department: "IP Capital & Statutory Fees",
+    status: "ACTIVE",
+    createdAt: "2026-01-15",
+    avatarTone: "teal",
+  },
+];
+
+const DEFAULT_ADMIN: PlatformUser = DEFAULT_USERS[0]; // Dr. Marcus Vance (CEO) as primary executive
 
 interface RoleContextValue {
   currentRole: RoleType;
@@ -96,10 +150,10 @@ interface RoleContextValue {
 }
 
 const RoleContext = React.createContext<RoleContextValue>({
-  currentRole: "ADMIN",
+  currentRole: "CEO",
   currentUser: DEFAULT_ADMIN,
-  profile: { ...ROLE_CONFIGS.ADMIN, name: DEFAULT_ADMIN.name, email: DEFAULT_ADMIN.email },
-  users: [DEFAULT_ADMIN],
+  profile: { ...ROLE_CONFIGS.CEO, name: DEFAULT_ADMIN.name, email: DEFAULT_ADMIN.email },
+  users: DEFAULT_USERS,
   setRole: () => {},
   switchUser: () => {},
   createUser: () => DEFAULT_ADMIN,
@@ -109,8 +163,8 @@ const RoleContext = React.createContext<RoleContextValue>({
 
 export function RoleProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [users, setUsers] = React.useState<PlatformUser[]>([DEFAULT_ADMIN]);
-  const [currentUserId, setCurrentUserId] = React.useState<string>(DEFAULT_ADMIN.id);
+  const [users, setUsers] = React.useState<PlatformUser[]>(DEFAULT_USERS);
+  const [currentUserId, setCurrentUserId] = React.useState<string>(DEFAULT_USERS[0].id);
 
   // Load registered users from localStorage
   React.useEffect(() => {
@@ -120,7 +174,14 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
         try {
           const parsed = JSON.parse(savedUsers);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            setUsers(parsed);
+            // Merge with default users so CEO is always present
+            const merged = [...parsed];
+            DEFAULT_USERS.forEach((du) => {
+              if (!merged.some((u) => u.id === du.id)) {
+                merged.push(du);
+              }
+            });
+            setUsers(merged);
           }
         } catch {
           // ignore
@@ -142,12 +203,12 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
   };
 
   const currentUser = users.find((u) => u.id === currentUserId) || users[0] || DEFAULT_ADMIN;
-  const currentRole = currentUser.role || "ADMIN";
+  const currentRole = currentUser.role || "CEO";
 
   const setRole = (role: RoleType) => {
     const updatedUsers = users.map((u) => (u.id === currentUser.id ? { ...u, role } : u));
     saveUsers(updatedUsers);
-    const target = ROLE_CONFIGS[role]?.defaultRoute || "/search";
+    const target = ROLE_CONFIGS[role]?.defaultRoute || "/portfolio";
     router.push(target);
   };
 
@@ -158,7 +219,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
       if (typeof window !== "undefined") {
         localStorage.setItem("moat_active_user_id", userId);
       }
-      const targetRoute = ROLE_CONFIGS[targetUser.role]?.defaultRoute || "/admin";
+      const targetRoute = ROLE_CONFIGS[targetUser.role]?.defaultRoute || "/portfolio";
       router.push(targetRoute);
     }
   };
@@ -166,7 +227,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
   const createUser = (userData: Omit<PlatformUser, "id" | "createdAt">) => {
     const newUser: PlatformUser = {
       ...userData,
-      id: `usr-${Date.now()}`,
+      id: "usr-" + Date.now(),
       createdAt: new Date().toISOString().split("T")[0],
     };
     const updated = [...users, newUser];
@@ -191,7 +252,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const activeProfile = ROLE_CONFIGS[currentRole] || ROLE_CONFIGS.ADMIN;
+  const activeProfile = ROLE_CONFIGS[currentRole] || ROLE_CONFIGS.CEO;
 
   return (
     <RoleContext.Provider
@@ -219,4 +280,3 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
 export function useActiveRole() {
   return React.useContext(RoleContext);
 }
-

@@ -210,13 +210,25 @@ export default function AdminControlPage() {
     e.preventDefault();
     if (!formName.trim() || !formEmail.trim()) return;
 
-    const created = createUser({
-      name: formName.trim(),
-      email: formEmail.trim(),
-      department: formDepartment.trim() || "General",
-      role: formRole,
-      status: formStatus,
-    });
+    // Guard: only ADMIN can create users
+    if (currentRole !== "ADMIN") {
+      alert("Permission Denied: Only Administrators can create user roles.");
+      return;
+    }
+
+    let created: PlatformUser;
+    try {
+      created = createUser({
+        name: formName.trim(),
+        email: formEmail.trim(),
+        department: formDepartment.trim() || "General",
+        role: formRole,
+        status: formStatus,
+      });
+    } catch (err: any) {
+      alert(err.message || "Failed to create user. Only Administrators are permitted.");
+      return;
+    }
 
     addAuditLog(`Created user account & assigned role "${ROLE_CONFIGS[formRole].title}"`, created.name, formRole);
 

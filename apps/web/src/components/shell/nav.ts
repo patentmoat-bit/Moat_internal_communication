@@ -36,7 +36,10 @@ import {
   CheckSquare,
   CalendarClock,
   LayoutDashboard,
-  Activity} from "lucide-react";
+  Activity,
+  ListTree,
+  FilePen,
+} from "lucide-react";
 import type { RoleType } from "@/components/auth/role-context";
 
 export interface NavItem {
@@ -210,27 +213,81 @@ export const ROLE_NAVIGATIONS: Record<RoleType, NavGroup[]> = {
 
   PATENT_DRAFTER: [
     {
-      label: "Drafting Suite",
+      label: "DASHBOARD",
       items: [
-        { href: "/drafts", label: "Drafting Studio", icon: FileText },
-        { href: "/drafts", label: "Specification & Claim Tree", icon: FileCode },
+        { href: "/dashboard/patent-drafter", label: "Overview", icon: LayoutDashboard },
       ],
     },
     {
-      label: "Input Disclosures",
+      label: "DRAFTING WORKSPACE",
       items: [
-        { href: "/inventions", label: "Approved Disclosures", icon: Lightbulb },
-        { href: "/copyrights", label: "Copyrights & Authorship", icon: FileCode },
+        { href: "/drafts", label: "My Drafts", icon: FileText },
+        { href: "/drafts/assigned", label: "Assigned to Me", icon: Users },
+        { href: "/drafts/progress", label: "Draft in Progress", icon: Clock },
+        { href: "/drafts/review", label: "Under Review", icon: Search },
+        { href: "/drafts/completed", label: "Completed", icon: CheckCircle },
       ],
     },
     {
-      label: "Workflow",
+      label: "INVENTION WORKSPACE",
       items: [
-        { href: "/inbox", label: "Drafting Tasks & Rework", icon: Inbox },
+        { href: "/inventions", label: "Invention Details", icon: Lightbulb },
+        { href: "/inventions/tech-info", label: "Technical Information", icon: Cpu },
+        { href: "/inventions/research", label: "Research Reference", icon: Compass },
+        { href: "/inventions/docs", label: "Documents", icon: Folder },
+      ],
+    },
+    {
+      label: "CLAIM WORKSPACE",
+      items: [
+        { href: "/claims/tree", label: "Claim Tree", icon: ListTree },
+        { href: "/claims/method", label: "Method Claims", icon: FileCode },
+        { href: "/claims/system", label: "System Claims", icon: Layers },
+        { href: "/claims/variations", label: "Claim Variations", icon: Sparkles },
+      ],
+    },
+    {
+      label: "TEMPLATES",
+      items: [
+        { href: "/templates/uspto", label: "USPTO Formats", icon: FilePen },
+        { href: "/templates/epo", label: "EPO Formats", icon: FilePen },
+        { href: "/templates/pct", label: "PCT Formats", icon: FilePen },
+      ],
+    },
+    {
+      label: "DOCUMENTS",
+      items: [
+        { href: "/docs/disclosures", label: "Disclosures", icon: FileText },
+        { href: "/docs/prior-art", label: "Prior Art", icon: FileSpreadsheet },
+        { href: "/docs/drawings", label: "Drawings", icon: ImageIcon },
+        { href: "/docs/exports", label: "Export Files", icon: UploadCloud },
+      ],
+    },
+    {
+      label: "REVIEW & COLLABORATION",
+      items: [
+        { href: "/collab/annotations", label: "Annotations", icon: FileEdit },
+        { href: "/collab/approvals", label: "Approvals", icon: CheckSquare },
+        { href: "/collab/feedback", label: "Feedback Logs", icon: History },
+      ],
+    },
+    {
+      label: "DOCKET",
+      items: [
+        { href: "/docket/deadlines", label: "Upcoming Deadlines", icon: CalendarClock },
+        { href: "/docket/reminders", label: "Reminders", icon: Clock },
+        { href: "/docket/actions", label: "Action Items", icon: Activity },
+      ],
+    },
+    {
+      label: "REPORTS",
+      items: [
+        { href: "/reports/metrics", label: "Drafting Metrics", icon: BarChart3 },
+        { href: "/reports/time", label: "Time Tracking", icon: Clock },
+        { href: "/reports/productivity", label: "Productivity", icon: Flame },
       ],
     },
   ],
-
   DESIGN_TEAM: [
     {
       label: "Design Suite",

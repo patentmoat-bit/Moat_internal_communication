@@ -74,16 +74,6 @@ export const ROLE_PROFILES = ROLE_CONFIGS;
 
 export const DEFAULT_USERS: PlatformUser[] = [
   {
-    id: "usr-ceo",
-    name: "Dr. Marcus Vance",
-    email: "marcus.vance@moat.ai",
-    role: "CEO",
-    department: "Executive Leadership & Strategy",
-    status: "ACTIVE",
-    createdAt: "2026-01-01",
-    avatarTone: "amber",
-  },
-  {
     id: "usr-admin",
     name: "Organization Admin",
     email: "admin@moat.ai",
@@ -92,50 +82,10 @@ export const DEFAULT_USERS: PlatformUser[] = [
     status: "ACTIVE",
     createdAt: "2026-01-01",
     avatarTone: "rose",
-  },
-  {
-    id: "usr-analyst",
-    name: "Elena Rostova",
-    email: "elena.rostova@moat.ai",
-    role: "PATENT_ANALYST",
-    department: "Patent Research & Prior Art",
-    status: "ACTIVE",
-    createdAt: "2026-01-05",
-    avatarTone: "purple",
-  },
-  {
-    id: "usr-drafter",
-    name: "David Chen",
-    email: "david.chen@moat.ai",
-    role: "PATENT_DRAFTER",
-    department: "Patent Engineering & Claims",
-    status: "ACTIVE",
-    createdAt: "2026-01-10",
-    avatarTone: "blue",
-  },
-  {
-    id: "usr-design",
-    name: "Aria Thorne",
-    email: "aria.thorne@moat.ai",
-    role: "DESIGN_TEAM",
-    department: "Illustration & Technical Drawings",
-    status: "ACTIVE",
-    createdAt: "2026-01-12",
-    avatarTone: "emerald",
-  },
-  {
-    id: "usr-finance",
-    name: "Sarah Jenkins",
-    email: "sarah.jenkins@moat.ai",
-    role: "FINANCE",
-    department: "IP Capital & Statutory Fees",
-    status: "ACTIVE",
-    createdAt: "2026-01-15",
-    avatarTone: "teal",
-  },
+  }
 ];
 
-const DEFAULT_ADMIN: PlatformUser = DEFAULT_USERS[0]; // Dr. Marcus Vance (CEO) as primary executive
+const DEFAULT_ADMIN: PlatformUser = DEFAULT_USERS[0];
 
 interface RoleContextValue {
   currentRole: RoleType;
@@ -169,7 +119,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
   // Load registered users from localStorage
   React.useEffect(() => {
     if (typeof window !== "undefined") {
-      const savedUsers = localStorage.getItem("moat_system_users");
+      const savedUsers = localStorage.getItem("moat_system_users_v2");
       if (savedUsers) {
         try {
           const parsed = JSON.parse(savedUsers);
@@ -198,7 +148,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
   const saveUsers = (updated: PlatformUser[]) => {
     setUsers(updated);
     if (typeof window !== "undefined") {
-      localStorage.setItem("moat_system_users", JSON.stringify(updated));
+      localStorage.setItem("moat_system_users_v2", JSON.stringify(updated));
     }
   };
 
@@ -225,6 +175,12 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
   };
 
   const createUser = (userData: Omit<PlatformUser, "id" | "createdAt">) => {
+    // Only ADMIN role can create new users
+    const actingUser = users.find((u) => u.id === currentUserId) || users[0] || DEFAULT_ADMIN;
+    if (actingUser.role !== "ADMIN") {
+      throw new Error("Unauthorized: Only Administrators can create users.");
+    }
+
     const newUser: PlatformUser = {
       ...userData,
       id: "usr-" + Date.now(),

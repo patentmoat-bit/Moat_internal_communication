@@ -1,0 +1,22 @@
+[
+  {
+    "id": "NOTIF-1791653777816",
+    "title": "Workflow State Changed",
+    "message": "INN-0012 moved to SUBMITTED_FOR_REVIEW",
+    "target_role": "PATENT_ANALYST",
+    "sender": "Drafter",
+    "actionUrl": "/dashboard",
+    "readAt": null,
+    "createdAt": "2026-10-10T17:36:17.816Z"
+  },
+  {
+    "id": "NOTIF-1791656059722",
+    "title": "Drawing Enhancement Request",
+    "message": "Shenbagakumar requested design enhancements for drawing 'FIG_1_Architecture.png' in project INN-0012.",
+    "target_role": "DESIGN_TEAM",
+    "sender": "Shenbagakumar",
+    "actionUrl": "/dashboard",
+    "readAt": null,
+    "createdAt": "2026-10-10T18:14:19.722Z"
+  }
+]

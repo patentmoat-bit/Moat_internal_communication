@@ -126,3 +126,5 @@ USER_SCOPED_TABLES = ("memberships",)
 #                     every tenant to deliver in commit order. Both hold ids and
 #                     references only -- never patent text or file bytes.
 UNPOLICIED_TENANT_TABLES = ("app_sessions", "outbox_events", "consumer_receipts")
+
+from .project import ProjectAssignment, ProjectTransitionLog

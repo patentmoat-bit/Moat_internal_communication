@@ -155,7 +155,7 @@ const PERMISSIONS_MATRIX: {
 ];
 
 export default function AdminControlPage() {
-  const { users, currentUser, createUser, updateUser, deleteUser, switchUser } = useActiveRole();
+  const { currentRole, users, currentUser, createUser, updateUser, deleteUser, switchUser } = useActiveRole();
   const [activeTab, setActiveTab] = React.useState<"users" | "roles" | "logs">("users");
 
   // Filter and search state

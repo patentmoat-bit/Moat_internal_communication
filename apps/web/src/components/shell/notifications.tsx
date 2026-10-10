@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Bell, Inbox } from "lucide-react";
 import { Badge, EmptyState, IconButton, cn } from "@moat/ui";
 import { api } from "@/lib/api";
+import { useActiveRole } from "@/components/auth/role-context";
 import { useEventStream } from "@/components/events/event-stream";
 import { formatDate } from "@/lib/display";
 import type { Notification } from "@/lib/types";
@@ -21,6 +22,7 @@ export function Notifications() {
   const [items, setItems] = React.useState<Notification[]>([]);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const { notifications: live } = useEventStream();
+  const { currentRole: role } = useActiveRole();
 
   // Live events first, then the fetched history, de-duplicated by id.
   const merged = React.useMemo(() => {
@@ -35,7 +37,7 @@ export function Notifications() {
   React.useEffect(() => {
     let cancelled = false;
     const load = () =>
-      Promise.resolve([])
+      fetch().then(r => r.json())
         .then((rows) => {
           if (!cancelled) setItems(rows);
         })

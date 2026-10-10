@@ -297,7 +297,10 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
           </div>
           <div>
             <span className="text-muted-foreground block text-[11px]">Assigned Owner:</span>
-            <span className="font-semibold text-foreground dark:text-[#e8dfc8]">{item.owner} ({item.responsible_team})</span>
+            <div className="flex items-center justify-between w-full">
+              <span className="font-semibold text-foreground dark:text-[#e8dfc8]">{item.owner} ({item.responsible_team})</span>
+              <button onClick={() => setAssignModalOpen(true)} className="ml-4 px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded text-xs font-bold transition-colors shadow-sm">Assign to Drafter</button>
+            </div>
           </div>
           <div>
             <span className="text-muted-foreground block text-[11px]">Priority Rating:</span>
@@ -441,6 +444,50 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
           </div>
         </div>
       </div>
+
+
+      {/* Assignment Modal */}
+      {assignModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-background rounded-2xl border border-border/50 shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="p-6 border-b border-border/40">
+              <h3 className="text-xl font-bold">Assign Project to Drafter</h3>
+              <p className="text-sm text-muted-foreground mt-1">Select a patent drafter and provide instructions.</p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold">Patent Drafter</label>
+                <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={assignDrafter} onChange={e => setAssignDrafter(e.target.value)}>
+                  <option value="">Select Drafter...</option>
+                  <option value="DRAFTER-01">Shenbagakumar (Patent Drafter)</option>
+                  <option value="DRAFTER-02">External Counsel</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold">Instructions</label>
+                <textarea 
+                  className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm" 
+                  placeholder="Draft claims based on attached Architecture PDF..."
+                  value={assignInstructions}
+                  onChange={e => setAssignInstructions(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold">Documents to Share</label>
+                <div className="text-xs p-2 bg-blue-50 text-blue-700 rounded border border-blue-200">
+                  <span className="font-bold">2 Authorized Files</span> will be shared with this assignment.
+                </div>
+              </div>
+            </div>
+            <div className="p-4 bg-muted/30 border-t border-border/40 flex justify-end gap-3">
+              <button className="px-4 py-2 text-sm font-semibold text-muted-foreground hover:bg-muted rounded-md" onClick={() => setAssignModalOpen(false)}>Cancel</button>
+              <button className="px-4 py-2 text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 rounded-md shadow-sm" onClick={handleAssignProject} disabled={isAssigning || !assignDrafter}>
+                {isAssigning ? 'Assigning...' : 'Confirm Assignment'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit Date Modal */}
       {editModalOpen && (

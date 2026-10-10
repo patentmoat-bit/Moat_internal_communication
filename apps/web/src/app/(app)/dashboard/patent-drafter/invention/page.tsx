@@ -1,0 +1,1 @@
+import { redirect } from 'next/navigation'; export default function Redirect() { redirect('/dashboard/patent-drafter/invention/details'); }

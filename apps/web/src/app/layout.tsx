@@ -31,27 +31,14 @@ export const metadata: Metadata = {
   description: "Invention disclosure, prior-art evidence and patent matter management.",
 };
 
-/**
- * Applied before first paint so a dark-theme user never sees a white flash.
- * Wrapped in try/catch: storage access throws outright in some privacy modes.
- */
-const themeScript = `
-try {
-  var stored = localStorage.getItem('moat-theme');
-  if (stored === 'dark' || stored === 'light') {
-    document.documentElement.setAttribute('data-theme', stored);
-  }
-} catch (e) {}
-`;
+
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
+      <head></head>
       <body className={`${ui.variable} ${document.variable} ${numeric.variable}`}>
         {children}
       </body>

@@ -34,6 +34,11 @@ COPY --from=builder --chown=root:root /build/apps/web/.next/standalone ./
 COPY --from=builder --chown=root:root /build/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder --chown=root:root /build/apps/web/public ./apps/web/public
 
+# The app stores its data under ./data (cwd is apps/web). The folder starts empty and is the
+# only place the non-root runtime user may write. Mount a volume here to keep data across deploys.
+RUN mkdir -p /app/apps/web/data && chown 10001:10001 /app/apps/web/data
+VOLUME ["/app/apps/web/data"]
+
 USER 10001:10001
 EXPOSE 3000
 ENV PORT=3000 HOSTNAME=0.0.0.0

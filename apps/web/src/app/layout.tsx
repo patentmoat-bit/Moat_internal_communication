@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Source_Serif_4, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { ToastProvider } from "@/components/ui/toast";
 
 const ui = Inter({
   subsets: ["latin"],
@@ -19,7 +20,8 @@ const document = Source_Serif_4({
 const numeric = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-numeric",
-  weight: ["400", "500"],
+  // A variable font: every weight is available without listing them (listing two breaks
+  // the Turbopack font loader in Next 16.4).
   display: "swap",
 });
 
@@ -31,8 +33,6 @@ export const metadata: Metadata = {
   description: "Invention disclosure, prior-art evidence and patent matter management.",
 };
 
-
-
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -40,7 +40,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head></head>
       <body className={`${ui.variable} ${document.variable} ${numeric.variable}`}>
-        {children}
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );

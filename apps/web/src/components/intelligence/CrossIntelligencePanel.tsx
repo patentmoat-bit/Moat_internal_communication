@@ -30,7 +30,7 @@ export function CrossIntelligencePanel({ correlations }: CrossPanelProps) {
         {correlations.map((corr) => (
           <div 
             key={corr.id} 
-            className="p-3.5 rounded-lg border border-border/40 bg-muted/30 space-y-3"
+            className="p-3.5 rounded-lg border border-border/40 bg-sunken/30 space-y-3"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h4 className="text-sm font-bold text-foreground">

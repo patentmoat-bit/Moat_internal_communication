@@ -18,7 +18,11 @@ export default function DocumentsFigma() {
   const [isEditing, setIsEditing] = useState(isNew);
   
   // Empty default state
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    title: string;
+    referenceNo: string;
+    documents: any[];
+  }>({
     title: isNew ? "Untitled Invention Draft" : "Smart Energy Management System",
     referenceNo: isNew ? "DRAFT-001" : "INN-0012",
     documents: []
@@ -124,7 +128,7 @@ export default function DocumentsFigma() {
         <div className="lg:col-span-3 space-y-6">
           <Card className="shadow-sm border-border/40 overflow-hidden">
             <CardContent className="p-0">
-              <div className="p-4 bg-muted/30 border-b border-border/50 flex flex-col sm:flex-row justify-between gap-4">
+              <div className="p-4 bg-sunken/30 border-b border-border/50 flex flex-col sm:flex-row justify-between gap-4">
                 <div className="relative flex-1 max-w-sm">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input className="pl-9 bg-background border-border/60 shadow-sm" placeholder="Search documents..." />
@@ -143,7 +147,7 @@ export default function DocumentsFigma() {
 
               <div className="p-0 overflow-x-auto">
                 <table className="w-full text-sm text-left">
-                  <thead className="text-xs text-muted-foreground uppercase bg-muted/10 border-b border-border/50 font-bold">
+                  <thead className="text-xs text-muted-foreground uppercase bg-sunken/10 border-b border-border/50 font-bold">
                     <tr>
                       <th className="px-6 py-4">Name</th>
                       <th className="px-6 py-4">Type</th>
@@ -162,7 +166,7 @@ export default function DocumentsFigma() {
                       </tr>
                     ) : (
                       formData.documents.map((doc, idx) => (
-                        <tr key={idx} className="border-b border-border/30 hover:bg-muted/10">
+                        <tr key={idx} className="border-b border-border/30 hover:bg-sunken/10">
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               <div className={`p-2 rounded-lg text-white font-bold text-[10px] w-8 h-8 flex items-center justify-center
@@ -215,7 +219,7 @@ export default function DocumentsFigma() {
         {/* Right Column: Folders */}
         <div className="space-y-6">
           <Card className="shadow-sm border-border/40 overflow-hidden">
-            <CardHeader className="bg-muted/30 border-b border-border/40 py-4">
+            <CardHeader className="bg-sunken/30 border-b border-border/40 py-4">
               <CardTitle className="text-sm font-black flex items-center gap-2 text-foreground">
                 <Folder className="w-4 h-4 text-blue-600" /> Document Categories
               </CardTitle>
@@ -223,11 +227,11 @@ export default function DocumentsFigma() {
             <CardContent className="p-0">
               <div className="divide-y divide-border/50">
                 {['All Documents', 'Drafts', 'Technical', 'Drawings', 'Research', 'Claims'].map((folder, i) => (
-                  <div key={i} className={`p-4 flex justify-between items-center cursor-pointer transition-colors ${i===0 ? 'bg-blue-50/50 dark:bg-blue-900/10 border-l-2 border-l-blue-600' : 'hover:bg-muted/30'}`}>
+                  <div key={i} className={`p-4 flex justify-between items-center cursor-pointer transition-colors ${i===0 ? 'bg-blue-50/50 dark:bg-blue-900/10 border-l-2 border-l-blue-600' : 'hover:bg-sunken/30'}`}>
                     <div className={`flex items-center gap-3 ${i===0 ? 'text-blue-700 dark:text-blue-400 font-bold' : 'text-foreground font-medium'}`}>
                       <Folder className={`w-4 h-4 ${i===0 ? 'text-blue-600' : 'text-muted-foreground'}`} /> {folder}
                     </div>
-                    <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">
+                    <div className="w-6 h-6 rounded-full bg-sunken flex items-center justify-center text-xs font-bold text-muted-foreground">
                       {i === 0 ? formData.documents.length : formData.documents.filter(d => d.category === folder).length}
                     </div>
                   </div>

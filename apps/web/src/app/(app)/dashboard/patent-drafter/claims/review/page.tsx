@@ -90,7 +90,7 @@ export default function ClaimReviewPage() {
     });
 
     // 3. Invalid dependencies (missing or forward)
-    const invalidDeps = [];
+    const invalidDeps: string[] = [];
     claims.forEach((c:any) => {
       if (c.parent) {
         if (!nums.includes(c.parent)) {

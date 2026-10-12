@@ -60,6 +60,7 @@ export const ROLE_NAVIGATIONS: Record<RoleType, NavGroup[]> = {
     {
       label: "Organization & Governance",
       items: [
+        { href: "/admin/access", label: "Access Requests", icon: Users },
         { href: "/admin", label: "User & Role Management", icon: Users },
         { href: "/admin?tab=roles", label: "Role Permissions Matrix", icon: KeyRound },
         { href: "/admin?tab=logs", label: "System Audit Logs", icon: BarChart3 },
@@ -74,6 +75,7 @@ export const ROLE_NAVIGATIONS: Record<RoleType, NavGroup[]> = {
         { href: "/copyrights", label: "Copyrights Suite", icon: FileCode },
         { href: "/portfolio", label: "Strategic Portfolio", icon: Shield },
         { href: "/matters", label: "Research Matters", icon: Scale },
+        { href: "/matters?tab=tracker", label: "Matters Tracker", icon: Clock },
         { href: "/payments", label: "Financial Docket", icon: Wallet },
       ],
     },
@@ -161,6 +163,7 @@ export const ROLE_NAVIGATIONS: Record<RoleType, NavGroup[]> = {
       items: [
         { href: "/portfolio", label: "Strategic IP Portfolio", icon: Shield },
         { href: "/intelligence", label: "IP Intelligence Suite", icon: Sparkles },
+        { href: "/matters?tab=tracker", label: "Research Matters Tracker", icon: Scale },
         { href: "/portfolio?tab=approvals", label: "1-Click Filing Approvals", icon: CheckCircle },
       ],
     },
@@ -207,6 +210,7 @@ export const ROLE_NAVIGATIONS: Record<RoleType, NavGroup[]> = {
       label: "Activity",
       items: [
         { href: "/dashboard/ceo/activity", label: "Activity History", icon: Activity },
+        { href: "/dashboard/ceo/sso-activity", label: "Sign-in Activity", icon: Activity },
       ],
     },
   ],

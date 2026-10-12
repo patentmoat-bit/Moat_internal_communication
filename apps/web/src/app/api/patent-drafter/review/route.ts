@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
+import { resolveActor } from '@/lib/actingRole';
+import { notify } from '@/lib/notifications';
+import { logActivity } from '@/lib/activityLog';
 import fs from 'fs';
 import path from 'path';
 
 const DB_FILE = path.join(process.cwd(), 'data', 'claims.json');
 
-function getClaimSets() {
+function getClaimSets(): any[] {
   if (!fs.existsSync(DB_FILE)) return [];
   try { return JSON.parse(fs.readFileSync(DB_FILE, 'utf8')); } catch(e) { return []; }
 }
@@ -19,9 +22,21 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const inventionId = searchParams.get("inventionId");
   
-  if (!inventionId) return NextResponse.json({ error: "Missing inventionId" }, { status: 400 });
-
   let allClaimSets = getClaimSets();
+
+  if (!inventionId) {
+    return NextResponse.json({
+      success: true,
+      reviews: allClaimSets.map((c) => ({
+        invention_id: c.invention_id,
+        status: c.status || "DRAFTING",
+        version: c.version || 1,
+        history: c.history || [],
+        comments: c.comments || [],
+        last_submitted: c.last_updated,
+      })),
+    });
+  }
   let claimSet = allClaimSets.find(c => c.invention_id === inventionId);
 
   if (!claimSet) {
@@ -44,7 +59,15 @@ export async function GET(req: Request) {
 export async function PUT(req: Request) {
   try {
     const body = await req.json();
-    const { inventionId, newStatus, role, decisionNote } = body;
+    const { inventionId, newStatus, decisionNote } = body;
+    // Identity and role come from the server session, not the request body.
+    const actor = await resolveActor(body.role);
+    if (!actor) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!actor.role) return NextResponse.json({ error: "Forbidden: you do not hold that role." }, { status: 403 });
+    if (actor.role !== 'PATENT_ANALYST' && actor.role !== 'PATENT_DRAFTER') {
+      return NextResponse.json({ error: "Forbidden: only analysts and drafters take part in review." }, { status: 403 });
+    }
+    const role = actor.role === 'PATENT_ANALYST' ? 'Patent Analyst' : 'Patent Drafter';
     
     if (!inventionId || !newStatus) return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
 
@@ -84,7 +107,7 @@ export async function PUT(req: Request) {
       if (!allClaimSets[idx].comments) allClaimSets[idx].comments = [];
       allClaimSets[idx].comments.push({
         id: Date.now(),
-        author: body.author || (role === 'Patent Analyst' ? 'Mock Analyst' : 'Mock Drafter'),
+        author: actor.name,
         role: role,
         text: decisionNote,
         timestamp: new Date().toISOString()
@@ -93,41 +116,32 @@ export async function PUT(req: Request) {
     
     saveClaimSets(allClaimSets);
 
-    // Send Global Cross-Role Notification
-    try {
-      const notifsPath = path.join(process.cwd(), 'data', 'notifications.json');
-      let notifs = [];
-      if (fs.existsSync(notifsPath)) {
-        notifs = JSON.parse(fs.readFileSync(notifsPath, 'utf8'));
-      }
-      notifs.push({
-        id: 'NOTIF-' + Date.now(),
-        title: 'Workflow State Changed',
-        message: `${inventionId} moved to ${newStatus}`,
-        target_role: role === 'Patent Analyst' ? 'PATENT_DRAFTER' : 'PATENT_ANALYST',
-        sender: body.author || role,
-        actionUrl: role === 'Patent Analyst' ? '/dashboard/patent-drafter/review/approvals' : '/dashboard',
-        readAt: null,
-        createdAt: new Date().toISOString()
+    const isAnalyst = actor.role === 'PATENT_ANALYST';
+    const msgs = [{
+      to: (isAnalyst ? 'PATENT_DRAFTER' : 'PATENT_ANALYST') as 'PATENT_DRAFTER' | 'PATENT_ANALYST',
+      title: 'Workflow State Changed',
+      message: `${inventionId} moved to ${newStatus.replace(/_/g, ' ')}${decisionNote ? `: ${decisionNote}` : ''}`,
+      sender: actor.name,
+      actionUrl: isAnalyst ? '/dashboard/patent-drafter/review/approvals' : '/dashboard/patent-drafter/review/approvals',
+      kind: 'workflow',
+      priority: (newStatus === 'REVISION_REQUIRED' ? 'high' : 'medium') as 'high' | 'medium',
+    }];
+    // Analyst sign-off is what puts a matter in front of the CEO.
+    if (newStatus === 'APPROVED') {
+      msgs.push({
+        to: 'CEO' as any,
+        title: 'Draft awaiting your approval',
+        message: `${inventionId} passed analyst review and needs executive approval.`,
+        sender: actor.name,
+        actionUrl: '/dashboard/ceo/approvals',
+        kind: 'approval',
+        priority: 'high',
       });
-      fs.writeFileSync(notifsPath, JSON.stringify(notifs, null, 2));
-    } catch(e) {}
+    }
+    notify(msgs as any);
 
-    
-    // Log Activity
-    try {
-      fetch('http://localhost:3000/api/patent-drafter/activity', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          actor: body.author || (role === 'Patent Analyst' ? 'Mock Analyst' : 'Mock Drafter'),
-          action: 'WORKFLOW_STATE_CHANGED',
-          invention_id: inventionId,
-          details: `Changed state from ${currentStatus} to ${newStatus}`
-        })
-      }).catch(()=>{});
-    } catch(e) {}
-    
+    logActivity(actor.name, 'WORKFLOW_STATE_CHANGED', inventionId, `Changed state from ${currentStatus} to ${newStatus}`);
+
     return NextResponse.json({ success: true, newStatus });
   } catch (error) {
     return NextResponse.json({ error: "Failed to update review status" }, { status: 500 });

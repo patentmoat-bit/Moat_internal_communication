@@ -100,7 +100,7 @@ export function PatentDrawingsViewer({ publicationId, title }: PatentDrawingsPro
               }}
               className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-bold transition ${
                 selectedFigure === fig.id
-                  ? "bg-accent text-white shadow-sm"
+                  ? "bg-accent text-on-accent shadow-sm"
                   : "bg-white dark:bg-zinc-800 text-ink border border-line hover:bg-hover"
               }`}
             >

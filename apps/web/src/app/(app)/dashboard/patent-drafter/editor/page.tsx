@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/components/ui/toast";
 
 export default function ThreePanelEditor() {
   const searchParams = useSearchParams();
@@ -106,10 +107,15 @@ export default function ThreePanelEditor() {
 
   const handleSubmitForReview = async (e: React.MouseEvent<HTMLButtonElement>) => {
     if (!draftId) {
-      alert("Please save the draft first before submitting for review!");
+      toast.warning("Please save the draft first before submitting for review!");
       return;
     }
-    if (!confirm("Are you sure you want to submit this draft to the Patent Analyst for review?")) return;
+    const confirmed = await toast.confirm({
+      title: "Submit for Review",
+      message: "Are you sure you want to submit this draft to the Patent Analyst for review?",
+      confirmText: "Submit",
+    });
+    if (!confirmed) return;
     
     const btn = e.currentTarget;
     const originalText = btn.innerHTML;
@@ -130,9 +136,12 @@ export default function ThreePanelEditor() {
         btn.innerHTML = 'Submitted ✓';
         btn.classList.replace('bg-blue-50', 'bg-emerald-50');
         btn.classList.replace('text-blue-700', 'text-emerald-700');
+        toast.success("Draft successfully submitted for review!");
         return; // Leave as submitted
       }
-    } catch(e) {}
+    } catch(e) {
+      toast.error("Failed to submit draft for review.");
+    }
 
     btn.innerHTML = originalText;
     btn.disabled = false;
@@ -193,7 +202,7 @@ export default function ThreePanelEditor() {
       <div className="h-14 border-b border-border/50 bg-card flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-4">
           <Link href="/dashboard/patent-drafter">
-            <Button variant="ghost" size="icon" className="hover:bg-muted"><ArrowLeft className="w-4 h-4" /></Button>
+            <Button variant="ghost" size="icon" className="hover:bg-sunken"><ArrowLeft className="w-4 h-4" /></Button>
           </Link>
           <div className="flex flex-col">
             <h1 className="font-black text-lg text-foreground tracking-tight flex items-center gap-2">
@@ -211,9 +220,10 @@ export default function ThreePanelEditor() {
           ) : isReviewMode ? (
             <>
               <Button size="sm" className="font-bold shadow-sm bg-rose-50 text-rose-700 border-rose-200" onClick={async (e) => {
-                if (!feedback) { alert("Please provide feedback in the right panel before requesting revisions."); return; }
+                if (!feedback) { toast.warning("Please provide feedback in the right panel before requesting revisions."); return; }
                 const btn = e.currentTarget; btn.innerHTML = 'Sending...'; btn.disabled = true;
                 await fetch('/api/patent-drafter/drafts', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: draftId, status: 'REVISION_REQUIRED', feedback }) });
+                toast.info("Revisions requested.");
                 window.location.href = '/dashboard/patent-drafter/drafts/under-review';
               }}>Request Revisions</Button>
               <Button size="sm" className="font-bold shadow-sm bg-emerald-600 text-white" onClick={async (e) => {
@@ -242,7 +252,7 @@ export default function ThreePanelEditor() {
       <div className="flex flex-1 overflow-hidden">
         
         {/* Left Panel: Draft Library & Sections */}
-        <div className="w-64 border-r border-border/50 bg-muted/10 flex flex-col">
+        <div className="w-64 border-r border-border/50 bg-sunken/10 flex flex-col">
           <div className="p-4 border-b border-border/50 font-black text-sm text-muted-foreground uppercase tracking-wider">
             Document Sections
           </div>
@@ -251,7 +261,7 @@ export default function ThreePanelEditor() {
               <button 
                 key={sec}
                 onClick={() => setActiveSection(sec)}
-                className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${activeSection === sec ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30' : 'hover:bg-muted text-foreground'}`}
+                className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${activeSection === sec ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30' : 'hover:bg-sunken text-foreground'}`}
               >
                 {sec}
               </button>
@@ -260,9 +270,9 @@ export default function ThreePanelEditor() {
           <div className="p-4 border-t border-border/50 font-black text-sm text-muted-foreground uppercase tracking-wider">
             My Drafts History
           </div>
-          <div className="h-48 overflow-y-auto p-2 space-y-1 bg-muted/20">
+          <div className="h-48 overflow-y-auto p-2 space-y-1 bg-sunken/20">
             {drafts.map(d => (
-              <div key={d.id} className="p-2 rounded hover:bg-muted cursor-pointer" onClick={() => { if (!isReviewMode && !isViewMode) { setContent(d.content || {}); setDraftId(d.id); setDrafterFeedback(d.feedback || ""); setDraftStatus(d.status); } }}>
+              <div key={d.id} className="p-2 rounded hover:bg-sunken cursor-pointer" onClick={() => { if (!isReviewMode && !isViewMode) { setContent(d.content || {}); setDraftId(d.id); setDrafterFeedback(d.feedback || ""); setDraftStatus(d.status); } }}>
                 <div className="text-xs font-bold text-foreground">{d.title}</div>
                 <div className="text-[10px] text-muted-foreground">{new Date(d.last_modified).toLocaleString()}</div>
               </div>
@@ -272,7 +282,7 @@ export default function ThreePanelEditor() {
 
         {/* Main Panel: Editor */}
         <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 relative">
-          <div className="h-12 border-b border-border/50 flex items-center justify-between px-4 bg-muted/5">
+          <div className="h-12 border-b border-border/50 flex items-center justify-between px-4 bg-sunken/5">
             <h2 className="font-bold text-lg">{activeSection}</h2>
             {(!isReviewMode && !isViewMode) && <Button variant="outline" size="sm" className="bg-purple-50 text-purple-700 border-purple-200 font-bold text-xs" onClick={handleGenerateDraft} disabled={isGenerating}>
               {isGenerating ? "Generating..." : "✨ Generate Draft from Invention"}
@@ -298,7 +308,7 @@ export default function ThreePanelEditor() {
         </div>
 
         {/* Right Panel: Reference or Review */}
-        <div className="w-80 border-l border-border/50 bg-muted/10 flex flex-col overflow-y-auto">
+        <div className="w-80 border-l border-border/50 bg-sunken/10 flex flex-col overflow-y-auto">
           {isViewMode ? (
             <>
               <div className="p-4 border-b border-border/50 font-black text-sm text-emerald-600 uppercase tracking-wider flex items-center gap-2">

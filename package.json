@@ -30,5 +30,10 @@
     "test:load": "cd apps/api && uv run locust -f ../../tests/load/locustfile.py --host http://localhost:3000",
     "helm:lint": "helm lint infra/helm/moat && helm template moat infra/helm/moat > /dev/null && echo chart renders",
     "setup": "npm install && ./scripts/setup.sh"
+  },
+  "overrides": {
+    "mammoth": {
+      "argparse": "^2.0.1"
+    }
   }
 }

@@ -191,7 +191,7 @@ export default function CEOLifecycleStagePage() {
 
                     <button
                       onClick={() => setDecisionMatter(matter)}
-                      className="flex items-center gap-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:brightness-110 transition"
+                      className="flex items-center gap-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-on-accent shadow-xs hover:brightness-110 transition"
                     >
                       <Shield className="size-3.5" />
                       <span>CEO Decision</span>

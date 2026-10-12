@@ -44,7 +44,7 @@ export default function CEOOpportunitiesPage() {
 
         <Link
           href="/inventions/new"
-          className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-xs font-bold text-white shadow-xs hover:brightness-110 transition"
+          className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-xs font-bold text-on-accent shadow-xs hover:brightness-110 transition"
         >
           <PlusCircle className="size-4" />
           <span>New Invention Idea</span>

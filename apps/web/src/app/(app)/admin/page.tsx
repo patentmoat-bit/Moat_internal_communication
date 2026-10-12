@@ -288,7 +288,7 @@ export default function AdminControlPage() {
 
         <button
           onClick={() => setShowAddModal(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:brightness-110 transition"
+          className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-bold text-on-accent shadow-sm hover:brightness-110 transition"
         >
           <UserPlus className="size-4" />
           Create New User
@@ -714,7 +714,7 @@ export default function AdminControlPage() {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-accent px-4 py-2 font-bold text-white shadow-sm hover:brightness-110"
+                  className="rounded-lg bg-accent px-4 py-2 font-bold text-on-accent shadow-sm hover:brightness-110"
                 >
                   Register User
                 </button>

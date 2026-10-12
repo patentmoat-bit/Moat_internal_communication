@@ -39,3 +39,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+/data/sso-activity.json
+
+# Runtime data written by the app: confidential uploads and the stores that point at them
+/data/uploads/
+/data/inventions.json
+/data/matters.json
+/data/payments.json
+/data/ceo-approvals.json
+/data/chat.json
+/data/reports.json
+/data/users.json

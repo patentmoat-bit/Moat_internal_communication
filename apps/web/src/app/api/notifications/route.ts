@@ -1,54 +1,51 @@
-import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { NextResponse } from "next/server";
+import { listFor, markRead, notify, type TargetRole } from "@/lib/notifications";
+import { resolveActor } from "@/lib/actingRole";
 
-const DB_FILE = path.join(process.cwd(), 'data', 'notifications.json');
+export const dynamic = "force-dynamic";
 
-function getNotifications() {
-  if (!fs.existsSync(DB_FILE)) return [];
-  try { return JSON.parse(fs.readFileSync(DB_FILE, 'utf8')); } catch(e) { return []; }
-}
-
-function saveNotifications(notifs: any[]) {
-  const dir = path.dirname(DB_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(DB_FILE, JSON.stringify(notifs, null, 2));
-}
+const ROLES = ["ADMIN", "PATENT_ANALYST", "CEO", "PATENT_DRAFTER", "DESIGN_TEAM", "FINANCE", "ALL"];
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const targetRole = searchParams.get("role"); // e.g. PATENT_ANALYST or PATENT_DRAFTER
-  
-  let allNotifs = getNotifications();
-  
-  if (targetRole) {
-    allNotifs = allNotifs.filter(n => n.target_role === targetRole || !n.target_role);
-  }
-
-  return NextResponse.json(allNotifs); // The frontend notifications.tsx expects an array directly, based on the code.
+  const actor = await resolveActor(new URL(req.url).searchParams.get("role"));
+  if (!actor) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Falls back to the user's first role when the requested one isn't theirs.
+  const role = actor.role ?? actor.roles[0];
+  // A signed-in person sees notices for every role they hold; the dev session is one role at a time.
+  return NextResponse.json(listFor(actor.id, actor.sso ? actor.roles : role));
 }
 
 export async function POST(req: Request) {
+  const actor = await resolveActor();
+  if (!actor) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const body = await req.json();
-    
-    let allNotifs = getNotifications();
-    const newNotif = {
-      id: 'NOTIF-' + Date.now(),
-      title: body.title || "New Notification",
-      message: body.message || "",
-      target_role: body.target_role || "ALL",
-      sender: body.sender || "System",
-      actionUrl: body.actionUrl || "",
-      readAt: null,
-      createdAt: new Date().toISOString()
-    };
-    
-    allNotifs.push(newNotif);
-    saveNotifications(allNotifs);
-    
-    return NextResponse.json({ success: true, notification: newNotif });
-  } catch (error) {
+    const to = (body.target_role ?? "ALL") as TargetRole;
+    if (!ROLES.includes(to)) return NextResponse.json({ error: "Invalid target_role" }, { status: 400 });
+    // The sender is always the signed-in user, never a caller-supplied name.
+    notify({
+      to,
+      toUserId: body.target_user_id,
+      title: String(body.title ?? "New Notification").slice(0, 200),
+      message: String(body.message ?? "").slice(0, 2000),
+      sender: actor.name,
+      senderId: actor.id,
+      actionUrl: typeof body.actionUrl === "string" && body.actionUrl.startsWith("/") ? body.actionUrl : "/inbox",
+      kind: body.kind,
+      priority: body.priority,
+    });
+    return NextResponse.json({ success: true });
+  } catch {
     return NextResponse.json({ error: "Failed to create notification" }, { status: 500 });
   }
+}
+
+/** Mark notifications read for the signed-in user only. Body: { ids: string[] } or { all: true }. */
+export async function PATCH(req: Request) {
+  const actor = await resolveActor(new URL(req.url).searchParams.get("role"));
+  if (!actor) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const body = await req.json().catch(() => ({}));
+  const ids = body.all ? "all" : Array.isArray(body.ids) ? (body.ids as string[]) : [];
+  markRead(actor.id, ids, actor.sso ? actor.roles : (actor.role ?? actor.roles[0]));
+  return NextResponse.json({ success: true });
 }

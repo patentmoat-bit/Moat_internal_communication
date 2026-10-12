@@ -130,7 +130,7 @@ export default function CopyrightsSuitePage() {
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <span className="flex size-8 items-center justify-center rounded-xl bg-accent text-white shadow-xs">
+              <span className="flex size-8 items-center justify-center rounded-xl bg-accent text-on-accent shadow-xs">
                 <FileCode className="size-4" />
               </span>
               <h1 className="text-xl font-bold tracking-tight text-ink">Copyrights & Authorship Suite</h1>
@@ -146,7 +146,7 @@ export default function CopyrightsSuitePage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setActiveTab("SOURCE_CODE")}
-              className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-xs font-bold text-white hover:bg-accent/90 transition shadow-xs"
+              className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-xs font-bold text-on-accent hover:bg-accent/90 transition shadow-xs"
             >
               <Lock className="size-3.5" />
               New Cryptographic Deposit
@@ -170,7 +170,7 @@ export default function CopyrightsSuitePage() {
                 onClick={() => setActiveTab(tab.id as CopyrightTab)}
                 className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition ${
                   isSelected
-                    ? "bg-accent text-white shadow-xs"
+                    ? "bg-accent text-on-accent shadow-xs"
                     : "border border-line bg-canvas/60 text-muted hover:text-ink hover:bg-canvas"
                 }`}
               >
@@ -247,7 +247,7 @@ export default function CopyrightsSuitePage() {
               <button
                 type="submit"
                 disabled={isDepositing}
-                className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-xs font-bold text-white hover:bg-accent/90 disabled:opacity-50 transition shadow-xs"
+                className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-xs font-bold text-on-accent hover:bg-accent/90 disabled:opacity-50 transition shadow-xs"
               >
                 <ShieldCheck className="size-3.5" />
                 {isDepositing ? "Stamping SHA-256 Proof..." : "Stamp Cryptographic Deposit"}

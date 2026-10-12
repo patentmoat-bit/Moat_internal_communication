@@ -42,15 +42,17 @@ export function EventStreamProvider({ children }: { children: React.ReactNode })
     function connect() {
       return; // Short-circuited to prevent 500 error
       if (closed) return;
-      const query = cursorRef.current ? `?since=${encodeURIComponent(cursorRef.current)}` : "";
-      source = new EventSource(`/api/v1/events${query}`);
+      const cursor = cursorRef.current;
+      const query = cursor ? `?since=${encodeURIComponent(cursor as string)}` : "";
+      const s = new EventSource(`/api/v1/events${query}`);
+      source = s;
 
-      source.addEventListener("open", () => {
+      s.addEventListener("open", () => {
         setConnected(true);
         backoff = 1000;
       });
 
-      source.addEventListener("notification", (event) => {
+      s.addEventListener("notification", (event) => {
         const data = JSON.parse((event as MessageEvent).data) as Notification;
         cursorRef.current = data.createdAt;
         setNotifications((current) =>
@@ -60,7 +62,7 @@ export function EventStreamProvider({ children }: { children: React.ReactNode })
         );
       });
 
-      source.addEventListener("job", (event) => {
+      s.addEventListener("job", (event) => {
         const job = JSON.parse((event as MessageEvent).data) as Job;
         setJobs((current) => ({ ...current, [job.id]: { ...current[job.id], ...job } }));
         // A finished job means the page's server-rendered data is stale.
@@ -69,14 +71,14 @@ export function EventStreamProvider({ children }: { children: React.ReactNode })
         }
       });
 
-      source.addEventListener("reconnect", () => {
-        source?.close();
+      s.addEventListener("reconnect", () => {
+        s.close();
         connect();
       });
 
-      source.onerror = () => {
+      s.onerror = () => {
         setConnected(false);
-        source?.close();
+        s.close();
         if (closed) return;
         // Backoff so a server restart does not turn every open tab into a
         // reconnect storm the moment it comes back.

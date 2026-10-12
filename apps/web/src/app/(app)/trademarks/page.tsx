@@ -174,7 +174,7 @@ function TrademarksSuiteInner() {
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <span className="flex size-8 items-center justify-center rounded-xl bg-accent text-white shadow-xs">
+              <span className="flex size-8 items-center justify-center rounded-xl bg-accent text-on-accent shadow-xs">
                 <Award className="size-4" />
               </span>
               <h1 className="text-xl font-bold tracking-tight text-ink">Trademark Management Suite</h1>
@@ -197,7 +197,7 @@ function TrademarksSuiteInner() {
             </button>
             <button
               onClick={() => setActiveTab("REMINDERS_DOCKET")}
-              className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-xs font-bold text-white hover:bg-accent/90 transition shadow-xs"
+              className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-xs font-bold text-on-accent hover:bg-accent/90 transition shadow-xs"
             >
               <Clock className="size-3.5" />
               Deadlines & Renewals
@@ -222,7 +222,7 @@ function TrademarksSuiteInner() {
                 onClick={() => setActiveTab(tab.id as TrademarkTab)}
                 className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition ${
                   isSelected
-                    ? "bg-accent text-white shadow-xs"
+                    ? "bg-accent text-on-accent shadow-xs"
                     : "border border-line bg-canvas/60 text-muted hover:text-ink hover:bg-canvas"
                 }`}
               >
@@ -371,7 +371,7 @@ function TrademarksSuiteInner() {
                 <h4 className="text-xs font-bold text-ink">Upload Logo / Emblem</h4>
                 <p className="text-[11px] text-muted">PNG, SVG, or JPG up to 10MB</p>
               </div>
-              <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-accent px-3.5 py-1.5 text-xs font-bold text-white hover:bg-accent/90 transition shadow-xs">
+              <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-accent px-3.5 py-1.5 text-xs font-bold text-on-accent hover:bg-accent/90 transition shadow-xs">
                 <UploadCloud className="size-3.5" /> Select Image
                 <input type="file" accept="image/*" onChange={handleUploadSpecimen} className="hidden" />
               </label>
@@ -413,7 +413,7 @@ function TrademarksSuiteInner() {
                 <UploadCloud className="size-10 text-faint mx-auto" />
                 <h4 className="text-sm font-bold text-ink">Drop Specimen or Packaging Photo</h4>
                 <p className="text-xs text-muted">PDF, PNG, JPG, or DOCX</p>
-                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-xs font-bold text-white hover:bg-accent/90 transition shadow-xs">
+                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-xs font-bold text-on-accent hover:bg-accent/90 transition shadow-xs">
                   Browse Files
                   <input type="file" onChange={handleUploadSpecimen} className="hidden" />
                 </label>
@@ -506,7 +506,7 @@ function TrademarksSuiteInner() {
             <div className="rounded-2xl border border-line bg-canvas p-4 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-ink text-sm">Moat Core Brand</span>
-                <span className="rounded-md bg-accent px-2 py-0.5 text-[10px] font-bold text-white">4 Marks</span>
+                <span className="rounded-md bg-accent px-2 py-0.5 text-[10px] font-bold text-on-accent">4 Marks</span>
               </div>
               <p className="text-xs text-muted">Primary enterprise marks registered in US, EP, UK, and JP.</p>
             </div>
@@ -514,7 +514,7 @@ function TrademarksSuiteInner() {
             <div className="rounded-2xl border border-line bg-canvas p-4 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-ink text-sm">NextGen AI Suite</span>
-                <span className="rounded-md bg-accent px-2 py-0.5 text-[10px] font-bold text-white">2 Marks</span>
+                <span className="rounded-md bg-accent px-2 py-0.5 text-[10px] font-bold text-on-accent">2 Marks</span>
               </div>
               <p className="text-xs text-muted">AI engine sub-brands under examination in USPTO and WIPO Madrid.</p>
             </div>

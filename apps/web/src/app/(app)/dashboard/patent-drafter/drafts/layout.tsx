@@ -35,11 +35,11 @@ export default function DraftingWorkspaceLayout({ children }: { children: React.
                   <div
                     className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${
                       active 
-                        ? "bg-[#c9a84c]/15 text-[#c9a84c] shadow-sm ring-1 ring-[#c9a84c]/30" 
-                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                        ? "bg-accent/15 text-accent-text shadow-sm ring-1 ring-accent-line" 
+                        : "text-muted-foreground hover:bg-sunken/50 hover:text-foreground"
                     }`}
                   >
-                    <tab.icon className={`w-4 h-4 ${active ? "text-[#c9a84c]" : ""}`} />
+                    <tab.icon className={`w-4 h-4 ${active ? "text-accent-text" : ""}`} />
                     {tab.name}
                   </div>
                 </Link>

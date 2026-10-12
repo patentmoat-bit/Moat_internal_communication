@@ -17,13 +17,13 @@ export default function ActivityHistoryPage() {
         if (!res.ok) throw new Error("Failed to load");
         return res.json();
       })
-      .then((json) => {
-        setData(json.activities || []);
+      .then((json: any) => {
+        setData(Array.isArray(json) ? json : json.activities || []);
         setLoading(false);
       })
       .catch((err) => {
         // console.error(err);
-        setData(Array.isArray(data) ? [] : {}); setError(true);
+        setData([]); setError(true);
         setLoading(false);
       });
   }, []);
@@ -39,20 +39,20 @@ export default function ActivityHistoryPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-8 pb-20 px-4 sm:px-6 lg:px-8">
-      <div className="pt-8 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-border dark:border-[#c9a84c]/20 pb-6">
+      <div className="pt-8 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-border pb-6">
         <div>
           <div className="flex items-center gap-3 mb-2">
             <Badge
               variant="outline"
-              className="border-[#c9a84c]/40 text-[#c9a84c] bg-[#c9a84c]/10 tracking-widest text-[10px] font-black uppercase px-2.5 py-0.5 rounded-sm"
+              className="border-accent-line text-accent-text bg-accent/10 tracking-widest text-[10px] font-black uppercase px-2.5 py-0.5 rounded-sm"
             >
               ACTIVITY
             </Badge>
           </div>
-          <h1 className="text-3xl font-black tracking-tight text-foreground dark:text-[#e8dfc8]">
+          <h1 className="text-3xl font-black tracking-tight text-foreground ">
             Activity History
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground dark:text-[#e8dfc8]/60 max-w-2xl font-medium">
+          <p className="mt-1 text-sm text-muted-foreground max-w-2xl font-medium">
             Immutable audit log of CEO actions and system events.
           </p>
         </div>
@@ -63,12 +63,12 @@ export default function ActivityHistoryPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input placeholder="Search activity..." className="pl-9 bg-card border-border" />
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-muted text-foreground border border-border rounded-lg hover:bg-muted/80 text-sm font-bold">
+        <button className="flex items-center gap-2 px-4 py-2 bg-sunken text-foreground border border-border rounded-lg hover:bg-sunken/80 text-sm font-bold">
           <Filter className="w-4 h-4" /> Filters
         </button>
       </div>
 
-      <Card className="border-border dark:border-[#c9a84c]/20 bg-card dark:bg-[#1a1a0e]">
+      <Card className="border-border bg-card ">
         <CardContent className="p-0">
           {(!data || data.length === 0) ? (
             <div className="p-8 text-center text-muted-foreground">

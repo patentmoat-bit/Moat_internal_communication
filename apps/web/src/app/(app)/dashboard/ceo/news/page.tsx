@@ -262,7 +262,7 @@ function CeoNewsPageContent() {
       case "International IP":
         return "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/40";
       default:
-        return "bg-amber-50/80 text-amber-800 border-amber-200 dark:bg-[#c9a84c]/15 dark:text-[#e8dfc8] dark:border-[#c9a84c]/30";
+        return "bg-amber-50/80 text-amber-800 border-amber-200 ";
     }
   };
 
@@ -317,20 +317,20 @@ function CeoNewsPageContent() {
   return (
     <div className="mx-auto w-full max-w-7xl space-y-8 pb-20 px-4 sm:px-6 lg:px-8">
       {/* Top Header */}
-      <div className="pt-8 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-border dark:border-[#c9a84c]/20 pb-6">
+      <div className="pt-8 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-border pb-6">
         <div>
           <div className="flex items-center gap-3 mb-3">
-            <Badge variant="outline" className="border-[#c9a84c] text-[#9a751a] dark:text-[#c9a84c] bg-[#c9a84c]/10 tracking-widest text-[10px] font-black uppercase px-2.5 py-0.5 rounded-sm">
+            <Badge variant="outline" className="border-accent-line text-accent-text bg-accent/10 tracking-widest text-[10px] font-black uppercase px-2.5 py-0.5 rounded-sm">
               MOAT CEO INTELLIGENCE
             </Badge>
             <span className="text-emerald-600 dark:text-emerald-400 text-[10px] font-bold tracking-widest uppercase flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-0.5 rounded-sm border border-emerald-200 dark:border-emerald-500/20">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> LIVE EXTERNAL SOURCES
             </span>
           </div>
-          <h1 className="text-3xl font-black tracking-tighter text-zinc-900 dark:text-[#e8dfc8]">
+          <h1 className="text-3xl font-black tracking-tighter text-ink ">
             IP NEWS & INTELLIGENCE
           </h1>
-          <p className="mt-2 text-sm text-zinc-600 dark:text-[#e8dfc8]/70 max-w-2xl font-medium">
+          <p className="mt-2 text-sm text-muted max-w-2xl font-medium">
             Stay informed on important patent, trademark, technology and IP developments directly from official patent offices and authoritative global sources.
           </p>
         </div>
@@ -338,7 +338,7 @@ function CeoNewsPageContent() {
         {/* Live Auto-Update & Action Bar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
           {/* Live Auto-Sync Status Indicator */}
-          <div className="flex items-center gap-2.5 bg-secondary/80 dark:bg-[#121208] border border-border dark:border-[#c9a84c]/25 px-3 py-1.5 rounded-sm text-xs shadow-xs">
+          <div className="flex items-center gap-2.5 bg-secondary/80 border border-border px-3 py-1.5 rounded-sm text-xs shadow-xs">
             <span className="relative flex h-2 w-2">
               {autoRefresh && (
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
@@ -358,7 +358,7 @@ function CeoNewsPageContent() {
             </div>
 
             {/* Quick frequency presets */}
-            <div className="flex items-center gap-1 pl-1.5 border-l border-border dark:border-[#c9a84c]/20">
+            <div className="flex items-center gap-1 pl-1.5 border-l border-border ">
               {[30, 60, 120].map((sec) => (
                 <button
                   key={sec}
@@ -370,7 +370,7 @@ function CeoNewsPageContent() {
                   }}
                   className={`text-[10px] font-mono px-1.5 py-0.5 rounded transition-colors ${
                     refreshInterval === sec && autoRefresh
-                      ? "bg-[#175a74] text-white font-black"
+                      ? "bg-accent text-on-accent font-black"
                       : "text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5"
                   }`}
                   title={`Auto-check news every ${sec} seconds`}
@@ -395,15 +395,15 @@ function CeoNewsPageContent() {
           </div>
 
           {lastUpdated && (
-            <div className="text-[11px] text-zinc-500 dark:text-[#e8dfc8]/50">
-              Last sync: <span className="text-zinc-700 dark:text-[#e8dfc8]/80 font-mono font-medium">{new Date(lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            <div className="text-[11px] text-muted ">
+              Last sync: <span className="text-zinc-700 font-mono font-medium">{new Date(lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
           )}
 
           <Button
             onClick={() => fetchNews(true)}
             disabled={refreshing || loading}
-            className="bg-[#175a74] hover:bg-[#114459] text-white font-bold text-xs uppercase tracking-wider px-4 py-2 h-9 rounded-sm flex items-center gap-2 shadow-sm transition-all"
+            className="bg-accent hover:bg-accent-hover text-on-accent font-bold text-xs uppercase tracking-wider px-4 py-2 h-9 rounded-sm flex items-center gap-2 shadow-sm transition-all"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing || isAutoSyncing ? "animate-spin" : ""}`} />
             {refreshing ? "Syncing Sources..." : isAutoSyncing ? "Auto-Syncing..." : "Refresh Feed"}
@@ -430,17 +430,17 @@ function CeoNewsPageContent() {
 
       {/* Executive KPI Bar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="border-border dark:border-[#c9a84c]/20 bg-card dark:bg-gradient-to-b dark:from-[#1a1a0e] dark:to-[#131309] shadow-sm dark:shadow-md">
+        <Card className="border-border bg-card shadow-sm dark:shadow-md">
           <CardContent className="p-4">
             <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Verified Articles</div>
-            <div className="text-2xl font-black text-[#9a751a] dark:text-amber-400 mt-1">{total}</div>
+            <div className="text-2xl font-black text-accent-text dark:text-amber-400 mt-1">{total}</div>
             <div className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1 font-medium">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> WIPO • EPO • USPTO • IPW
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-border dark:border-[#c9a84c]/20 bg-card dark:bg-gradient-to-b dark:from-[#1a1a0e] dark:to-[#131309] shadow-sm dark:shadow-md">
+        <Card className="border-border bg-card shadow-sm dark:shadow-md">
           <CardContent className="p-4">
             <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Active IP Offices</div>
             <div className="text-2xl font-black text-foreground mt-1">{SOURCES.length - 1}</div>
@@ -450,34 +450,34 @@ function CeoNewsPageContent() {
 
         <Card 
           onClick={() => { setQuickDate("upcoming"); setPage(1); }}
-          className="border-border dark:border-[#c9a84c]/20 bg-card dark:bg-gradient-to-b dark:from-[#1a1a0e] dark:to-[#131309] shadow-sm dark:shadow-md cursor-pointer hover:border-[#c9a84c]/50 transition-all group"
+          className="border-border bg-card shadow-sm dark:shadow-md cursor-pointer hover:border-accent-line transition-all group"
         >
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground group-hover:text-foreground">Upcoming IP Events</div>
-              <Calendar className="w-3.5 h-3.5 text-[#9a751a] dark:text-amber-400" />
+              <Calendar className="w-3.5 h-3.5 text-accent-text dark:text-amber-400" />
             </div>
-            <div className="text-2xl font-black text-[#9a751a] dark:text-amber-400 mt-1 flex items-center gap-1.5">
+            <div className="text-2xl font-black text-accent-text dark:text-amber-400 mt-1 flex items-center gap-1.5">
               {upcomingEventsCount || upcomingEvents.length || 6}
               <span className="text-[11px] font-mono font-medium text-muted-foreground">Scheduled</span>
             </div>
-            <div className="text-[10px] text-amber-700 dark:text-[#c9a84c] mt-1 flex items-center gap-1 font-medium">
+            <div className="text-[10px] text-amber-700 mt-1 flex items-center gap-1 font-medium">
               PTAB • EPO • WIPO • CAFC
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-border dark:border-[#c9a84c]/20 bg-card dark:bg-gradient-to-b dark:from-[#1a1a0e] dark:to-[#131309] shadow-sm dark:shadow-md">
+        <Card className="border-border bg-card shadow-sm dark:shadow-md">
           <CardContent className="p-4">
             <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Executive Synthesis</div>
-            <div className="text-2xl font-black text-[#9a751a] dark:text-[#c9a84c] mt-1">Enabled</div>
+            <div className="text-2xl font-black text-accent-text mt-1">Enabled</div>
             <div className="text-[10px] text-muted-foreground mt-1">MOAT Executive Summaries</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Control Bar: Search & Filters */}
-      <div className="space-y-4 bg-card dark:bg-[#14140b] p-5 rounded-lg border border-border dark:border-[#c9a84c]/20 shadow-sm dark:shadow-md">
+      <div className="space-y-4 bg-card p-5 rounded-lg border border-border shadow-sm dark:shadow-md">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
           {/* Search Form */}
           <form onSubmit={handleSearchSubmit} className="relative flex-1">
@@ -487,7 +487,7 @@ function CeoNewsPageContent() {
               placeholder="Search headline, summary, patent office or keywords (e.g. AI, PTAB, unitary)..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="pl-9 pr-9 bg-background dark:bg-[#0d0d08] border-input dark:border-[#c9a84c]/30 text-foreground dark:text-[#e8dfc8] placeholder:text-muted-foreground dark:placeholder:text-[#e8dfc8]/40 h-10 text-xs focus:border-[#c9a84c] rounded-sm"
+              className="pl-9 pr-9 bg-background border-input text-foreground placeholder:text-muted-foreground h-10 text-xs focus:border-accent-line rounded-sm"
             />
             {searchInput && (
               <button
@@ -502,13 +502,13 @@ function CeoNewsPageContent() {
 
           {/* Sort Toggle */}
           <div className="flex items-center gap-3 shrink-0">
-            <div className="flex items-center bg-secondary dark:bg-[#0d0d08] rounded border border-border dark:border-[#c9a84c]/30 p-0.5">
+            <div className="flex items-center bg-secondary rounded border border-border p-0.5">
               <button
                 type="button"
                 onClick={() => { setSortOrder("latest"); setPage(1); }}
                 className={`px-3 py-1.5 text-xs font-bold rounded-sm transition-all ${
                   sortOrder === "latest"
-                    ? "bg-[#175a74] text-white shadow-xs"
+                    ? "bg-accent text-on-accent shadow-xs"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -519,7 +519,7 @@ function CeoNewsPageContent() {
                 onClick={() => { setSortOrder("oldest"); setPage(1); }}
                 className={`px-3 py-1.5 text-xs font-bold rounded-sm transition-all ${
                   sortOrder === "oldest"
-                    ? "bg-[#175a74] text-white shadow-xs"
+                    ? "bg-accent text-on-accent shadow-xs"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -530,9 +530,9 @@ function CeoNewsPageContent() {
         </div>
 
         {/* Quick Date Timeline Filters */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border dark:border-[#c9a84c]/10 text-xs">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground dark:text-[#c9a84c]/80 flex items-center gap-1">
-            <Clock className="w-3 h-3 text-[#9a751a] dark:text-[#c9a84c]" />
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border text-xs">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+            <Clock className="w-3 h-3 text-accent-text " />
             Timeline:
           </span>
           {[
@@ -553,8 +553,8 @@ function CeoNewsPageContent() {
               }}
               className={`px-3 py-1 text-xs rounded-sm border transition-all flex items-center gap-1.5 ${
                 quickDate === item.id
-                  ? "bg-[#175a74] text-white font-bold border-[#175a74] shadow-xs"
-                  : "bg-background dark:bg-[#0d0d08] text-muted-foreground hover:text-foreground border-border dark:border-[#c9a84c]/20"
+                  ? "bg-accent text-on-accent font-bold border-accent shadow-xs"
+                  : "bg-background text-muted-foreground hover:text-foreground border-border "
               }`}
             >
               {item.id === "today" && <Sparkles className="w-3 h-3 text-amber-500" />}
@@ -562,7 +562,7 @@ function CeoNewsPageContent() {
               <span>{item.label}</span>
               {item.count !== undefined && item.count > 0 && (
                 <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                  quickDate === item.id ? "bg-black/20 text-black font-bold" : "bg-amber-500/15 text-[#9a751a] dark:text-amber-300 font-bold"
+                  quickDate === item.id ? "bg-black/15 text-on-accent font-bold" : "bg-amber-500/15 text-accent-text dark:text-amber-300 font-bold"
                 }`}>
                   {item.count}
                 </span>
@@ -574,8 +574,8 @@ function CeoNewsPageContent() {
             variant="ghost"
             size="sm"
             onClick={() => setShowDateFilter(!showDateFilter)}
-            className={`h-7 text-xs border border-border dark:border-[#c9a84c]/20 gap-1 ml-auto ${
-              showDateFilter || dateFrom || dateTo ? "border-[#c9a84c] text-[#9a751a] dark:text-[#c9a84c] bg-[#c9a84c]/10" : "text-muted-foreground hover:text-foreground"
+            className={`h-7 text-xs border border-border gap-1 ml-auto ${
+              showDateFilter || dateFrom || dateTo ? "border-accent-line text-accent-text bg-accent/10" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Calendar className="w-3 h-3" />
@@ -585,15 +585,15 @@ function CeoNewsPageContent() {
 
         {/* Date Filter Collapsible Row */}
         {showDateFilter && (
-          <div className="pt-3 border-t border-border dark:border-[#c9a84c]/10 flex flex-wrap items-center gap-4 text-xs text-foreground dark:text-[#e8dfc8]">
-            <span className="font-bold text-[11px] uppercase tracking-wider text-[#9a751a] dark:text-[#c9a84c]">Published Between:</span>
+          <div className="pt-3 border-t border-border flex flex-wrap items-center gap-4 text-xs text-foreground ">
+            <span className="font-bold text-[11px] uppercase tracking-wider text-accent-text ">Published Between:</span>
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground">From:</span>
               <Input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => { setDateFrom(e.target.value); setQuickDate("all"); setPage(1); }}
-                className="bg-background dark:bg-[#0d0d08] border-input dark:border-[#c9a84c]/30 text-foreground dark:text-[#e8dfc8] h-8 text-xs w-36 rounded-sm"
+                className="bg-background border-input text-foreground h-8 text-xs w-36 rounded-sm"
               />
             </div>
             <div className="flex items-center gap-2">
@@ -602,7 +602,7 @@ function CeoNewsPageContent() {
                 type="date"
                 value={dateTo}
                 onChange={(e) => { setDateTo(e.target.value); setQuickDate("all"); setPage(1); }}
-                className="bg-background dark:bg-[#0d0d08] border-input dark:border-[#c9a84c]/30 text-foreground dark:text-[#e8dfc8] h-8 text-xs w-36 rounded-sm"
+                className="bg-background border-input text-foreground h-8 text-xs w-36 rounded-sm"
               />
             </div>
             {(dateFrom || dateTo) && (
@@ -610,7 +610,7 @@ function CeoNewsPageContent() {
                 variant="ghost"
                 size="sm"
                 onClick={() => { setDateFrom(""); setDateTo(""); setPage(1); }}
-                className="h-8 text-[11px] text-[#9a751a] dark:text-amber-400 hover:underline"
+                className="h-8 text-[11px] text-accent-text dark:text-amber-400 hover:underline"
               >
                 Clear Dates
               </Button>
@@ -619,8 +619,8 @@ function CeoNewsPageContent() {
         )}
 
         {/* Source Pills */}
-        <div className="space-y-2 pt-2 border-t border-border dark:border-[#c9a84c]/10">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground dark:text-[#c9a84c]/80">Filter By Source:</div>
+        <div className="space-y-2 pt-2 border-t border-border ">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ">Filter By Source:</div>
           <div className="flex flex-wrap gap-2">
             {SOURCES.map((source) => {
               const isSelected = selectedSource === source;
@@ -638,16 +638,16 @@ function CeoNewsPageContent() {
                   }}
                   className={`px-3 py-1 text-xs rounded-sm border transition-all flex items-center gap-1.5 ${
                     isSelected
-                      ? "bg-[#175a74] text-white font-black border-[#175a74] shadow-xs"
-                      : "bg-background dark:bg-[#0d0d08] text-foreground dark:text-[#e8dfc8]/70 border-border dark:border-[#c9a84c]/20 hover:border-[#c9a84c] hover:text-foreground"
+                      ? "bg-accent text-on-accent font-black border-accent shadow-xs"
+                      : "bg-background text-foreground border-border hover:border-accent-line hover:text-foreground"
                   }`}
                 >
                   <span>{source}</span>
                   {count > 0 && (
                     <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
                       isSelected
-                        ? "bg-black/20 text-black font-bold"
-                        : "bg-muted dark:bg-[#c9a84c]/20 text-muted-foreground dark:text-amber-300"
+                        ? "bg-black/15 text-on-accent font-bold"
+                        : "bg-sunken text-muted-foreground dark:text-amber-300"
                     }`}>
                       {count}
                     </span>
@@ -659,8 +659,8 @@ function CeoNewsPageContent() {
         </div>
 
         {/* Category Pills */}
-        <div className="space-y-2 pt-2 border-t border-border dark:border-[#c9a84c]/10">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground dark:text-[#c9a84c]/80">Filter By Category:</div>
+        <div className="space-y-2 pt-2 border-t border-border ">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ">Filter By Category:</div>
           <div className="flex flex-wrap gap-1.5">
             {CATEGORIES.map((cat) => {
               const isSelected = selectedCategory === cat;
@@ -674,8 +674,8 @@ function CeoNewsPageContent() {
                   }}
                   className={`px-2.5 py-1 text-[11px] rounded-sm transition-all border ${
                     isSelected
-                      ? "bg-[#175a74] text-white font-bold border-[#175a74] shadow-xs"
-                      : "bg-background dark:bg-[#0d0d08] text-muted-foreground hover:text-foreground hover:bg-secondary dark:hover:bg-[#1a1a0e] border-border dark:border-[#c9a84c]/10"
+                      ? "bg-accent text-on-accent font-bold border-accent shadow-xs"
+                      : "bg-background text-muted-foreground hover:text-foreground hover:bg-secondary border-border "
                   }`}
                 >
                   {cat}
@@ -705,15 +705,15 @@ function CeoNewsPageContent() {
 
       {/* Upcoming Events & Hearings Radar Widget (Shown if events exist and not already in upcoming-only view) */}
       {upcomingEvents.length > 0 && quickDate !== "upcoming" && (
-        <div className="bg-card dark:bg-gradient-to-r dark:from-[#1b1709] dark:via-[#14140b] dark:to-[#17140b] border border-amber-500/30 dark:border-[#c9a84c]/30 rounded-lg p-5 shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border dark:border-[#c9a84c]/15 pb-3">
+        <div className="bg-card border border-amber-500/30 rounded-lg p-5 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
             <div className="flex items-center gap-2.5">
-              <span className="p-1.5 bg-amber-500/10 dark:bg-[#c9a84c]/15 text-[#9a751a] dark:text-[#c9a84c] rounded border border-amber-500/20">
+              <span className="p-1.5 bg-amber-500/10 text-accent-text rounded border border-amber-500/20">
                 <Calendar className="w-4 h-4" />
               </span>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-black tracking-wide uppercase text-foreground dark:text-[#e8dfc8]">
+                  <h2 className="text-sm font-black tracking-wide uppercase text-foreground ">
                     Upcoming IP Events & Hearings Radar
                   </h2>
                   <Badge variant="outline" className="border-amber-500/40 text-amber-700 dark:text-amber-400 bg-amber-500/10 text-[10px] font-mono px-1.5 py-0 font-bold">
@@ -733,7 +733,7 @@ function CeoNewsPageContent() {
                 setQuickDate("upcoming");
                 setPage(1);
               }}
-              className="h-7 text-xs border-amber-500/40 text-[#9a751a] dark:text-[#c9a84c] hover:bg-[#c9a84c]/10"
+              className="h-7 text-xs border-amber-500/40 text-accent-text hover:bg-accent/10"
             >
               <span>View All Events ({upcomingEventsCount || upcomingEvents.length})</span>
               <ArrowRight className="w-3 h-3 ml-1" />
@@ -746,11 +746,11 @@ function CeoNewsPageContent() {
               return (
                 <div
                   key={event.id}
-                  className="bg-background dark:bg-[#0e0e07] border border-border dark:border-[#c9a84c]/20 hover:border-amber-500/60 dark:hover:border-[#c9a84c]/60 rounded-md p-4 flex flex-col justify-between transition-all group"
+                  className="bg-background border border-border hover:border-amber-500/60 rounded-md p-4 flex flex-col justify-between transition-all group"
                 >
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-mono font-black text-amber-700 dark:text-[#c9a84c] bg-amber-500/10 dark:bg-[#c9a84c]/15 px-2 py-0.5 rounded border border-amber-500/30">
+                      <span className="text-[10px] font-mono font-black text-amber-700 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">
                         📅 {eventDateStr}
                       </span>
                       <Badge variant="outline" className={`text-[9px] font-mono font-black uppercase ${getSourceBadgeStyle(event.source_name)}`}>
@@ -759,7 +759,7 @@ function CeoNewsPageContent() {
                     </div>
 
                     <Link href={`/dashboard/ceo/news/${event.id}`} className="block">
-                      <h4 className="text-xs font-bold text-foreground group-hover:text-[#9a751a] dark:group-hover:text-amber-400 transition-colors line-clamp-2 leading-snug">
+                      <h4 className="text-xs font-bold text-foreground group-hover:text-accent-text dark:group-hover:text-amber-400 transition-colors line-clamp-2 leading-snug">
                         {event.title}
                       </h4>
                     </Link>
@@ -769,13 +769,13 @@ function CeoNewsPageContent() {
                     </p>
                   </div>
 
-                  <div className="pt-3 mt-3 border-t border-border dark:border-[#c9a84c]/10 flex items-center justify-between text-[11px]">
+                  <div className="pt-3 mt-3 border-t border-border flex items-center justify-between text-[11px]">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
                       Impact: {event.impact_level || "HIGH"}
                     </span>
                     <Link
                       href={`/dashboard/ceo/news/${event.id}`}
-                      className="font-bold text-[#9a751a] dark:text-[#c9a84c] hover:underline flex items-center gap-1"
+                      className="font-bold text-accent-text hover:underline flex items-center gap-1"
                     >
                       <span>Read Intelligence</span>
                       <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
@@ -792,24 +792,24 @@ function CeoNewsPageContent() {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} className="border-border dark:border-[#c9a84c]/20 bg-card dark:bg-[#16160d] p-5 space-y-4">
+            <Card key={i} className="border-border bg-card p-5 space-y-4">
               <div className="flex justify-between items-center">
-                <Skeleton className="h-5 w-24 bg-muted dark:bg-white/5" />
-                <Skeleton className="h-4 w-20 bg-muted dark:bg-white/5" />
+                <Skeleton className="h-5 w-24 bg-sunken dark:bg-white/5" />
+                <Skeleton className="h-4 w-20 bg-sunken dark:bg-white/5" />
               </div>
-              <Skeleton className="h-6 w-full bg-muted dark:bg-white/5" />
-              <Skeleton className="h-4 w-3/4 bg-muted dark:bg-white/5" />
-              <Skeleton className="h-16 w-full bg-muted dark:bg-white/5" />
+              <Skeleton className="h-6 w-full bg-sunken dark:bg-white/5" />
+              <Skeleton className="h-4 w-3/4 bg-sunken dark:bg-white/5" />
+              <Skeleton className="h-16 w-full bg-sunken dark:bg-white/5" />
               <div className="pt-4 border-t border-border dark:border-white/5 flex justify-between">
-                <Skeleton className="h-4 w-24 bg-muted dark:bg-white/5" />
-                <Skeleton className="h-4 w-20 bg-muted dark:bg-white/5" />
+                <Skeleton className="h-4 w-24 bg-sunken dark:bg-white/5" />
+                <Skeleton className="h-4 w-20 bg-sunken dark:bg-white/5" />
               </div>
             </Card>
           ))}
         </div>
       ) : articles.length === 0 ? (
-        <div className="text-center py-20 bg-card dark:bg-[#14140b] rounded-lg border border-border dark:border-[#c9a84c]/20 p-8 space-y-4 shadow-sm">
-          <div className="w-12 h-12 rounded-full bg-[#c9a84c]/10 text-[#9a751a] dark:text-[#c9a84c] flex items-center justify-center mx-auto">
+        <div className="text-center py-20 bg-card rounded-lg border border-border p-8 space-y-4 shadow-sm">
+          <div className="w-12 h-12 rounded-full bg-accent/10 text-accent-text flex items-center justify-center mx-auto">
             <Globe className="w-6 h-6" />
           </div>
           <h3 className="text-base font-bold text-foreground">No IP news available for the selected filters.</h3>
@@ -821,14 +821,14 @@ function CeoNewsPageContent() {
               onClick={resetFilters}
               variant="outline"
               size="sm"
-              className="border-[#c9a84c]/40 text-[#9a751a] dark:text-[#c9a84c] hover:bg-[#c9a84c]/10 text-xs"
+              className="border-accent-line text-accent-text hover:bg-accent/10 text-xs"
             >
               Reset All Filters
             </Button>
             <Button
               onClick={() => fetchNews(true)}
               size="sm"
-              className="bg-[#175a74] hover:bg-[#114459] text-white font-bold text-xs"
+              className="bg-accent hover:bg-accent-hover text-on-accent font-bold text-xs"
             >
               Sync Fresh News
             </Button>
@@ -845,13 +845,13 @@ function CeoNewsPageContent() {
             return (
               <Card
                 key={article.id}
-                className="border-border dark:border-[#c9a84c]/20 bg-card dark:bg-gradient-to-b dark:from-[#18180e] dark:to-[#121208] shadow-sm hover:shadow-md dark:shadow-lg hover:border-[#c9a84c]/60 dark:hover:border-[#c9a84c]/50 transition-all flex flex-col justify-between group relative overflow-hidden"
+                className="border-border bg-card shadow-sm hover:shadow-md dark:shadow-lg hover:border-accent-line transition-all flex flex-col justify-between group relative overflow-hidden"
               >
                 {/* Subtle top indicator for articles published today or upcoming events */}
                 {isUpcoming ? (
                   <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 via-purple-500 to-amber-500" />
                 ) : isNew ? (
-                  <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-amber-500 via-[#c9a84c] to-amber-500" />
+                  <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-amber-500 via-accent to-amber-500" />
                 ) : null}
 
                 <CardHeader className="p-5 pb-3 space-y-3">
@@ -892,7 +892,7 @@ function CeoNewsPageContent() {
                   </div>
 
                   <Link href={`/dashboard/ceo/news/${article.id}`} className="block">
-                    <h3 className="text-sm font-bold text-foreground group-hover:text-[#9a751a] dark:group-hover:text-amber-400 transition-colors leading-snug line-clamp-3">
+                    <h3 className="text-sm font-bold text-foreground group-hover:text-accent-text dark:group-hover:text-amber-400 transition-colors leading-snug line-clamp-3">
                       {article.title}
                     </h3>
                   </Link>
@@ -919,7 +919,7 @@ function CeoNewsPageContent() {
                   </div>
                 </CardContent>
 
-                <CardFooter className="p-5 pt-3 border-t border-border dark:border-[#c9a84c]/10 flex items-center justify-between text-xs text-muted-foreground bg-secondary/30 dark:bg-black/10">
+                <CardFooter className="p-5 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground bg-secondary/30 dark:bg-black/10">
                   <div className="flex flex-col">
                     <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70">
                       {isUpcoming && eventDateDisplay ? "Scheduled Event Date" : "Published"}
@@ -931,7 +931,7 @@ function CeoNewsPageContent() {
 
                   <Link
                     href={`/dashboard/ceo/news/${article.id}`}
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[#9a751a] dark:text-amber-400 hover:text-[#7d5f1b] dark:hover:text-amber-300 hover:underline"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-accent-text dark:text-amber-400 hover:text-accent-hover dark:hover:text-amber-300 hover:underline"
                   >
                     <span>{isUpcoming ? "Read Event Intelligence" : "Read Intelligence"}</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
@@ -945,7 +945,7 @@ function CeoNewsPageContent() {
 
       {/* Pagination Controls */}
       {totalPages > 1 && (
-        <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border dark:border-[#c9a84c]/20">
+        <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border ">
           <div className="text-xs text-muted-foreground">
             Showing <span className="font-bold text-foreground">{(page - 1) * 12 + 1}</span> to{" "}
             <span className="font-bold text-foreground">{Math.min(page * 12, total)}</span> of{" "}
@@ -958,12 +958,12 @@ function CeoNewsPageContent() {
               size="sm"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1 || loading}
-              className="border-border dark:border-[#c9a84c]/30 text-foreground dark:text-[#e8dfc8] hover:bg-secondary dark:hover:bg-[#c9a84c]/10 text-xs h-8"
+              className="border-border text-foreground hover:bg-secondary text-xs h-8"
             >
               Previous
             </Button>
 
-            <span className="text-xs font-mono text-[#9a751a] dark:text-[#c9a84c] px-3 font-bold">
+            <span className="text-xs font-mono text-accent-text px-3 font-bold">
               Page {page} of {totalPages}
             </span>
 
@@ -972,7 +972,7 @@ function CeoNewsPageContent() {
               size="sm"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages || loading}
-              className="border-border dark:border-[#c9a84c]/30 text-foreground dark:text-[#e8dfc8] hover:bg-secondary dark:hover:bg-[#c9a84c]/10 text-xs h-8"
+              className="border-border text-foreground hover:bg-secondary text-xs h-8"
             >
               Next
             </Button>

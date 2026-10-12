@@ -121,7 +121,7 @@ export default function InventionDetailsWorkflow() {
         {/* Left Column: Overview & Features */}
         <div className="lg:col-span-2 space-y-6">
           <Card className="shadow-sm border-border/40 overflow-hidden">
-            <CardHeader className="bg-muted/30 border-b border-border/40 py-4 flex flex-row items-center justify-between">
+            <CardHeader className="bg-sunken/30 border-b border-border/40 py-4 flex flex-row items-center justify-between">
               <CardTitle className="text-lg font-black flex items-center gap-2 text-foreground">
                 <Lightbulb className="w-5 h-5 text-blue-600" /> Invention Overview
               </CardTitle>
@@ -179,7 +179,7 @@ export default function InventionDetailsWorkflow() {
           </Card>
 
           <Card className="shadow-sm border-border/40 overflow-hidden">
-            <CardHeader className="bg-muted/30 border-b border-border/40 py-4">
+            <CardHeader className="bg-sunken/30 border-b border-border/40 py-4">
               <CardTitle className="text-lg font-black flex items-center gap-2 text-foreground">
                 <FileText className="w-5 h-5 text-blue-600" /> Key Features
               </CardTitle>
@@ -227,7 +227,7 @@ export default function InventionDetailsWorkflow() {
         {/* Right Column: Inventors & Assignees */}
         <div className="space-y-6">
           <Card className="shadow-sm border-border/40 overflow-hidden">
-            <CardHeader className="bg-muted/30 border-b border-border/40 py-4">
+            <CardHeader className="bg-sunken/30 border-b border-border/40 py-4">
               <CardTitle className="text-sm font-black flex items-center gap-2 text-foreground">
                 <User className="w-4 h-4 text-blue-600" /> Inventors
               </CardTitle>
@@ -264,7 +264,7 @@ export default function InventionDetailsWorkflow() {
               ) : (
                 <div className="space-y-3">
                   {formData.inventors.filter(i => i.name.trim() !== "").length > 0 ? formData.inventors.filter(i => i.name.trim() !== "").map((inv, idx) => (
-                    <div key={idx} className="flex items-center gap-3 p-3 rounded-xl bg-muted/40 border border-border/50">
+                    <div key={idx} className="flex items-center gap-3 p-3 rounded-xl bg-sunken/40 border border-border/50">
                       <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
                         {inv.name.substring(0, 2).toUpperCase() || "??"}
                       </div>
@@ -282,7 +282,7 @@ export default function InventionDetailsWorkflow() {
           </Card>
 
           <Card className="shadow-sm border-border/40 overflow-hidden">
-            <CardHeader className="bg-muted/30 border-b border-border/40 py-4">
+            <CardHeader className="bg-sunken/30 border-b border-border/40 py-4">
               <CardTitle className="text-sm font-black flex items-center gap-2 text-foreground">
                 <Building className="w-4 h-4 text-blue-600" /> Assignees
               </CardTitle>
@@ -296,7 +296,7 @@ export default function InventionDetailsWorkflow() {
                 />
               ) : (
                 formData.assignee ? (
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/40 border border-border/50">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-sunken/40 border border-border/50">
                     <div className="w-10 h-10 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-sm">
                       <Building className="w-5 h-5" />
                     </div>

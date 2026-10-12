@@ -154,7 +154,7 @@ export function DraftListView({ status, title, description }: DraftListViewProps
                       <Briefcase className="w-4 h-4" /> Assigned by {project.assignedBy} • {project.date}
                     </p>
                     {project.instructions && (
-                      <div className="mt-3 p-3 bg-muted/40 rounded-lg border border-border/50 text-sm italic text-muted-foreground">
+                      <div className="mt-3 p-3 bg-sunken/40 rounded-lg border border-border/50 text-sm italic text-muted-foreground">
                         <span className="font-bold block mb-1">Instructions:</span>
                         {project.instructions}
                       </div>
@@ -167,7 +167,7 @@ export function DraftListView({ status, title, description }: DraftListViewProps
                 </h3>
                 
                 {(status === "assigned" || status === "under-review") && (
-                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-2 mb-4 bg-muted/30 p-2 rounded-md border border-border/50">
+                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-2 mb-4 bg-sunken/30 p-2 rounded-md border border-border/50">
                     <User className="w-4 h-4 text-blue-500" />
                     <span className="font-medium">From:</span> {project.assignedBy}
                   </div>
@@ -179,7 +179,7 @@ export function DraftListView({ status, title, description }: DraftListViewProps
                     <span>{project.date}</span>
                   </div>
                   
-                  <div className="w-full bg-muted rounded-full h-2">
+                  <div className="w-full bg-sunken rounded-full h-2">
                     <div 
                       className={`h-2 rounded-full ${status === 'completed' ? 'bg-emerald-500' : 'bg-blue-600'}`} 
                       style={{ width: `${project.progress}%` }}

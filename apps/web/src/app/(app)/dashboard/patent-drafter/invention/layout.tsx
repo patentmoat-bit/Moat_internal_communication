@@ -34,7 +34,7 @@ export default function InventionWorkspaceLayout({ children }: { children: React
                     className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
                       active 
                         ? "bg-blue-600/10 text-blue-700 shadow-sm ring-1 ring-blue-600/20" 
-                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                        : "text-muted-foreground hover:bg-sunken/50 hover:text-foreground"
                     }`}
                   >
                     <tab.icon className={`w-4 h-4 ${active ? "text-blue-700" : ""}`} />

@@ -7,6 +7,8 @@ import { InventionActions } from "@/components/invention/invention-actions";
 import { DecisionForm } from "@/components/invention/decision-form";
 import { DocumentUpload } from "@/components/invention/document-upload";
 import { serverApi } from "@/lib/server-api";
+import { InventionHub } from "@/components/invention/invention-hub";
+import { canDelete, getHub, inWorkflow } from "@/lib/inventionStore";
 import { getSession } from "@/lib/session";
 import { formatDate, statusMeta } from "@/lib/display";
 import { PERMISSIONS, can, type InventionDetail, type SourceDocument } from "@/lib/types";
@@ -27,6 +29,21 @@ export default async function InventionPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+
+  // Disclosures kept in this workspace render as a single hub with every file.
+  const hub = getHub(id);
+  if (hub) {
+    const hubSession = await getSession();
+    return (
+      <InventionHub
+        hub={hub}
+        canUpload={!!hubSession?.permissions.some((p) => p === "invention.create" || p === "invention.edit")}
+        canDelete={!!hubSession && canDelete({ name: hubSession.user.name, roles: hubSession.roles }, hub.invention?.createdBy)}
+        inWorkflow={inWorkflow(id)}
+      />
+    );
+  }
+
   const [invention, session, documents] = await Promise.all([
     serverApi<InventionDetail>(`/inventions/${id}`),
     getSession(),

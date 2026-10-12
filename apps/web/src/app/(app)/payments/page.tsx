@@ -32,30 +32,30 @@ export default function FinancePaymentsPage() {
   const [payments, setPayments] = React.useState<PaymentRecord[]>([]);
   const [filterStatus, setFilterStatus] = React.useState<string>("ALL");
 
-  React.useEffect(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("moat_financial_ledger");
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setPayments(parsed);
-          }
-        } catch {
-          // ignore
-        }
-      }
-    }
+  const [error, setError] = React.useState<string | null>(null);
+
+  const load = React.useCallback(() => {
+    fetch("/api/payments")
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((json) => setPayments(json.payments ?? []))
+      .catch(() => setError("Could not load the payment ledger."));
   }, []);
 
-  const handleUpdateStatus = (id: string, newStatus: PaymentRecord["status"]) => {
-    setPayments((prev) => {
-      const updated = prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item));
-      if (typeof window !== "undefined") {
-        localStorage.setItem("moat_financial_ledger", JSON.stringify(updated));
-      }
-      return updated;
+  React.useEffect(() => {
+    load();
+    const t = setInterval(load, 15_000);
+    return () => clearInterval(t);
+  }, [load]);
+
+  const handleUpdateStatus = async (id: string, newStatus: PaymentRecord["status"]) => {
+    setError(null);
+    const res = await fetch("/api/payments", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status: newStatus }),
     });
+    if (res.ok) setPayments((await res.json()).payments);
+    else setError((await res.json().catch(() => null))?.error ?? "Update failed.");
   };
 
   const filtered = payments.filter((p) => filterStatus === "ALL" || p.status === filterStatus);
@@ -70,6 +70,11 @@ export default function FinancePaymentsPage() {
 
   return (
     <div className="flex h-[calc(100vh-var(--topbar-h))] flex-col overflow-y-auto bg-canvas p-8 space-y-8">
+      {error ? (
+        <p role="alert" className="rounded border border-critical/25 bg-critical-soft px-3 py-2 text-sm text-critical">
+          {error}
+        </p>
+      ) : null}
       {/* Header */}
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>

@@ -144,7 +144,7 @@ export default function TechnicalInfoFigma() {
         {/* Left Column: Technical Specs */}
         <div className="lg:col-span-2 space-y-6">
           <Card className="shadow-sm border-border/40 overflow-hidden">
-            <CardHeader className="bg-muted/30 border-b border-border/40 py-4 flex flex-row items-center justify-between">
+            <CardHeader className="bg-sunken/30 border-b border-border/40 py-4 flex flex-row items-center justify-between">
               <CardTitle className="text-lg font-black flex items-center gap-2 text-foreground">
                 <Cpu className="w-5 h-5 text-blue-600" /> Technical Overview
               </CardTitle>
@@ -226,7 +226,7 @@ export default function TechnicalInfoFigma() {
         {/* Right Column: Diagrams & Files */}
         <div className="space-y-6">
           <Card className="shadow-sm border-border/40 overflow-hidden">
-            <CardHeader className="bg-muted/30 border-b border-border/40 py-4 flex flex-row items-center justify-between">
+            <CardHeader className="bg-sunken/30 border-b border-border/40 py-4 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-black flex items-center gap-2 text-foreground">
                 <ImageIcon className="w-4 h-4 text-blue-600" /> Key Diagrams
               </CardTitle>
@@ -244,7 +244,7 @@ export default function TechnicalInfoFigma() {
           </Card>
 
           <Card className="shadow-sm border-border/40 overflow-hidden">
-            <CardHeader className="bg-muted/30 border-b border-border/40 py-4 flex flex-row items-center justify-between">
+            <CardHeader className="bg-sunken/30 border-b border-border/40 py-4 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-black flex items-center gap-2 text-foreground">
                 <FileArchive className="w-4 h-4 text-blue-600" /> Technical Files
               </CardTitle>

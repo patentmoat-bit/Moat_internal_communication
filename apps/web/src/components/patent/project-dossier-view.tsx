@@ -158,7 +158,7 @@ export function ProjectDossierView({
                 <button
                   type="button"
                   onClick={() => onOpenReportGenerator && onOpenReportGenerator(currentFolder)}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-accent/90 transition"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-3.5 py-1.5 text-xs font-bold text-on-accent shadow-sm hover:bg-accent/90 transition"
                 >
                   <FileCheck2 className="size-3.5" />
                   Generate Formal Report
@@ -174,7 +174,7 @@ export function ProjectDossierView({
                   onClick={() => setFilterCategory("ALL")}
                   className={`rounded-lg px-2.5 py-1 font-semibold transition ${
                     filterCategory === "ALL"
-                      ? "bg-accent text-white"
+                      ? "bg-accent text-on-accent"
                       : "text-muted hover:text-ink hover:bg-hover"
                   }`}
                 >
@@ -189,7 +189,7 @@ export function ProjectDossierView({
                       onClick={() => setFilterCategory(cat.id)}
                       className={`rounded-lg px-2.5 py-1 font-semibold transition ${
                         filterCategory === cat.id
-                          ? "bg-accent text-white"
+                          ? "bg-accent text-on-accent"
                           : "text-muted hover:text-ink hover:bg-hover"
                       }`}
                     >

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { logActivity } from '@/lib/activityLog';
 import fs from 'fs';
 import path from 'path';
 
@@ -7,22 +8,6 @@ const DB_FILE = path.join(process.cwd(), 'data', 'activity.json');
 function getActivity() {
   if (!fs.existsSync(DB_FILE)) return [];
   try { return JSON.parse(fs.readFileSync(DB_FILE, 'utf8')); } catch(e) { return []; }
-}
-
-export function logActivity(actor: string, action: string, invention_id: string, details: string) {
-  let activities = getActivity();
-  activities.unshift({
-    id: 'ACT-' + Date.now() + Math.random().toString(36).substring(7),
-    actor,
-    action,
-    invention_id,
-    details,
-    timestamp: new Date().toISOString()
-  });
-  
-  const dir = path.dirname(DB_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(DB_FILE, JSON.stringify(activities, null, 2));
 }
 
 export async function GET(req: Request) {

@@ -25,7 +25,7 @@ export default function PriorArtPage() {
       const invRes = await fetch(`/api/patent-drafter/invention?id=${currentId}`);
       const invData = await invRes.json();
       
-      let combined = [];
+      let combined: any[] = [];
       if (invData.invention && invData.invention.research) {
         combined = [...invData.invention.research];
       }

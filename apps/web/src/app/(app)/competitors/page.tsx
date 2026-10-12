@@ -78,7 +78,7 @@ export default function CompetitorIntelligencePage() {
         <button
           onClick={fetchIntel}
           disabled={isLoading || !topic.trim()}
-          className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-xs font-bold text-white shadow-sm hover:brightness-110 disabled:opacity-50 transition"
+          className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-xs font-bold text-on-accent shadow-sm hover:brightness-110 disabled:opacity-50 transition"
         >
           <RefreshCw className={`size-3.5 ${isLoading ? "animate-spin" : ""}`} />
           {isLoading ? "Fetching Live Intelligence..." : "Run Intelligence Radar"}

@@ -59,7 +59,7 @@ export function LifecycleVisual({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#175a74] dark:text-[#38bdf8] bg-[#175a74]/10 px-2 py-0.5 rounded">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#175a74] bg-accent/10 px-2 py-0.5 rounded">
               MOAT IP Lifecycle
             </span>
             <span className="text-xs text-muted">Continuous Invention Decision Pipeline</span>
@@ -75,7 +75,7 @@ export function LifecycleVisual({
               onClick={() => onSelectStage("ALL")}
               className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
                 selectedStage === "ALL"
-                  ? "bg-[#175a74] text-white shadow-xs"
+                  ? "bg-accent text-on-accent shadow-xs"
                   : "border border-line bg-canvas text-muted hover:text-ink"
               }`}
             >
@@ -84,7 +84,7 @@ export function LifecycleVisual({
           )}
           <Link
             href="/portfolio/pipeline"
-            className="flex items-center gap-1 text-xs font-bold text-[#175a74] dark:text-[#38bdf8] hover:underline"
+            className="flex items-center gap-1 text-xs font-bold text-[#175a74] hover:underline"
           >
             <span>Kanban Pipeline</span>
             <ArrowRight className="size-3" />
@@ -103,7 +103,7 @@ export function LifecycleVisual({
             <div
               className={`relative flex flex-col justify-between p-3.5 rounded-xl border transition cursor-pointer text-left h-full ${
                 isSelected
-                  ? "border-[#175a74] bg-[#175a74]/10 shadow-sm ring-1 ring-[#175a74]/40"
+                  ? "border-accent bg-accent/10 shadow-sm ring-1 ring-[#175a74]/40"
                   : "border-line bg-canvas hover:border-line-strong hover:bg-hover"
               }`}
               onClick={() => onSelectStage && onSelectStage(st.key)}
@@ -118,7 +118,7 @@ export function LifecycleVisual({
                 </div>
                 <div
                   className={`flex size-6 items-center justify-center rounded-lg ${
-                    count > 0 ? "bg-[#175a74]/10 text-[#175a74] dark:text-[#38bdf8]" : "bg-line/40 text-faint"
+                    count > 0 ? "bg-accent/10 text-[#175a74] " : "bg-line/40 text-faint"
                   }`}
                 >
                   <Icon className="size-3.5" />

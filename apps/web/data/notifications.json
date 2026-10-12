@@ -7,7 +7,10 @@
     "sender": "Drafter",
     "actionUrl": "/dashboard",
     "readAt": null,
-    "createdAt": "2026-10-10T17:36:17.816Z"
+    "createdAt": "2026-10-10T17:36:17.816Z",
+    "readBy": {
+      "u-dev-1": "2026-10-12T05:59:28.096Z"
+    }
   },
   {
     "id": "NOTIF-1791656059722",
@@ -18,5 +21,81 @@
     "actionUrl": "/dashboard",
     "readAt": null,
     "createdAt": "2026-10-10T18:14:19.722Z"
+  },
+  {
+    "id": "NOTIF-52906503-0396-4092-90bf-b5d330c720c9",
+    "kind": "mention",
+    "title": "Executive Patent Analyst mentioned your team",
+    "message": "Hi",
+    "target_role": "CEO",
+    "sender": "Executive Patent Analyst",
+    "actionUrl": "/inbox",
+    "priority": "medium",
+    "readBy": {
+      "u-dev-1": "2026-10-12T06:16:00.944Z"
+    },
+    "createdAt": "2026-10-12T06:15:51.864Z"
+  },
+  {
+    "id": "NOTIF-b62d0d9b-6b36-4639-8241-d2bb99af1ee2",
+    "kind": "design_request",
+    "title": "Drawing Enhancement Request",
+    "message": "Arjun Mehta requested design enhancements for drawing 'FIG_3_Architecture.png' in project INN-0012.",
+    "target_role": "DESIGN_TEAM",
+    "sender": "Executive Patent Analyst",
+    "sender_id": "u-dev-1",
+    "actionUrl": "/design",
+    "priority": "medium",
+    "readBy": {},
+    "createdAt": "2026-10-12T06:47:56.440Z"
+  },
+  {
+    "id": "NOTIF-80023bb3-c9cd-4cea-a764-1ee501140beb",
+    "kind": "design_request",
+    "title": "Drawing Enhancement Request",
+    "message": "Arjun Mehta requested design enhancements for drawing 'FIG_4_Architecture.png' in project INN-0012.",
+    "target_role": "DESIGN_TEAM",
+    "sender": "Executive Patent Analyst",
+    "sender_id": "u-dev-1",
+    "actionUrl": "/design",
+    "priority": "medium",
+    "readBy": {},
+    "createdAt": "2026-10-12T06:48:07.471Z"
+  },
+  {
+    "id": "NOTIF-1b20bd11-20ae-4f09-b759-35dffd12c3c9",
+    "kind": "workflow",
+    "title": "Workflow State Changed",
+    "message": "INN-0012 moved to APPROVED",
+    "target_role": "PATENT_DRAFTER",
+    "sender": "Executive Patent Analyst",
+    "actionUrl": "/dashboard/patent-drafter/review/approvals",
+    "priority": "medium",
+    "readBy": {},
+    "createdAt": "2026-10-12T07:11:36.983Z"
+  },
+  {
+    "id": "NOTIF-66c47c95-9d4b-4d44-b77d-393231c151c5",
+    "kind": "approval",
+    "title": "Draft awaiting your approval",
+    "message": "INN-0012 passed analyst review and needs executive approval.",
+    "target_role": "CEO",
+    "sender": "Executive Patent Analyst",
+    "actionUrl": "/dashboard/ceo/approvals",
+    "priority": "high",
+    "readBy": {},
+    "createdAt": "2026-10-12T07:11:36.983Z"
+  },
+  {
+    "id": "NOTIF-44ebab68-a913-45c7-a24e-7b677b345e56",
+    "kind": "assignment",
+    "title": "Matter handed off to drafting",
+    "message": "Pat-001 \u00b7 cyber is ready for claim drafting (review note by Executive Patent Analyst).",
+    "target_role": "PATENT_DRAFTER",
+    "sender": "Executive Patent Analyst",
+    "actionUrl": "/dashboard/patent-drafter",
+    "priority": "high",
+    "readBy": {},
+    "createdAt": "2026-10-12T07:29:59.432Z"
   }
 ]

@@ -6,6 +6,12 @@ export type LifecycleStage =
   | "PROTECT"
   | "COMPOUND";
 
+export type LifecycleStageKey = LifecycleStage;
+
+export interface LifecycleSummaryStats {
+  [key: string]: any;
+}
+
 export const LIFECYCLE_STAGES: {
   key: LifecycleStage;
   label: string;

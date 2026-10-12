@@ -1,4 +1,7 @@
 import { cookies } from "next/headers";
+import { SESSION_COOKIE, readSessionCookie } from "./msAuth";
+import { resolveUser } from "./userRegistry";
+import { authEnforced } from "./authMode";
 
 export interface AuthenticatedUser {
   id: string;
@@ -8,17 +11,26 @@ export interface AuthenticatedUser {
   sub: string;
 }
 
+// Local development only (see authEnforced). A neutral identity, not a real person.
 const DEV_CEO_USER: AuthenticatedUser = {
-  id: "8ee522c0-14d1-4fb0-a5dd-19c6269c4008",
-  sub: "8ee522c0-14d1-4fb0-a5dd-19c6269c4008",
-  email: "rravikumar@pinochle.ai",
+  id: "dev-user",
+  sub: "dev-user",
+  email: "dev@example.test",
   role: "CEO",
-  name: "Raji",
+  name: "Dev User",
 };
 
 export async function getAuthenticatedUser(): Promise<AuthenticatedUser | null> {
   try {
     const cookieStore = await cookies();
+    const ms = readSessionCookie(cookieStore.get(SESSION_COOKIE)?.value);
+    if (ms) {
+      const { user } = resolveUser({ oid: ms.oid, email: ms.email, name: ms.name }, { create: false });
+      if (!user || user.status !== "approved") return null;
+      return { id: user.oid, sub: user.oid, email: user.email, name: user.name, role: user.role ?? "ADMIN" };
+    }
+    // Anything but an approved Microsoft session is a stranger outside local development.
+    if (authEnforced()) return null;
     const token = cookieStore.get("custom_access_token")?.value;
 
     if (!token) {
@@ -45,7 +57,7 @@ export async function getAuthenticatedUser(): Promise<AuthenticatedUser | null> 
     }
 
     return DEV_CEO_USER;
-  } catch (err) {
-    return DEV_CEO_USER;
+  } catch {
+    return authEnforced() ? null : DEV_CEO_USER;
   }
 }

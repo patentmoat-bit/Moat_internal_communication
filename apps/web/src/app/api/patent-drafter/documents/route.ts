@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
+import { logActivity } from '@/lib/activityLog';
+import { actorName } from '@/lib/actingRole';
 import fs from 'fs';
 import path from 'path';
 
 const DB_FILE = path.join(process.cwd(), 'data', 'documents.json');
 
-function getDocuments() {
+function getDocuments(): any[] {
   if (!fs.existsSync(DB_FILE)) return [];
   try { return JSON.parse(fs.readFileSync(DB_FILE, 'utf8')); } catch(e) { return []; }
 }
@@ -73,18 +75,7 @@ export async function POST(req: Request) {
     saveDocuments(allDocs);
     
     // Log activity
-    try {
-      fetch('http://localhost:3000/api/patent-drafter/activity', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          actor: payload.uploader || 'Alice Drafter',
-          action: type === 'exports' ? 'EXPORT_GENERATED' : 'DOCUMENT_UPLOADED',
-          invention_id: invention_id,
-          details: `Added ${type.slice(0,-1)}: ${payload.filename || payload.title}`
-        })
-      }).catch(()=>{});
-    } catch(e) {}
+    logActivity(payload.uploader || (await actorName()), type === 'exports' ? 'EXPORT_GENERATED' : 'DOCUMENT_UPLOADED', invention_id, `Added ${type.slice(0,-1)}: ${payload.filename || payload.title}`);
     
     return NextResponse.json({ success: true, document: newDoc });
   } catch (error) {

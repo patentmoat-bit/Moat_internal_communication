@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Bell, Inbox } from "lucide-react";
 import { Badge, EmptyState, IconButton, cn } from "@moat/ui";
-import { api } from "@/lib/api";
 import { useActiveRole } from "@/components/auth/role-context";
 import { useEventStream } from "@/components/events/event-stream";
 import { formatDate } from "@/lib/display";
@@ -14,7 +13,7 @@ import type { Notification } from "@/lib/types";
 // The event stream delivers new notifications immediately. This refetch is the
 // safety net that reconciles anything the stream missed -- and the reason it can
 // be this infrequent is that the stream replays from a durable cursor.
-const RECONCILE_MS = 120_000;
+const RECONCILE_MS = 15_000;
 
 export function Notifications() {
   const router = useRouter();
@@ -36,19 +35,22 @@ export function Notifications() {
 
   React.useEffect(() => {
     let cancelled = false;
-    const load = () =>
-      fetch().then(r => r.json())
+    const load = () => {
+      const query = role ? `?role=${encodeURIComponent(role)}` : "";
+      fetch(`/api/notifications${query}`)
+        .then(r => r.json())
         .then((rows) => {
-          if (!cancelled) setItems(rows);
+          if (!cancelled && Array.isArray(rows)) setItems(rows);
         })
         .catch(() => undefined);
+    };
     load();
     const timer = setInterval(load, RECONCILE_MS);
     return () => {
       cancelled = true;
       clearInterval(timer);
     };
-  }, []);
+  }, [role]);
 
   React.useEffect(() => {
     if (!open) return;
@@ -66,7 +68,11 @@ export function Notifications() {
     setItems((rows) =>
       rows.map((row) => (row.id === item.id ? { ...row, readAt: new Date().toISOString() } : row)),
     );
-    await api(`/notifications/${item.id}/read`, { method: "POST" }).catch(() => undefined);
+    await fetch(`/api/notifications${role ? `?role=${encodeURIComponent(role)}` : ""}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: [item.id] }),
+    }).catch(() => undefined);
     if (item.actionUrl) {
       router.push(item.actionUrl);
       router.refresh();

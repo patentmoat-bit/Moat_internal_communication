@@ -89,7 +89,7 @@ export function InventionWorkflow() {
   return (
     <div className="flex flex-col lg:flex-row h-full min-h-[800px] bg-surface border border-line rounded-xl overflow-hidden shadow-sm">
       {/* Sidebar Navigation */}
-      <div className="w-full lg:w-64 bg-[#f8f9fa] dark:bg-[#11110a] border-r border-line p-4 space-y-2 shrink-0">
+      <div className="w-full lg:w-64 bg-[#f8f9fa] border-r border-line p-4 space-y-2 shrink-0">
         <h3 className="text-[10px] font-black tracking-widest text-muted uppercase mb-4 pl-2">Workflow Stages</h3>
         {STAGES.map((stage, idx) => {
           const isUnlocked = unlockedStages.includes(stage.id);
@@ -100,7 +100,7 @@ export function InventionWorkflow() {
               disabled={!isUnlocked}
               onClick={() => setCurrentStage(stage.id)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold transition-all text-left
-                ${isActive ? "bg-[#175a74] text-white shadow-md" : 
+                ${isActive ? "bg-accent text-on-accent shadow-md" : 
                   isUnlocked ? "text-ink hover:bg-line-strong" : "text-muted opacity-50 cursor-not-allowed"}
               `}
             >
@@ -115,12 +115,12 @@ export function InventionWorkflow() {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 p-6 lg:p-10 overflow-y-auto bg-white dark:bg-[#0a0a05] relative">
+      <div className="flex-1 p-6 lg:p-10 overflow-y-auto bg-surface relative">
         
         {currentStage === "CAPTURE" && (
           <div className="max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-500">
             <h2 className="text-2xl font-black text-ink mb-6 flex items-center gap-3">
-              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[#175a74]/10 text-[#175a74]">1</span>
+              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-accent/10 text-[#175a74]">1</span>
               Capture New Invention
             </h2>
             <form onSubmit={handleStartAnalysis} className="space-y-6">
@@ -137,7 +137,7 @@ export function InventionWorkflow() {
                 <textarea required rows={5} placeholder="Describe the mechanism, components, and steps..." className="w-full px-4 py-3 rounded-lg border border-line bg-surface focus:ring-2 focus:ring-[#175a74] focus:outline-none resize-none" />
               </div>
               <div className="pt-4 border-t border-line flex justify-end">
-                <button type="submit" className="px-6 py-3 bg-[#175a74] text-white rounded-lg font-black hover:bg-[#124256] transition-colors shadow-md flex items-center gap-2">
+                <button type="submit" className="px-6 py-3 bg-accent text-on-accent rounded-lg font-black hover:bg-[#124256] transition-colors shadow-md flex items-center gap-2">
                   <Play className="w-4 h-4" /> Start Automated Analysis
                 </button>
               </div>
@@ -160,7 +160,7 @@ export function InventionWorkflow() {
                   const isDone = idx < analysisSteps;
 
                   return (
-                    <div key={idx} className={`flex items-center gap-3 animate-in fade-in slide-in-from-left-2 duration-300 ${isCurrent ? 'text-[#c9a84c]' : 'text-emerald-400'}`}>
+                    <div key={idx} className={`flex items-center gap-3 animate-in fade-in slide-in-from-left-2 duration-300 ${isCurrent ? 'text-accent-text' : 'text-emerald-400'}`}>
                       {isDone ? <Check className="w-4 h-4 shrink-0" /> : <LoaderCircle className="w-4 h-4 shrink-0 animate-spin" />}
                       <span className={isCurrent ? "animate-pulse" : ""}>{text}</span>
                     </div>
@@ -169,14 +169,14 @@ export function InventionWorkflow() {
               </div>
 
               {needsClarification && (
-                <div className="mt-8 p-5 bg-[#1a1a1a] border border-[#c9a84c]/30 rounded-lg animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="mt-8 p-5 bg-[#1a1a1a] border border-accent-line rounded-lg animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="flex items-start gap-3">
-                    <AlertTriangle className="w-5 h-5 text-[#c9a84c] shrink-0 mt-0.5" />
+                    <AlertTriangle className="w-5 h-5 text-accent-text shrink-0 mt-0.5" />
                     <div className="w-full">
-                      <h4 className="text-[#c9a84c] font-bold mb-2">MOAT identified missing information!</h4>
+                      <h4 className="text-accent-text font-bold mb-2">MOAT identified missing information!</h4>
                       <p className="text-zinc-400 text-xs mb-4">CEO Attention Required: Please specify the exact algorithmic derivation used in step 2 to ensure computational sufficiency mapping.</p>
-                      <textarea rows={2} placeholder="CEO Answer..." className="w-full bg-[#111] border border-zinc-800 rounded p-2 text-zinc-300 text-xs focus:outline-none focus:border-[#175a74] resize-none mb-3" />
-                      <button onClick={handleAnswerClarification} className="px-4 py-2 bg-[#175a74] hover:bg-[#124256] text-white text-xs font-bold rounded-md transition-colors">
+                      <textarea rows={2} placeholder="CEO Answer..." className="w-full bg-[#111] border border-zinc-800 rounded p-2 text-zinc-300 text-xs focus:outline-none focus:border-accent resize-none mb-3" />
+                      <button onClick={handleAnswerClarification} className="px-4 py-2 bg-accent hover:bg-[#124256] text-on-accent text-xs font-bold rounded-md transition-colors">
                         Submit Answer & Resume
                       </button>
                     </div>
@@ -206,7 +206,7 @@ export function InventionWorkflow() {
                 <h4 className="text-xs font-black uppercase tracking-wider text-amber-600 mb-2">What are the risks?</h4>
                 <p className="text-sm font-medium text-ink">Prior art from IBM covers lattice generation; claims must be narrow on the *seeding* mechanism.</p>
               </div>
-              <div className="p-5 border border-line bg-surface rounded-xl shadow-xs bg-[#175a74]/5 border-[#175a74]/20">
+              <div className="p-5 border border-line bg-surface rounded-xl shadow-xs bg-accent/5 border-accent/20">
                 <h4 className="text-xs font-black uppercase tracking-wider text-[#175a74] mb-2">Recommendation</h4>
                 <p className="text-sm font-bold text-ink">Proceed to Architect phase. Novelty delta is high enough to warrant TMM building.</p>
               </div>

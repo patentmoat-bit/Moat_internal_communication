@@ -1,4 +1,17 @@
 @import "tailwindcss";
+
+/* `dark:` must follow the app's theme (data-theme / system), not only the OS,
+   otherwise a light app on a dark OS renders dark-only styles on a light canvas. */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+}
 @import "@moat/ui/tokens.css";
 
 /* The design system lives outside this app, so tell Tailwind to scan it. */
@@ -17,7 +30,6 @@
   --color-foreground: var(--ink);
   --color-border: var(--line);
   --color-input: var(--line);
-  --color-muted: var(--surface-sunken);
   --color-muted-foreground: var(--ink-muted);
   --color-primary: var(--accent);
   --color-primary-foreground: var(--ink-on-accent);

@@ -147,7 +147,7 @@ export function IntelligenceSignalCard({ signal, onRefresh }: SignalCardProps) {
 
       <CardContent className="space-y-4 text-sm">
         {/* WHAT CHANGED & WHY IT MATTERS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 rounded-lg bg-muted/40 border border-border/40">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 rounded-lg bg-sunken/40 border border-border/40">
           <div>
             <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
               What Changed?
@@ -278,7 +278,7 @@ export function IntelligenceSignalCard({ signal, onRefresh }: SignalCardProps) {
               size="sm"
               disabled={actionLoading}
               onClick={handleCreateIdea}
-              className="text-xs h-8 gap-1 bg-[#175a74] hover:bg-[#114459] text-white"
+              className="text-xs h-8 gap-1 bg-accent hover:bg-accent-hover text-on-accent"
             >
               <PlusCircle className="w-3.5 h-3.5" />
               New Idea

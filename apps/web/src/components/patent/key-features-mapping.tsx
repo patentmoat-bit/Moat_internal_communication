@@ -464,7 +464,7 @@ export function KeyFeaturesMapping({
                             <button
                               type="button"
                               onClick={() => setEditingCellKey(null)}
-                              className="w-full rounded bg-accent py-1 text-[10.5px] font-bold text-white"
+                              className="w-full rounded bg-accent py-1 text-[10.5px] font-bold text-on-accent"
                             >
                               Done Editing
                             </button>
@@ -528,7 +528,7 @@ export function KeyFeaturesMapping({
                 mappings,
               })
             }
-            className="inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-accent/90 transition shrink-0"
+            className="inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-2 text-xs font-bold text-on-accent shadow-sm hover:bg-accent/90 transition shrink-0"
           >
             <FileCheck2 className="size-4" />
             Generate Report from Feature Matrix

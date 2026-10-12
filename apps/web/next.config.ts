@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
   // Emits a self-contained server bundle so the runtime image carries neither
   // the build toolchain nor the full node_modules tree.
   output: "standalone",
+  // The app writes users, notifications and uploads under ./data at runtime. Tracing sees those
+  // paths and would otherwise copy whatever is in the folder into the build output.
+  outputFileTracingExcludes: { "*": ["./data/**"] },
 
   async rewrites() {
     // Proxy the API through the web origin so the session cookie is

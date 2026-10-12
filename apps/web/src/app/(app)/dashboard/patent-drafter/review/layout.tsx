@@ -32,7 +32,7 @@ export default function ReviewCollaborationLayout({ children }: { children: Reac
                   <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                     active 
                       ? "bg-purple-600 text-white shadow-md shadow-purple-500/20" 
-                      : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                      : "bg-sunken/50 text-muted-foreground hover:bg-sunken hover:text-foreground"
                   }`}>
                     <tab.icon className="w-4 h-4" />
                     {tab.name}

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useActiveRole } from "@/components/auth/role-context";
+import { toast } from "@/components/ui/toast";
 
 export default function UnifiedDraftEditorPage() {
   const { currentUser } = useActiveRole();
@@ -174,7 +175,7 @@ export default function UnifiedDraftEditorPage() {
                 <Button variant="outline" size="sm" className="h-8 bg-white" onClick={handleSaveWorkspace}>
                   {actionStatus === 'saving' ? 'Saving...' : actionStatus === 'done' ? 'Saved' : <><Save className="w-3.5 h-3.5 mr-1" /> Save to Workspace</>}
                 </Button>
-                <Button variant="outline" size="sm" className="h-8 bg-white" onClick={() => { navigator.clipboard.writeText(content); alert('Copied to clipboard'); }}>
+                <Button variant="outline" size="sm" className="h-8 bg-white" onClick={() => { navigator.clipboard.writeText(content); toast.success('Copied to clipboard'); }}>
                   <Copy className="w-3.5 h-3.5 mr-1" /> Copy All
                 </Button>
               </div>

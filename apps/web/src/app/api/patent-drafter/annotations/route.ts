@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
+import { logActivity } from '@/lib/activityLog';
+import { actorName } from '@/lib/actingRole';
 import fs from 'fs';
 import path from 'path';
 
 const DB_FILE = path.join(process.cwd(), 'data', 'annotations.json');
 
-function getAnnotations() {
+function getAnnotations(): any[] {
   if (!fs.existsSync(DB_FILE)) return [];
   try { return JSON.parse(fs.readFileSync(DB_FILE, 'utf8')); } catch(e) { return []; }
 }
@@ -40,7 +42,7 @@ export async function POST(req: Request) {
       invention_id: body.invention_id,
       target_passage: body.target_passage || "General Document",
       text: body.text,
-      author: body.author || 'Alice Drafter',
+      author: body.author || (await actorName()),
       role: body.role || 'Drafter',
       status: 'OPEN',
       created_at: new Date().toISOString(),
@@ -51,18 +53,7 @@ export async function POST(req: Request) {
     saveAnnotations(allAnns);
     
     // Log activity if it's a new top-level annotation
-    try {
-      fetch('http://localhost:3000/api/patent-drafter/activity', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          actor: newAnn.author,
-          action: 'ANNOTATION_ADDED',
-          invention_id: body.invention_id,
-          details: `Added annotation to ${newAnn.target_passage}`
-        })
-      }).catch(()=>{});
-    } catch(e) {}
+    logActivity(newAnn.author, 'ANNOTATION_ADDED', body.invention_id, `Added annotation to ${newAnn.target_passage}`);
     
     return NextResponse.json({ success: true, annotation: newAnn });
   } catch (error) {
@@ -81,7 +72,7 @@ export async function PUT(req: Request) {
     // Handle resolution
     if (body.status === 'RESOLVED') {
       allAnns[idx].status = 'RESOLVED';
-      allAnns[idx].resolved_by = body.resolved_by || 'Alice Drafter';
+      allAnns[idx].resolved_by = body.resolved_by || (await actorName());
       allAnns[idx].resolved_at = new Date().toISOString();
     }
     
@@ -90,7 +81,7 @@ export async function PUT(req: Request) {
       allAnns[idx].replies.push({
         id: 'REP-' + Date.now(),
         text: body.reply.text,
-        author: body.reply.author || 'Alice Drafter',
+        author: body.reply.author || (await actorName()),
         role: body.reply.role || 'Drafter',
         created_at: new Date().toISOString()
       });

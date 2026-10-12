@@ -193,7 +193,7 @@ export function CaptureInventionModal({
             <div className="flex items-center gap-2 mb-1">
               <Badge
                 variant="outline"
-                className="border-[#175a74]/40 text-[#175a74] dark:text-[#38bdf8] bg-[#175a74]/10 text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-sm"
+                className="border-accent/40 text-[#175a74] bg-accent/10 text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-sm"
               >
                 MOAT INTELLIGENCE ENGINE
               </Badge>
@@ -256,7 +256,7 @@ export function CaptureInventionModal({
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="e.g. Non-Invasive Optical Glucose Sensor with On-Device ML"
-                    className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-[#175a74] focus:ring-1 focus:ring-[#175a74]"
+                    className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent focus:ring-1 focus:ring-[#175a74]"
                   />
                 </div>
 
@@ -269,7 +269,7 @@ export function CaptureInventionModal({
                       value={field}
                       onChange={(e) => setField(e.target.value)}
                       placeholder="e.g. Medical & Biotech Diagnostics"
-                      className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-[#175a74] focus:ring-1 focus:ring-[#175a74]"
+                      className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent focus:ring-1 focus:ring-[#175a74]"
                     />
                   </div>
                   <div>
@@ -280,7 +280,7 @@ export function CaptureInventionModal({
                       value={tags}
                       onChange={(e) => setTags(e.target.value)}
                       placeholder="e.g. Optical, ML, Sensor"
-                      className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-[#175a74] focus:ring-1 focus:ring-[#175a74]"
+                      className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent focus:ring-1 focus:ring-[#175a74]"
                     />
                   </div>
                 </div>
@@ -294,7 +294,7 @@ export function CaptureInventionModal({
                     value={problem}
                     onChange={(e) => setProblem(e.target.value)}
                     placeholder="What technical problem or industrial bottleneck does this invention address?"
-                    className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-[#175a74] focus:ring-1 focus:ring-[#175a74] resize-none"
+                    className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent focus:ring-1 focus:ring-[#175a74] resize-none"
                   />
                 </div>
 
@@ -307,7 +307,7 @@ export function CaptureInventionModal({
                     value={solution}
                     onChange={(e) => setSolution(e.target.value)}
                     placeholder="How does the system physically or algorithmically solve this problem?"
-                    className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-[#175a74] focus:ring-1 focus:ring-[#175a74] resize-none"
+                    className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent focus:ring-1 focus:ring-[#175a74] resize-none"
                   />
                 </div>
 
@@ -320,7 +320,7 @@ export function CaptureInventionModal({
                     value={technical}
                     onChange={(e) => setTechnical(e.target.value)}
                     placeholder="Detailed components, inputs, models, and closed-loop feedback..."
-                    className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-[#175a74] focus:ring-1 focus:ring-[#175a74] resize-none"
+                    className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent focus:ring-1 focus:ring-[#175a74] resize-none"
                   />
                 </div>
               </div>
@@ -340,7 +340,7 @@ export function CaptureInventionModal({
                   type="button"
                   onClick={handleStartCaptureFlow}
                   disabled={!title.trim()}
-                  className="rounded-lg bg-[#175a74] px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#114459] transition flex items-center gap-2 disabled:opacity-50"
+                  className="rounded-lg bg-accent px-5 py-2 text-xs font-bold text-on-accent shadow-xs hover:bg-accent-hover transition flex items-center gap-2 disabled:opacity-50"
                 >
                   <Sparkles className="w-4 h-4" />
                   Capture & Execute 8-Step Flow
@@ -364,7 +364,7 @@ export function CaptureInventionModal({
                   <span className="text-sm font-mono font-bold text-[#175a74]">
                     {progressPercent}%
                   </span>
-                  <div className="w-9 h-9 rounded-full border-2 border-[#175a74]/40 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-full border-2 border-accent/40 flex items-center justify-center">
                     {currentStepIndex >= 8 ? (
                       <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                     ) : (
@@ -387,7 +387,7 @@ export function CaptureInventionModal({
                         isDone
                           ? "border-emerald-500/30 bg-emerald-500/5"
                           : isCurrent
-                          ? "border-[#175a74]/50 bg-[#175a74]/10"
+                          ? "border-accent/50 bg-accent/10"
                           : "border-line bg-surface/50"
                       }`}
                     >
@@ -397,7 +397,7 @@ export function CaptureInventionModal({
                             isDone
                               ? "bg-emerald-500 text-white"
                               : isCurrent
-                              ? "bg-[#175a74] text-white animate-pulse"
+                              ? "bg-accent text-on-accent animate-pulse"
                               : "bg-surface text-muted"
                           }`}
                         >
@@ -408,7 +408,7 @@ export function CaptureInventionModal({
                             isDone
                               ? "text-emerald-600 dark:text-emerald-400"
                               : isCurrent
-                              ? "text-[#175a74] dark:text-[#38bdf8]"
+                              ? "text-[#175a74] "
                               : "text-muted"
                           }`}
                         >
@@ -423,7 +423,7 @@ export function CaptureInventionModal({
                           </Badge>
                         )}
                         {isCurrent && (
-                          <Badge className="bg-[#175a74]/20 text-[#175a74] border-[#175a74]/40 text-[9px] font-mono flex items-center gap-1">
+                          <Badge className="bg-accent/20 text-[#175a74] border-accent/40 text-[9px] font-mono flex items-center gap-1">
                             <Loader2 className="w-2.5 h-2.5 animate-spin" /> RUNNING
                           </Badge>
                         )}
@@ -463,7 +463,7 @@ export function CaptureInventionModal({
                     <button
                       type="button"
                       onClick={handleViewInvention}
-                      className="rounded-lg bg-[#175a74] px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#114459] transition flex items-center gap-2"
+                      className="rounded-lg bg-accent px-5 py-2 text-xs font-bold text-on-accent shadow-xs hover:bg-accent-hover transition flex items-center gap-2"
                     >
                       View Full Invention Intelligence
                       <ArrowRight className="w-4 h-4 ml-1" />

@@ -32,7 +32,7 @@ export default function DocketWorkspaceLayout({ children }: { children: React.Re
                   <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                     active 
                       ? "bg-rose-600 text-white shadow-md shadow-rose-500/20" 
-                      : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                      : "bg-sunken/50 text-muted-foreground hover:bg-sunken hover:text-foreground"
                   }`}>
                     <tab.icon className="w-4 h-4" />
                     {tab.name}

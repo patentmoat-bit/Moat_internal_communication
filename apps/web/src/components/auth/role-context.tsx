@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { useOptionalSession } from "./session-context";
 
 export type RoleType = "ADMIN" | "PATENT_ANALYST" | "CEO" | "PATENT_DRAFTER" | "DESIGN_TEAM" | "FINANCE";
 
@@ -82,7 +83,58 @@ export const DEFAULT_USERS: PlatformUser[] = [
     status: "ACTIVE",
     createdAt: "2026-01-01",
     avatarTone: "rose",
-  }
+  },
+  // Test users, one per role. Rename freely: the id is what identifies them.
+  {
+    id: "usr-ceo",
+    name: "Raji Ravikumar",
+    email: "raji@moat.ai",
+    role: "CEO",
+    department: "Executive Office",
+    status: "ACTIVE",
+    createdAt: "2026-01-01",
+    avatarTone: "amber",
+  },
+  {
+    id: "usr-analyst",
+    name: "Priya Nair",
+    email: "priya@moat.ai",
+    role: "PATENT_ANALYST",
+    department: "Patent Analysis",
+    status: "ACTIVE",
+    createdAt: "2026-01-01",
+    avatarTone: "purple",
+  },
+  {
+    id: "usr-drafter",
+    name: "Arjun Mehta",
+    email: "arjun@moat.ai",
+    role: "PATENT_DRAFTER",
+    department: "Patent Drafting",
+    status: "ACTIVE",
+    createdAt: "2026-01-01",
+    avatarTone: "blue",
+  },
+  {
+    id: "usr-design",
+    name: "Meera Iyer",
+    email: "meera@moat.ai",
+    role: "DESIGN_TEAM",
+    department: "Design & Illustration",
+    status: "ACTIVE",
+    createdAt: "2026-01-01",
+    avatarTone: "emerald",
+  },
+  {
+    id: "usr-finance",
+    name: "Karthik Subramanian",
+    email: "karthik@moat.ai",
+    role: "FINANCE",
+    department: "Finance & Fees",
+    status: "ACTIVE",
+    createdAt: "2026-01-01",
+    avatarTone: "teal",
+  },
 ];
 
 const DEFAULT_ADMIN: PlatformUser = DEFAULT_USERS[0];
@@ -113,7 +165,18 @@ const RoleContext = React.createContext<RoleContextValue>({
 
 export function RoleProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [users, setUsers] = React.useState<PlatformUser[]>(DEFAULT_USERS);
+  const session = useOptionalSession();
+  const [storedUsers, setUsers] = React.useState<PlatformUser[]>(DEFAULT_USERS);
+  // A person who signed in with Microsoft is exactly that person, in the roles an admin gave them.
+  // The local test users exist only for the development fallback.
+  const ssoUsers = React.useMemo<PlatformUser[] | null>(() => {
+    if (!session?.sso) return null;
+    return session.roles.filter((r): r is RoleType => r in ROLE_CONFIGS).map((r) => ({
+      id: `${session.user.id}:${r}`, name: session.user.name, email: session.user.email, role: r,
+      department: ROLE_CONFIGS[r].title, status: "ACTIVE" as const, createdAt: "",
+    }));
+  }, [session]);
+  const users = ssoUsers ?? storedUsers;
   const [currentUserId, setCurrentUserId] = React.useState<string>(DEFAULT_USERS[0].id);
 
   // Load registered users from localStorage
@@ -146,6 +209,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const saveUsers = (updated: PlatformUser[]) => {
+    if (ssoUsers) return; // roles come from the server for signed-in users
     setUsers(updated);
     if (typeof window !== "undefined") {
       localStorage.setItem("moat_system_users_v2", JSON.stringify(updated));

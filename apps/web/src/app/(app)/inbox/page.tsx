@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
+import { useActiveRole } from "@/components/auth/role-context";
 import {
   Inbox,
   CheckCircle,
@@ -38,123 +40,111 @@ interface ChatMessage {
   time: string;
 }
 
-const DEFAULT_INBOX_ITEMS: InboxItem[] = [
-  {
-    id: "inb-1",
-    type: "APPROVAL_REQUEST",
-    title: "USPTO 1-Click Filing Signoff Required: MAT-2026-081",
+interface ApiNotification {
+  id: string;
+  kind: string;
+  title: string;
+  message: string;
+  sender: string;
+  actionUrl: string;
+  priority: string;
+  target_role: string;
+  createdAt: string;
+  readAt: string | null;
+}
+
+const TYPE_BY_KIND: Record<string, InboxItem["type"]> = {
+  approval: "APPROVAL_REQUEST",
+  payment: "APPROVAL_REQUEST",
+  assignment: "ASSIGNMENT",
+  design_request: "ASSIGNMENT",
+  workflow: "ASSIGNMENT",
+  mention: "MENTION",
+  deadline: "DEADLINE",
+};
+
+function toItem(n: ApiNotification): InboxItem & { kind: string; actionUrl: string } {
+  return {
+    id: n.id,
+    kind: n.kind,
+    actionUrl: n.actionUrl,
+    type: TYPE_BY_KIND[n.kind] ?? "ASSIGNMENT",
+    title: n.title,
     sender_role: "PATENT_ANALYST",
-    sender_name: "Elena Rostova",
-    matter_ref: "MAT-2026-081",
-    timestamp: "10 mins ago",
-    is_read: false,
-    priority: "HIGH",
-    description: "Quantum-Resistant Lattice Key Exchange specification and Claim Tree passed all Section 101/102/103 checks. Ready for immediate executive signoff.",
-  },
-  {
-    id: "inb-2",
-    type: "APPROVAL_REQUEST",
-    title: "Statutory Fee Docket Authorization: MAT-2026-094",
-    sender_role: "FINANCE",
-    sender_name: "Sarah Jenkins",
-    matter_ref: "MAT-2026-094",
-    timestamp: "1 hour ago",
-    is_read: false,
-    priority: "HIGH",
-    description: "Estimated USPTO statutory filing and attorney disbursement of $12,200 requires executive budget clearance.",
-  },
-  {
-    id: "inb-3",
-    type: "ASSIGNMENT",
-    title: "Claim Tree Architecture Milestone Reached: MAT-2026-102",
-    sender_role: "PATENT_DRAFTER",
-    sender_name: "David Chen",
-    matter_ref: "MAT-2026-102",
-    timestamp: "3 hours ago",
-    is_read: true,
-    priority: "NORMAL",
-    description: "Independent claim 1 and 17 dependent claims completed. Awaiting executive signoff to advance from Claim to Protect stage.",
-  },
-  {
-    id: "inb-4",
-    type: "DEADLINE",
-    title: "Stage Gate Review: Cryogenic Superconducting Cell MAT-2026-128",
-    sender_role: "PATENT_ANALYST",
-    sender_name: "Dr. Jennifer Wu",
-    matter_ref: "MAT-2026-128",
-    timestamp: "Yesterday",
-    is_read: true,
-    priority: "NORMAL",
-    description: "Continuous 72-hour Josephson junction testbench logs verified. Ready to advance to Architect stage.",
-  },
-];
+    sender_name: n.sender,
+    matter_ref: n.target_role,
+    timestamp: new Date(n.createdAt).toLocaleString(),
+    is_read: n.readAt !== null,
+    priority: n.priority === "high" || n.priority === "urgent" ? "HIGH" : "NORMAL",
+    description: n.message,
+  };
+}
 
 export default function CommandInboxPage() {
+  const { currentRole } = useActiveRole();
   const [activeFilter, setActiveFilter] = React.useState<string>("ALL");
-  const [items, setItems] = React.useState<InboxItem[]>(DEFAULT_INBOX_ITEMS);
+  const [items, setItems] = React.useState<ReturnType<typeof toItem>[]>([]);
   const [chatMessages, setChatMessages] = React.useState<ChatMessage[]>([]);
   const [newChatText, setNewChatText] = React.useState("");
+  const [mention, setMention] = React.useState("");
+  const roleQuery = `?role=${encodeURIComponent(currentRole)}`;
+
+  const load = React.useCallback(() => {
+    fetch(`/api/notifications${roleQuery}`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((rows: ApiNotification[]) => Array.isArray(rows) && setItems(rows.map(toItem)))
+      .catch(() => undefined);
+    fetch("/api/chat")
+      .then((r) => (r.ok ? r.json() : { messages: [] }))
+      .then((json) =>
+        setChatMessages(
+          (json.messages ?? []).map((m: { id: string; sender: string; role: string; text: string; createdAt: string }) => ({
+            id: m.id,
+            sender: m.sender,
+            role: m.role,
+            text: m.text,
+            time: new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          })),
+        ),
+      )
+      .catch(() => undefined);
+  }, [roleQuery]);
 
   React.useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedItems = localStorage.getItem("moat_inbox_items");
-      if (savedItems) {
-        try {
-          const parsed = JSON.parse(savedItems);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setItems(parsed);
-          } else {
-            setItems(DEFAULT_INBOX_ITEMS);
-          }
-        } catch {
-          // ignore
-        }
-      }
+    load();
+    const t = setInterval(load, 10_000);
+    return () => clearInterval(t);
+  }, [load]);
 
-      const savedChat = localStorage.getItem("moat_inbox_chat");
-      if (savedChat) {
-        try {
-          const parsed = JSON.parse(savedChat);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setChatMessages(parsed);
-          }
-        } catch {
-          // ignore
-        }
-      }
-    }
-  }, []);
-
-  const handleSendChat = (e: React.FormEvent) => {
+  const handleSendChat = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newChatText.trim()) return;
-
-    const newMsg: ChatMessage = {
-      id: `m-${Date.now()}`,
-      sender: "Active User",
-      role: "PATENT_ANALYST",
-      text: newChatText.trim(),
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    };
-
-    setChatMessages((prev) => {
-      const updated = [...prev, newMsg];
-      if (typeof window !== "undefined") {
-        localStorage.setItem("moat_inbox_chat", JSON.stringify(updated));
-      }
-      return updated;
-    });
+    const text = newChatText.trim();
+    if (!text) return;
     setNewChatText("");
+    await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, role: currentRole, mention: mention || undefined }),
+    });
+    load();
   };
 
   const markAsRead = (id: string) => {
-    setItems((prev) => {
-      const updated = prev.map((item) => (item.id === id ? { ...item, is_read: true } : item));
-      if (typeof window !== "undefined") {
-        localStorage.setItem("moat_inbox_items", JSON.stringify(updated));
-      }
-      return updated;
+    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, is_read: true } : item)));
+    fetch(`/api/notifications${roleQuery}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: [id] }),
+    }).catch(() => undefined);
+  };
+
+  const completeRequest = async (id: string) => {
+    await fetch("/api/notifications/respond", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, role: currentRole }),
     });
+    markAsRead(id);
   };
 
   const filteredItems = items.filter((item) => {
@@ -249,10 +239,23 @@ export default function CommandInboxPage() {
                 </div>
 
                 <div className="mt-3 flex items-center justify-between border-t border-line/60 pt-2.5 text-xs">
-                  <span className="text-[11px] text-faint">Role: {item.sender_role}</span>
-                  <button className="flex items-center gap-1 font-semibold text-accent hover:underline">
-                    Open Project Matter <ArrowRight className="size-3" />
-                  </button>
+                  <span className="text-[11px] text-faint">To: {item.matter_ref}</span>
+                  <span className="flex items-center gap-3">
+                    {item.kind === "design_request" && currentRole === "DESIGN_TEAM" ? (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          completeRequest(item.id);
+                        }}
+                        className="rounded bg-accent px-2 py-1 font-semibold text-on-accent hover:brightness-110"
+                      >
+                        Mark done
+                      </button>
+                    ) : null}
+                    <Link href={item.actionUrl} className="flex items-center gap-1 font-semibold text-accent hover:underline">
+                      Open <ArrowRight className="size-3" />
+                    </Link>
+                  </span>
                 </div>
               </div>
             ))
@@ -269,7 +272,7 @@ export default function CommandInboxPage() {
           </div>
           <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600">
             <span className="size-2 rounded-full bg-emerald-500 animate-ping" />
-            <span>Live WebSocket</span>
+            <span>Live (10s refresh)</span>
           </div>
         </header>
 
@@ -303,16 +306,30 @@ export default function CommandInboxPage() {
 
         {/* Message Input Box */}
         <form onSubmit={handleSendChat} className="border-t border-line bg-surface p-3 flex gap-2">
+          <select
+            value={mention}
+            onChange={(e) => setMention(e.target.value)}
+            aria-label="Notify a team"
+            className="rounded-lg border border-line bg-canvas px-2 py-2 text-xs text-ink"
+          >
+            <option value="">No ping</option>
+            {["CEO", "PATENT_ANALYST", "PATENT_DRAFTER", "DESIGN_TEAM", "FINANCE", "ADMIN"].map((r) => (
+              <option key={r} value={r}>
+                @{r}
+              </option>
+            ))}
+          </select>
           <input
             type="text"
             value={newChatText}
             onChange={(e) => setNewChatText(e.target.value)}
             placeholder="Type message across roles..."
+            aria-label="Message"
             className="flex-1 rounded-lg border border-line bg-canvas px-3 py-2 text-xs text-ink outline-none focus:border-accent"
           />
           <button
             type="submit"
-            className="flex items-center gap-1 rounded-lg bg-accent px-3 py-2 text-xs font-bold text-white shadow-sm hover:brightness-110 transition"
+            className="flex items-center gap-1 rounded-lg bg-accent px-3 py-2 text-xs font-bold text-on-accent shadow-sm hover:brightness-110 transition"
           >
             <Send className="size-3.5" />
             Send

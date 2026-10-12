@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/shell/page-header";
-import { InventionWorkflow } from "@/components/invention/invention-workflow";
+import { DisclosureForm } from "@/components/invention/disclosure-form";
 import { getSession } from "@/lib/session";
 import { PERMISSIONS, can } from "@/lib/types";
 
@@ -20,9 +20,7 @@ export default async function NewInventionPage() {
         title="New disclosure"
         caption="Describe the invention while it is fresh. Nothing here is published, and raising a disclosure does not commit anyone to filing."
       />
-      <div className="p-4 sm:p-6 lg:p-8 h-full">
-        <InventionWorkflow />
-      </div>
+      <DisclosureForm />
     </>
   );
 }

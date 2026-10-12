@@ -195,7 +195,7 @@ export function DecisionDialog({ matter, onClose, onDecision }: DecisionDialogPr
 
             <button
               type="submit"
-              className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-xs font-bold text-white shadow-sm hover:brightness-110 transition"
+              className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-xs font-bold text-on-accent shadow-sm hover:brightness-110 transition"
             >
               <Send className="size-3.5" />
               <span>Record Executive Action</span>

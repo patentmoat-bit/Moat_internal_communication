@@ -609,7 +609,7 @@ function PriorArtSearchPageInner() {
             onClick={() => setSearchMode("SEMANTIC")}
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 transition ${
               searchMode === "SEMANTIC"
-                ? "bg-accent text-white shadow-xs"
+                ? "bg-accent text-on-accent shadow-xs"
                 : "text-muted hover:text-ink hover:bg-hover"
             }`}
           >
@@ -622,7 +622,7 @@ function PriorArtSearchPageInner() {
             onClick={() => setSearchMode("BOOLEAN")}
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 transition ${
               searchMode === "BOOLEAN"
-                ? "bg-accent text-white shadow-xs"
+                ? "bg-accent text-on-accent shadow-xs"
                 : "text-muted hover:text-ink hover:bg-hover"
             }`}
           >
@@ -638,7 +638,7 @@ function PriorArtSearchPageInner() {
             }}
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 transition ${
               searchMode === "KEYWORD_MATRIX"
-                ? "bg-accent text-white shadow-xs"
+                ? "bg-accent text-on-accent shadow-xs"
                 : "text-muted hover:text-ink hover:bg-hover"
             }`}
           >
@@ -694,7 +694,7 @@ function PriorArtSearchPageInner() {
                 <button
                   type="submit"
                   disabled={isSearching}
-                  className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-accent/90 disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-xs font-bold text-on-accent shadow-xs transition hover:bg-accent/90 disabled:opacity-50"
                 >
                   <Search className="size-3.5" />
                   {isSearching ? "Evaluating..." : "Run Boolean Query"}
@@ -740,7 +740,7 @@ function PriorArtSearchPageInner() {
                 type="button"
                 onClick={handleExpandKeywords}
                 disabled={isExpanding}
-                className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-accent/90 disabled:opacity-50 shrink-0"
+                className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-xs font-bold text-on-accent shadow-xs hover:bg-accent/90 disabled:opacity-50 shrink-0"
               >
                 <Sparkles className="size-3.5" />
                 {isExpanding ? "Expanding Matrix..." : "Expand Keywords & CPC"}
@@ -812,7 +812,7 @@ function PriorArtSearchPageInner() {
                         setSearchMode("BOOLEAN");
                         handleSearch();
                       }}
-                      className="inline-flex items-center gap-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-white shrink-0 hover:bg-accent/90 transition shadow-xs"
+                      className="inline-flex items-center gap-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-on-accent shrink-0 hover:bg-accent/90 transition shadow-xs"
                     >
                       <Search className="size-3.5" />
                       Apply & Execute Search
@@ -1072,7 +1072,7 @@ function PriorArtSearchPageInner() {
                   return (
                     <span
                       key={`inc-${code}`}
-                      className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-0.5 text-xs font-semibold text-white shadow-2xs"
+                      className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-0.5 text-xs font-semibold text-on-accent shadow-2xs"
                     >
                       <span>{item?.flag || "🏳️"}</span>
                       <span>{code}</span>
@@ -1300,7 +1300,7 @@ function PriorArtSearchPageInner() {
             <button
               type="button"
               onClick={() => setShowReportGeneratorModal(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1 font-bold text-white shadow-2xs hover:bg-accent/90 transition text-xs"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1 font-bold text-on-accent shadow-2xs hover:bg-accent/90 transition text-xs"
             >
               <FileCheck2 className="size-3.5" /> Generate Formal Report
             </button>
@@ -1526,7 +1526,7 @@ function PriorArtSearchPageInner() {
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="rounded-md bg-accent px-2.5 py-0.5 font-mono text-xs font-bold text-white shadow-2xs">
+                          <span className="rounded-md bg-accent px-2.5 py-0.5 font-mono text-xs font-bold text-on-accent shadow-2xs">
                             {selectedPatent.publication_id}
                           </span>
                           <span className="rounded bg-line px-2 py-0.5 text-xs font-semibold text-muted">
@@ -1652,7 +1652,7 @@ function PriorArtSearchPageInner() {
                         onClick={() => setPatentSpecTab("abstract")}
                         className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 transition ${
                           patentSpecTab === "abstract"
-                            ? "bg-accent text-white shadow-sm"
+                            ? "bg-accent text-on-accent shadow-sm"
                             : "text-muted hover:text-ink hover:bg-hover"
                         }`}
                       >
@@ -1664,7 +1664,7 @@ function PriorArtSearchPageInner() {
                         onClick={() => setPatentSpecTab("claims")}
                         className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 transition ${
                           patentSpecTab === "claims"
-                            ? "bg-accent text-white shadow-sm"
+                            ? "bg-accent text-on-accent shadow-sm"
                             : "text-muted hover:text-ink hover:bg-hover"
                         }`}
                       >
@@ -1676,7 +1676,7 @@ function PriorArtSearchPageInner() {
                         onClick={() => setPatentSpecTab("description")}
                         className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 transition ${
                           patentSpecTab === "description"
-                            ? "bg-accent text-white shadow-sm"
+                            ? "bg-accent text-on-accent shadow-sm"
                             : "text-muted hover:text-ink hover:bg-hover"
                         }`}
                       >
@@ -1688,7 +1688,7 @@ function PriorArtSearchPageInner() {
                         onClick={() => setPatentSpecTab("notes")}
                         className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 transition ${
                           patentSpecTab === "notes"
-                            ? "bg-accent text-white shadow-sm"
+                            ? "bg-accent text-on-accent shadow-sm"
                             : "text-muted hover:text-ink hover:bg-hover"
                         }`}
                       >
@@ -1700,7 +1700,7 @@ function PriorArtSearchPageInner() {
                         onClick={() => setPatentSpecTab("legal")}
                         className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 transition ${
                           patentSpecTab === "legal"
-                            ? "bg-accent text-white shadow-sm"
+                            ? "bg-accent text-on-accent shadow-sm"
                             : "text-muted hover:text-ink hover:bg-hover"
                         }`}
                       >
@@ -1712,7 +1712,7 @@ function PriorArtSearchPageInner() {
                         onClick={() => setPatentSpecTab("classifications")}
                         className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 transition ${
                           patentSpecTab === "classifications"
-                            ? "bg-accent text-white shadow-sm"
+                            ? "bg-accent text-on-accent shadow-sm"
                             : "text-muted hover:text-ink hover:bg-hover"
                         }`}
                       >
@@ -1724,7 +1724,7 @@ function PriorArtSearchPageInner() {
                         onClick={() => setPatentSpecTab("family")}
                         className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 transition ${
                           patentSpecTab === "family"
-                            ? "bg-accent text-white shadow-sm"
+                            ? "bg-accent text-on-accent shadow-sm"
                             : "text-muted hover:text-ink hover:bg-hover"
                         }`}
                       >
@@ -1801,7 +1801,7 @@ function PriorArtSearchPageInner() {
                             type="button"
                             onClick={() => handleSaveAnnotations(selectedPatent.publication_id)}
                             disabled={isSavingAnnotation}
-                            className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 font-bold text-white shadow-xs hover:bg-accent/90 disabled:opacity-50 transition"
+                            className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 font-bold text-on-accent shadow-xs hover:bg-accent/90 disabled:opacity-50 transition"
                           >
                             <FolderPlus className="size-3.5" />
                             {isSavingAnnotation ? "Saving to Docket..." : "Save Changes to Docket"}
@@ -2435,7 +2435,7 @@ function PriorArtSearchPageInner() {
           {/* Reader Header */}
           <div className="flex items-center justify-between border-b border-line bg-surface px-6 py-3">
             <div className="flex items-center gap-3">
-              <span className="rounded-md bg-accent px-2.5 py-1 font-mono text-xs font-bold text-white">
+              <span className="rounded-md bg-accent px-2.5 py-1 font-mono text-xs font-bold text-on-accent">
                 {selectedPatent.publication_id}
               </span>
               <div>
@@ -2615,7 +2615,7 @@ function PriorArtSearchPageInner() {
                     type="button"
                     onClick={() => handleSaveAnnotations(selectedPatent.publication_id)}
                     disabled={isSavingAnnotation}
-                    className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 font-bold text-white shadow-xs hover:bg-accent/90 disabled:opacity-50 transition text-xs"
+                    className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 font-bold text-on-accent shadow-xs hover:bg-accent/90 disabled:opacity-50 transition text-xs"
                   >
                     <FolderPlus className="size-3.5" />
                     {isSavingAnnotation ? "Saving..." : "Save to Docket"}
@@ -2690,7 +2690,7 @@ function PriorArtSearchPageInner() {
       {selectedPatentIds.size > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 rounded-2xl border border-line bg-surface/95 backdrop-blur-md px-5 py-3 shadow-2xl animate-in slide-in-from-bottom-4">
           <div className="flex items-center gap-2">
-            <span className="flex size-6 items-center justify-center rounded-full bg-accent font-mono text-xs font-bold text-white">
+            <span className="flex size-6 items-center justify-center rounded-full bg-accent font-mono text-xs font-bold text-on-accent">
               {selectedPatentIds.size}
             </span>
             <span className="text-xs font-bold text-ink">References Selected</span>
@@ -2701,7 +2701,7 @@ function PriorArtSearchPageInner() {
           <button
             type="button"
             onClick={() => setShowProjectDossierModal(true)}
-            className="flex items-center gap-1.5 rounded-xl bg-accent px-3.5 py-1.5 text-xs font-bold text-white hover:bg-accent/90 transition shadow-xs"
+            className="flex items-center gap-1.5 rounded-xl bg-accent px-3.5 py-1.5 text-xs font-bold text-on-accent hover:bg-accent/90 transition shadow-xs"
           >
             <FolderPlus className="size-3.5" /> Add to Project Folder
           </button>

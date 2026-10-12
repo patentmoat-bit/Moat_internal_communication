@@ -36,8 +36,17 @@ import {
   Image as ImageIcon,
   FileSpreadsheet,
   FileCheck,
+  ArrowLeft,
+  Lock,
+  Unlock,
+  Send,
+  History,
+  ListChecks,
+  ShieldCheck,
+  FileEdit,
 } from "lucide-react";
 import mammoth from "mammoth";
+import { toast } from "@/components/ui/toast";
 
 export type MatterTab = "storage" | "uploads" | "review" | "tracker" | "comparison";
 
@@ -84,6 +93,14 @@ export interface IPProject {
     last_saved: string;
   };
   claim_comparisons: ClaimFeatureComparison[];
+  history?: { from: IPProject["stage"] | null; to: IPProject["stage"]; by: string; at: string }[];
+}
+
+async function matterApi(url: string, init?: RequestInit) {
+  const res = await fetch(url, init);
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error ?? "Request failed.");
+  return json as { matter?: IPProject };
 }
 
 function ResearchProjectsInner() {
@@ -134,33 +151,17 @@ function ResearchProjectsInner() {
     if (isDocx) {
       setIsConvertingDocx(true);
       setDocxHtml("");
-      try {
-        const base64Parts = previewFile.dataUrl.split(",");
-        const base64Data = base64Parts.length > 1 ? base64Parts[1] : base64Parts[0];
-        const binaryString = window.atob(base64Data);
-        const len = binaryString.length;
-        const bytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-
-        mammoth
-          .convertToHtml({ arrayBuffer: bytes.buffer })
-          .then((result) => {
-            setDocxHtml(result.value);
-          })
-          .catch((err) => {
-            console.error("Mammoth DOCX conversion error:", err);
-            setDocxHtml("<p class='text-red-500'>Unable to parse Word document formatting.</p>");
-          })
-          .finally(() => {
-            setIsConvertingDocx(false);
-          });
-      } catch (e) {
-        console.error("DOCX parsing exception:", e);
-        setIsConvertingDocx(false);
-        setDocxHtml("");
-      }
+      let cancelled = false;
+      fetch(previewFile.dataUrl.replace("?inline=1", ""))
+        .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error("download failed"))))
+        .then((arrayBuffer) => mammoth.convertToHtml({ arrayBuffer }))
+        .then((result) => { if (!cancelled) setDocxHtml(result.value); })
+        .catch((err) => {
+          console.error("DOCX conversion error:", err);
+          if (!cancelled) setDocxHtml("<p class='text-red-500'>Unable to parse Word document formatting.</p>");
+        })
+        .finally(() => { if (!cancelled) setIsConvertingDocx(false); });
+      return () => { cancelled = true; };
     } else {
       setDocxHtml("");
       setIsConvertingDocx(false);
@@ -184,37 +185,40 @@ function ResearchProjectsInner() {
     }
   }, [searchParams]);
 
-  // Load saved matters on mount and clean up any old dummy files
+  // Load matters from the server. Matters kept in this browser by older versions are
+  // moved to the server once, then removed from local storage.
+  const [loadError, setLoadError] = React.useState<string | null>(null);
+  const [stageError, setStageError] = React.useState<string | null>(null);
   React.useEffect(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("moat_research_matters");
-      if (saved) {
+    let cancelled = false;
+    (async () => {
+      try {
         try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            // Clean up any previously auto-injected dummy files with fake hash
-            const cleaned: IPProject[] = parsed.map((p: any) => {
-              const realFiles = (p.vault_files || []).filter(
-                (f: any) => !(f.hash === "a4f89d71c8b4e21..." && f.name?.endsWith("_Invention_Disclosure.pdf"))
-              );
-              return {
-                ...p,
-                vault_files: realFiles,
-                documents_count: realFiles.length,
-                claim_comparisons: p.claim_comparisons || [],
-              };
-            });
-            setProjects(cleaned);
-            setSelectedProject(cleaned[0]);
-            localStorage.setItem("moat_research_matters", JSON.stringify(cleaned));
-            return;
+          const legacy = JSON.parse(localStorage.getItem("moat_research_matters") ?? "[]");
+          if (Array.isArray(legacy) && legacy.length) {
+            const results = await Promise.all(
+              legacy.map((p: any) =>
+                matterApi("/api/matters", {
+                  method: "POST", headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ ...p, import: true }),
+                }).then(() => true).catch((e: Error) => /already exists/.test(e.message)),
+              ),
+            );
+            if (results.every(Boolean)) localStorage.removeItem("moat_research_matters");
           }
-        } catch {
-          // ignore
-        }
+        } catch { /* nothing to migrate */ }
+        const { matters } = (await (await fetch("/api/matters")).json()) as { matters?: IPProject[] };
+        if (cancelled) return;
+        setProjects(matters ?? []);
+        setSelectedProject((cur) => (matters ?? []).find((m) => m.id === cur?.id) ?? matters?.[0] ?? null);
+      } catch {
+        if (!cancelled) setLoadError("Could not load matters from the server.");
       }
-    }
+    })();
+    return () => { cancelled = true; };
   }, []);
+
+  React.useEffect(() => setStageError(null), [selectedProject?.id]);
 
   // Update Review Note form state when selectedProject changes
   React.useEffect(() => {
@@ -235,11 +239,17 @@ function ResearchProjectsInner() {
     }
   }, [selectedProject]);
 
-  const saveProjects = (updated: IPProject[]) => {
-    setProjects(updated);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("moat_research_matters", JSON.stringify(updated));
-    }
+  /** Replace one matter everywhere after the server confirms a change. */
+  const applyMatter = (m: IPProject) => {
+    setProjects((prev) => prev.map((p) => (p.id === m.id ? m : p)));
+    setSelectedProject((cur) => (cur?.id === m.id ? m : cur));
+  };
+  const patchMatter = async (body: object) => {
+    if (!selectedProject) return;
+    const { matter } = await matterApi(`/api/matters/${selectedProject.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+    });
+    if (matter) applyMatter(matter);
   };
 
   const handleTabChange = (tab: MatterTab) => {
@@ -247,118 +257,42 @@ function ResearchProjectsInner() {
     router.replace(`/matters?tab=${tab}`);
   };
 
-  const handleCreateMatter = (e: React.FormEvent) => {
+  const handleCreateMatter = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
-
-    const ref =
-      newMatterRef.trim() ||
-      `PAT-${new Date().getFullYear()}-${String(projects.length + 1).padStart(4, "0")}`;
-    const newProj: IPProject = {
-      id: `mat-${Date.now()}`,
-      matter_ref: ref,
-      title: newTitle.trim(),
-      client: newClient.trim() || "Moat Enterprise Client",
-      ip_type: newIpType,
-      stage: "DISCLOSURE_RECEIVED",
-      lead_analyst: newLead.trim() || "Patent Analyst",
-      docket_deadline:
-        newDeadline ||
-        new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-      documents_count: 0,
-      progress_pct: 20,
-      vault_files: [], // Strictly empty initially - zero fake files
-      claim_comparisons: [], // Clean empty comparison matrix
-      review_note: {
-        novelty_risk: "LOW",
-        obviousness_risk: "LOW",
-        section_101_eligible: true,
-        analyst_summary: "",
-        key_novelty_points: "",
-        prosecution_strategy: "",
-        last_saved: new Date().toISOString().replace("T", " ").substring(0, 16),
-      },
-    };
-
-    const updated = [newProj, ...projects];
-    saveProjects(updated);
-    setSelectedProject(newProj);
-    setShowNewModal(false);
-    setNewMatterRef("");
-    setNewTitle("");
-    setNewClient("");
-    setNewLead("");
-    setNewDeadline("");
+    try {
+      const { matter } = await matterApi("/api/matters", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          matter_ref: newMatterRef, title: newTitle, client: newClient, ip_type: newIpType,
+          lead_analyst: newLead, docket_deadline: newDeadline,
+        }),
+      });
+      if (!matter) return;
+      setProjects((prev) => [matter, ...prev]);
+      setSelectedProject(matter);
+      setShowNewModal(false);
+      setNewMatterRef(""); setNewTitle(""); setNewClient(""); setNewLead(""); setNewDeadline("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not create the matter.");
+    }
   };
 
-  // Real File Reader to store actual content for viewing and preview
+  // Files are uploaded to the server; the browser keeps no copy.
   const processFiles = async (files: FileList | null) => {
     if (!files || files.length === 0 || !selectedProject) return;
     setIsUploading(true);
-
     try {
-      const filePromises = Array.from(files).map((file, idx) => {
-        return new Promise<VaultFile>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            const dataUrl = event.target?.result as string;
-            // Generate deterministic short hash
-            const hash = `sha256-${Math.random().toString(36).substring(2, 10)}${Math.random().toString(36).substring(2, 10)}`;
-            const sizeFormatted =
-              file.size < 1024 * 1024
-                ? `${(file.size / 1024).toFixed(1)} KB`
-                : `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
-
-            resolve({
-              id: `vf-${Date.now()}-${idx}`,
-              name: file.name,
-              size: sizeFormatted,
-              category: uploadCategory,
-              hash: hash,
-              uploadedAt: new Date().toISOString().split("T")[0],
-              dataUrl: dataUrl,
-              mimeType: file.type || "application/octet-stream",
-            });
-          };
-
-          reader.onerror = () => {
-            resolve({
-              id: `vf-${Date.now()}-${idx}`,
-              name: file.name,
-              size: `${(file.size / 1024).toFixed(1)} KB`,
-              category: uploadCategory,
-              hash: `sha256-unreadable`,
-              uploadedAt: new Date().toISOString().split("T")[0],
-              mimeType: file.type,
-            });
-          };
-
-          reader.readAsDataURL(file);
-        });
-      });
-
-      const newVaultFiles = await Promise.all(filePromises);
-
-      const updated = projects.map((p) => {
-        if (p.id === selectedProject.id) {
-          const combined = [...(p.vault_files || []), ...newVaultFiles];
-          return { ...p, vault_files: combined, documents_count: combined.length };
-        }
-        return p;
-      });
-
-      saveProjects(updated);
-      setSelectedProject((prev) =>
-        prev
-          ? {
-              ...prev,
-              vault_files: [...(prev.vault_files || []), ...newVaultFiles],
-              documents_count: (prev.vault_files?.length || 0) + newVaultFiles.length,
-            }
-          : null
-      );
+      const form = new FormData();
+      form.set("category", uploadCategory);
+      Array.from(files).forEach((f) => form.append("files", f));
+      const { matter } = await matterApi(`/api/matters/${selectedProject.id}/files`, { method: "POST", body: form });
+      if (matter) {
+        applyMatter(matter);
+        toast.success("Files uploaded successfully.");
+      }
     } catch (err) {
-      console.error("Error processing file uploads:", err);
+      toast.error(err instanceof Error ? err.message : "Upload failed.");
     } finally {
       setIsUploading(false);
     }
@@ -376,30 +310,52 @@ function ResearchProjectsInner() {
     }
   };
 
-  const handleDeleteFile = (fileId: string) => {
+  const handleDeleteFile = async (fileId: string) => {
     if (!selectedProject) return;
-    if (!window.confirm("Are you sure you want to delete this file from the matter vault?")) return;
-    const updatedFiles = (selectedProject.vault_files || []).filter((f) => f.id !== fileId);
-    const updated = projects.map((p) => {
-      if (p.id === selectedProject.id) {
-        return { ...p, vault_files: updatedFiles, documents_count: updatedFiles.length };
-      }
-      return p;
+    const ok = await toast.confirm({
+      title: "Delete File",
+      message: "Are you sure you want to delete this file from the matter vault?",
+      confirmText: "Delete",
+      danger: true,
     });
-    saveProjects(updated);
-    setSelectedProject((prev) => (prev ? { ...prev, vault_files: updatedFiles, documents_count: updatedFiles.length } : null));
-    if (previewFile?.id === fileId) {
-      setPreviewFile(null);
+    if (!ok) return;
+    try {
+      const { matter } = await matterApi(`/api/matters/${selectedProject.id}/files/${fileId}`, { method: "DELETE" });
+      if (matter) applyMatter(matter);
+      if (previewFile?.id === fileId) setPreviewFile(null);
+      toast.success("File deleted from vault.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not delete the file.");
+    }
+  };
+
+  const handleDeleteMatter = async () => {
+    if (!selectedProject) return;
+    const ok = await toast.confirm({
+      title: "Delete Matter",
+      message: `Delete ${selectedProject.matter_ref} and all of its files? This cannot be undone.`,
+      confirmText: "Delete Matter",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await matterApi(`/api/matters/${selectedProject.id}`, { method: "DELETE" });
+      const rest = projects.filter((p) => p.id !== selectedProject.id);
+      setProjects(rest);
+      setSelectedProject(rest[0] ?? null);
+      toast.success(`Matter ${selectedProject.matter_ref} deleted.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not delete the matter.");
     }
   };
 
   const handleDownloadFile = (file: VaultFile) => {
     if (!file.dataUrl) {
-      alert("File data is not available for download.");
+      toast.warning("File is not available for download.");
       return;
     }
     const link = document.createElement("a");
-    link.href = file.dataUrl;
+    link.href = file.dataUrl.replace("?inline=1", "");
     link.download = file.name;
     document.body.appendChild(link);
     link.click();
@@ -410,10 +366,9 @@ function ResearchProjectsInner() {
     setPreviewFile(file);
   };
 
-  const handleSaveReviewNote = (e: React.FormEvent) => {
+  const handleSaveReviewNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProject) return;
-
     const note = {
       novelty_risk: reviewNoveltyRisk,
       obviousness_risk: reviewObviousRisk,
@@ -423,42 +378,29 @@ function ResearchProjectsInner() {
       prosecution_strategy: reviewStrategy,
       last_saved: new Date().toISOString().replace("T", " ").substring(0, 16),
     };
-
-    const updated = projects.map((p) => {
-      if (p.id === selectedProject.id) {
-        return { ...p, review_note: note };
-      }
-      return p;
-    });
-
-    saveProjects(updated);
-    setSelectedProject((prev) => (prev ? { ...prev, review_note: note } : null));
-    setSaveSuccessNotice(true);
-    setTimeout(() => setSaveSuccessNotice(false), 2500);
+    try {
+      await patchMatter({ review_note: note });
+      setStageError(null);
+      setSaveSuccessNotice(true);
+      setTimeout(() => setSaveSuccessNotice(false), 2500);
+      toast.success("Review note saved successfully.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save the review note.");
+    }
   };
 
-  const handleUpdateStage = (newStage: IPProject["stage"]) => {
-    if (!selectedProject) return;
-    const stagePctMap: Record<IPProject["stage"], number> = {
-      DISCLOSURE_RECEIVED: 20,
-      PRIOR_ART_SEARCH: 40,
-      REVIEW_NOTE: 60,
-      DRAFTER_HANDOFF: 80,
-      FINAL_APPROVAL: 100,
-    };
-
-    const updated = projects.map((p) => {
-      if (p.id === selectedProject.id) {
-        return { ...p, stage: newStage, progress_pct: stagePctMap[newStage] };
-      }
-      return p;
-    });
-
-    saveProjects(updated);
-    setSelectedProject((prev) =>
-      prev ? { ...prev, stage: newStage, progress_pct: stagePctMap[newStage] } : null
-    );
+  const handleUpdateStage = async (newStage: IPProject["stage"]) => {
+    if (!selectedProject || newStage === selectedProject.stage) return;
+    try {
+      await patchMatter({ stage: newStage });
+      setStageError(null);
+    } catch (err) {
+      setStageError(err instanceof Error ? err.message : "Could not update the stage.");
+    }
   };
+
+  const saveComparisons = (rows: ClaimFeatureComparison[]) =>
+    patchMatter({ claim_comparisons: rows }).catch((err: Error) => toast.error(err.message));
 
   const handleAddComparisonRow = () => {
     if (!selectedProject) return;
@@ -471,17 +413,7 @@ function ResearchProjectsInner() {
       d2_rating: "DISTINGUISHED",
       distinguishing_argument: "Recite clear patentable distinction under 35 U.S.C. 102/103.",
     };
-
-    const updatedRows = [...(selectedProject.claim_comparisons || []), newRow];
-    const updated = projects.map((p) => {
-      if (p.id === selectedProject.id) {
-        return { ...p, claim_comparisons: updatedRows };
-      }
-      return p;
-    });
-
-    saveProjects(updatedRows.length ? updated : projects);
-    setSelectedProject((prev) => (prev ? { ...prev, claim_comparisons: updatedRows } : null));
+    saveComparisons([...(selectedProject.claim_comparisons || []), newRow]);
   };
 
   const handleUpdateComparisonRating = (
@@ -490,22 +422,7 @@ function ResearchProjectsInner() {
     val: "IDENTICAL" | "EQUIVALENT" | "DISTINGUISHED"
   ) => {
     if (!selectedProject) return;
-    const updatedRows = (selectedProject.claim_comparisons || []).map((row) => {
-      if (row.id === rowId) {
-        return { ...row, [field]: val };
-      }
-      return row;
-    });
-
-    const updated = projects.map((p) => {
-      if (p.id === selectedProject.id) {
-        return { ...p, claim_comparisons: updatedRows };
-      }
-      return p;
-    });
-
-    saveProjects(updated);
-    setSelectedProject((prev) => (prev ? { ...prev, claim_comparisons: updatedRows } : null));
+    saveComparisons((selectedProject.claim_comparisons || []).map((row) => (row.id === rowId ? { ...row, [field]: val } : row)));
   };
 
   const filteredProjects = projects.filter((p) => {
@@ -542,7 +459,7 @@ function ResearchProjectsInner() {
 
             <button
               onClick={() => setShowNewModal(true)}
-              className="flex items-center gap-1.5 rounded-lg bg-accent px-2.5 py-1.5 text-xs font-bold text-white shadow-xs hover:brightness-110 transition"
+              className="flex items-center gap-1.5 rounded-lg bg-accent px-2.5 py-1.5 text-xs font-bold text-on-accent shadow-xs hover:brightness-110 transition"
             >
               <Plus className="size-3.5" />
               New Matter
@@ -649,7 +566,7 @@ function ResearchProjectsInner() {
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="rounded bg-accent px-2 py-0.5 font-mono text-xs font-bold text-white">
+                    <span className="rounded bg-accent px-2 py-0.5 font-mono text-xs font-bold text-on-accent">
                       {selectedProject.matter_ref}
                     </span>
                     <span className="text-xs text-muted">· Lead: {selectedProject.lead_analyst}</span>
@@ -676,7 +593,7 @@ function ResearchProjectsInner() {
                       onClick={() => handleTabChange(t.id)}
                       className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
                         isActive
-                          ? "bg-accent text-white shadow-xs"
+                          ? "bg-accent text-on-accent shadow-xs"
                           : "text-muted hover:bg-hover hover:text-ink"
                       }`}
                     >
@@ -806,7 +723,7 @@ function ResearchProjectsInner() {
                         <option value="OTHER">General Attachment</option>
                       </select>
 
-                      <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-1.5 text-xs font-bold text-white shadow-xs hover:brightness-110 transition">
+                      <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-1.5 text-xs font-bold text-on-accent shadow-xs hover:brightness-110 transition">
                         <FileUp className="size-3.5" />
                         {isUploading ? "Uploading & Processing..." : "Select Files"}
                         <input
@@ -1009,7 +926,7 @@ function ResearchProjectsInner() {
                       </div>
                       <button
                         type="submit"
-                        className="flex items-center gap-1.5 rounded-xl bg-accent px-5 py-2 text-xs font-bold text-white shadow-sm hover:brightness-110 transition"
+                        className="flex items-center gap-1.5 rounded-xl bg-accent px-5 py-2 text-xs font-bold text-on-accent shadow-sm hover:brightness-110 transition"
                       >
                         <Save className="size-3.5" />
                         Save Review Note
@@ -1020,101 +937,457 @@ function ResearchProjectsInner() {
               )}
 
               {/* TAB 4: TRACKER & MILESTONES PIPELINE */}
-              {activeTab === "tracker" && (
-                <div className="max-w-3xl mx-auto space-y-6">
-                  <div className="rounded-2xl border border-line bg-surface p-6 shadow-sm space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-sm font-bold text-ink">5-Stage Prosecution Milestone Pipeline</h3>
-                        <p className="text-xs text-muted">Click any stage to update matter lifecycle progression.</p>
-                      </div>
-                      <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-bold text-accent">
-                        {selectedProject.progress_pct}% Completed
-                      </span>
-                    </div>
+              {activeTab === "tracker" && (() => {
+                const STAGE_ORDER = ["DISCLOSURE_RECEIVED", "PRIOR_ART_SEARCH", "REVIEW_NOTE", "DRAFTER_HANDOFF", "FINAL_APPROVAL"] as const;
+                const currentStageIdx = STAGE_ORDER.indexOf(selectedProject.stage);
+                const nextStageKey = currentStageIdx < STAGE_ORDER.length - 1 ? STAGE_ORDER[currentStageIdx + 1] : null;
+                const prevStageKey = currentStageIdx > 0 ? STAGE_ORDER[currentStageIdx - 1] : null;
+                const hasReviewSummary = Boolean(selectedProject.review_note?.analyst_summary?.trim());
 
-                    {/* Pipeline Stage Bar */}
-                    <div className="space-y-3 pt-2">
-                      {(
-                        [
-                          {
-                            key: "DISCLOSURE_RECEIVED" as const,
-                            title: "1. Disclosure Received",
-                            desc: "Inventor IDF & technical specifications ingested.",
-                          },
-                          {
-                            key: "PRIOR_ART_SEARCH" as const,
-                            title: "2. Prior Art Search",
-                            desc: "Boolean & AI semantic query runs across IP5 databases.",
-                          },
-                          {
-                            key: "REVIEW_NOTE" as const,
-                            title: "3. Review Note Drafted",
-                            desc: "Patentability evaluation, 102/103 risk scoring completed.",
-                          },
-                          {
-                            key: "DRAFTER_HANDOFF" as const,
-                            title: "4. Drafter Handoff",
-                            desc: "Transferred to Patent Drafter for formal claims generation.",
-                          },
-                          {
-                            key: "FINAL_APPROVAL" as const,
-                            title: "5. Final Approval & Filing",
-                            desc: "Executive sign-off and USPTO electronic filing.",
-                          },
-                        ] as const
-                      ).map((st, i) => {
-                        const isCurrent = selectedProject.stage === st.key;
-                        const isPast =
-                          st.key === "DISCLOSURE_RECEIVED" ||
-                          (st.key === "PRIOR_ART_SEARCH" && selectedProject.progress_pct >= 40) ||
-                          (st.key === "REVIEW_NOTE" && selectedProject.progress_pct >= 60) ||
-                          (st.key === "DRAFTER_HANDOFF" && selectedProject.progress_pct >= 80) ||
-                          (st.key === "FINAL_APPROVAL" && selectedProject.progress_pct === 100);
+                const deadlineDays = selectedProject.docket_deadline
+                  ? Math.ceil((new Date(selectedProject.docket_deadline).getTime() - Date.now()) / (1000 * 3600 * 24))
+                  : null;
 
-                        return (
-                          <div
-                            key={st.key}
-                            onClick={() => handleUpdateStage(st.key)}
-                            className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition ${
-                              isCurrent
-                                ? "border-accent bg-accent/5 shadow-xs"
-                                : isPast
-                                ? "border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/50"
-                                : "border-line bg-canvas hover:border-line-strong"
-                            }`}
-                          >
-                            <div
-                              className={`flex size-6 items-center justify-center rounded-full text-xs font-bold shrink-0 mt-0.5 ${
-                                isCurrent
-                                  ? "bg-accent text-white"
-                                  : isPast
-                                  ? "bg-emerald-600 text-white"
-                                  : "bg-line text-muted"
+                const STAGES_META = [
+                  {
+                    key: "DISCLOSURE_RECEIVED" as const,
+                    step: 1,
+                    title: "1. Disclosure Received",
+                    shortName: "Disclosure Received",
+                    desc: "Inventor IDF & technical specifications ingested.",
+                    badge: "Stage 1 · Ingestion",
+                    checkLabel: `${selectedProject.vault_files?.length || 0} Files in Vault`,
+                    tabAction: "uploads" as MatterTab,
+                    tabLabel: "Vault Files",
+                  },
+                  {
+                    key: "PRIOR_ART_SEARCH" as const,
+                    step: 2,
+                    title: "2. Prior Art Search",
+                    shortName: "Prior Art Search",
+                    desc: "Boolean & AI semantic query runs across IP5 databases.",
+                    badge: "Stage 2 · Search & Matrix",
+                    checkLabel: `${selectedProject.claim_comparisons?.length || 0} Claim Features Mapped`,
+                    tabAction: "comparison" as MatterTab,
+                    tabLabel: "Feature Comparison",
+                  },
+                  {
+                    key: "REVIEW_NOTE" as const,
+                    step: 3,
+                    title: "3. Review Note Drafted",
+                    shortName: "Review Note Drafted",
+                    desc: "Patentability evaluation, 102/103 risk scoring completed.",
+                    badge: "Stage 3 · Analyst Review",
+                    checkLabel: hasReviewSummary ? "Novelty Summary Complete" : "Summary Required",
+                    tabAction: "review" as MatterTab,
+                    tabLabel: "Review Note",
+                  },
+                  {
+                    key: "DRAFTER_HANDOFF" as const,
+                    step: 4,
+                    title: "4. Drafter Handoff",
+                    shortName: "Drafter Handoff",
+                    desc: "Transferred to Patent Drafter for formal claims generation.",
+                    badge: "Stage 4 · Drafting Assignment",
+                    checkLabel: currentStageIdx >= 3 ? "Transferred to Drafter Studio" : "Pending Handoff",
+                    linkUrl: "/dashboard/patent-drafter",
+                    linkLabel: "Open Drafting Studio",
+                  },
+                  {
+                    key: "FINAL_APPROVAL" as const,
+                    step: 5,
+                    title: "5. Final Approval & Filing",
+                    shortName: "Final Approval & Filing",
+                    desc: "Executive sign-off and USPTO electronic filing clearance.",
+                    badge: "Stage 5 · Executive Filing",
+                    checkLabel: currentStageIdx >= 4 ? "In CEO Approval Queue" : "Pending Sign-Off",
+                    linkUrl: "/dashboard/ceo/approvals",
+                    linkLabel: "Open CEO Approvals",
+                  },
+                ];
+
+                return (
+                  <div className="max-w-3xl mx-auto space-y-6">
+                    {/* DOCKET & SLA TRACKER HEADER CARD */}
+                    <div className="rounded-2xl border border-line bg-surface p-6 shadow-sm space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs font-bold text-accent">{selectedProject.matter_ref}</span>
+                            <span className="text-xs text-muted">· Lead: {selectedProject.lead_analyst}</span>
+                            <span className="text-xs text-muted">· Client: {selectedProject.client}</span>
+                          </div>
+                          <h3 className="text-base font-bold text-ink mt-1">Prosecution Lifecycle & SLA Tracker</h3>
+                        </div>
+
+                        {/* Deadline Countdown Badge */}
+                        <div className="flex items-center gap-2 shrink-0">
+                          {deadlineDays !== null && (
+                            <span
+                              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${
+                                deadlineDays < 0
+                                  ? "bg-rose-500/10 text-rose-600 border border-rose-500/20"
+                                  : deadlineDays <= 14
+                                  ? "bg-amber-500/10 text-amber-600 border border-amber-500/20"
+                                  : "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
                               }`}
                             >
-                              {isPast && !isCurrent ? <CheckCircle className="size-3.5" /> : i + 1}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between">
-                                <span className={`text-xs font-bold ${isCurrent ? "text-accent" : "text-ink"}`}>
-                                  {st.title}
-                                </span>
-                                {isCurrent && (
-                                  <span className="rounded bg-accent px-2 py-0.2 text-[9px] font-bold text-white uppercase">
-                                    Active Stage
-                                  </span>
+                              {deadlineDays < 0 ? (
+                                <>
+                                  <AlertTriangle className="size-3.5" />
+                                  <span>Overdue by {Math.abs(deadlineDays)} Days</span>
+                                </>
+                              ) : deadlineDays <= 14 ? (
+                                <>
+                                  <Clock className="size-3.5" />
+                                  <span>Urgent: {deadlineDays} Days Left</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Calendar className="size-3.5" />
+                                  <span>{deadlineDays} Days Left</span>
+                                </>
+                              )}
+                            </span>
+                          )}
+                          <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-bold text-accent">
+                            {selectedProject.progress_pct}% Completed
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Overall Progress Bar */}
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex justify-between text-[11px] text-muted">
+                          <span>Progress: {selectedProject.stage.replace(/_/g, " ")}</span>
+                          <span>Deadline: {selectedProject.docket_deadline}</span>
+                        </div>
+                        <div className="h-2 w-full rounded-full bg-line overflow-hidden">
+                          <div
+                            className="h-full bg-accent transition-all duration-300"
+                            style={{ width: `${selectedProject.progress_pct}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Quick Meta Indicators */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1 text-xs">
+                        <div className="rounded-lg bg-canvas p-2.5 border border-line">
+                          <span className="text-[10.5px] text-muted font-medium">Vault Documents</span>
+                          <p className="font-bold text-ink mt-0.5">{selectedProject.vault_files?.length || 0} Files</p>
+                        </div>
+                        <div className="rounded-lg bg-canvas p-2.5 border border-line">
+                          <span className="text-[10.5px] text-muted font-medium">Claim Matrix</span>
+                          <p className="font-bold text-ink mt-0.5">{selectedProject.claim_comparisons?.length || 0} Elements</p>
+                        </div>
+                        <div className="rounded-lg bg-canvas p-2.5 border border-line">
+                          <span className="text-[10.5px] text-muted font-medium">Novelty Risk</span>
+                          <p className="font-bold text-ink mt-0.5">{selectedProject.review_note?.novelty_risk || "Pending"}</p>
+                        </div>
+                        <div className="rounded-lg bg-canvas p-2.5 border border-line">
+                          <span className="text-[10.5px] text-muted font-medium">Section 101</span>
+                          <p className="font-bold text-emerald-600 mt-0.5">
+                            {selectedProject.review_note?.section_101_eligible ? "Eligible" : "Under Evaluation"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* STAGE PROGRESSION ACTION CONTROLS */}
+                    <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                          <div className="text-[11px] font-bold uppercase tracking-wider text-muted">Active Stage Action</div>
+                          <div className="text-sm font-bold text-ink mt-0.5 flex items-center gap-2">
+                            <span>{STAGES_META[currentStageIdx].title}</span>
+                            <span className="rounded bg-accent/10 px-2 py-0.5 text-[10px] font-bold text-accent uppercase">
+                              Active
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Progression Buttons */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {prevStageKey && (
+                            <button
+                              onClick={async () => {
+                                const ok = await toast.confirm({
+                                  title: "Revert Matter Stage",
+                                  message: `Revert matter status back to "${STAGES_META[currentStageIdx - 1].shortName}"?`,
+                                  confirmText: "Revert",
+                                  danger: true,
+                                });
+                                if (ok) {
+                                  handleUpdateStage(prevStageKey);
+                                }
+                              }}
+                              className="flex items-center gap-1 rounded-xl border border-line bg-canvas px-3 py-1.5 text-xs font-semibold text-muted hover:text-ink hover:border-line-strong transition"
+                            >
+                              <ArrowLeft className="size-3" />
+                              <span>Revert Step</span>
+                            </button>
+                          )}
+
+                          {nextStageKey ? (
+                            <button
+                              onClick={() => {
+                                if (nextStageKey === "DRAFTER_HANDOFF" && !hasReviewSummary) {
+                                  setStageError("Review Note summary is required before handing off to Patent Drafter. Please complete it in the Review Note tab.");
+                                  return;
+                                }
+                                handleUpdateStage(nextStageKey);
+                              }}
+                              className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-xs font-bold text-on-accent shadow-xs hover:brightness-110 transition"
+                            >
+                              <span>Advance to {STAGES_META[currentStageIdx + 1].shortName}</span>
+                              <ArrowRight className="size-3.5" />
+                            </button>
+                          ) : (
+                            <span className="flex items-center gap-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 text-xs font-bold text-emerald-600">
+                              <CheckCircle2 className="size-3.5" />
+                              <span>Lifecycle Complete</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Missing Prerequisite Alert & One-Click Shortcut */}
+                      {nextStageKey === "DRAFTER_HANDOFF" && !hasReviewSummary && (
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs">
+                          <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300">
+                            <AlertTriangle className="size-4 shrink-0 text-amber-600" />
+                            <span>Analyst Review Note summary required before drafter handoff.</span>
+                          </div>
+                          <button
+                            onClick={() => handleTabChange("review")}
+                            className="inline-flex items-center gap-1 rounded-lg bg-amber-600 px-3 py-1 font-bold text-white hover:bg-amber-700 transition shrink-0"
+                          >
+                            <span>Draft Review Note</span>
+                            <ArrowRight className="size-3" />
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Downstream Integration Links */}
+                      {selectedProject.stage === "DRAFTER_HANDOFF" && (
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl border border-purple-500/30 bg-purple-500/10 p-3 text-xs">
+                          <div className="flex items-center gap-2 text-purple-800 dark:text-purple-300">
+                            <FileEdit className="size-4 shrink-0 text-purple-600" />
+                            <span>Matter assigned to Patent Drafter. Drafting studio tasks are active.</span>
+                          </div>
+                          <a
+                            href="/dashboard/patent-drafter"
+                            className="inline-flex items-center gap-1 rounded-lg bg-purple-600 px-3 py-1 font-bold text-white hover:bg-purple-700 transition shrink-0"
+                          >
+                            <span>Open Drafting Studio</span>
+                            <ExternalLink className="size-3" />
+                          </a>
+                        </div>
+                      )}
+
+                      {selectedProject.stage === "FINAL_APPROVAL" && (
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs">
+                          <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300">
+                            <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                            <span>Matter is ready for final executive sign-off in CEO approvals queue.</span>
+                          </div>
+                          <a
+                            href="/dashboard/ceo/approvals"
+                            className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1 font-bold text-white hover:bg-emerald-700 transition shrink-0"
+                          >
+                            <span>Open CEO Approvals</span>
+                            <ExternalLink className="size-3" />
+                          </a>
+                        </div>
+                      )}
+
+                      {stageError && (
+                        <p role="alert" className="rounded-lg border border-critical/25 bg-critical-soft px-3 py-2 text-xs text-critical">
+                          {stageError}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* 5-STAGE PROSECUTION MILESTONES PIPELINE */}
+                    <div className="rounded-2xl border border-line bg-surface p-6 shadow-sm space-y-4">
+                      <div>
+                        <h4 className="text-sm font-bold text-ink">5-Stage Prosecution Milestone Pipeline</h4>
+                        <p className="text-xs text-muted">Click any actionable stage to update lifecycle progression or review details.</p>
+                      </div>
+
+                      <div className="space-y-3 pt-1">
+                        {STAGES_META.map((st, i) => {
+                          const isCurrent = selectedProject.stage === st.key;
+                          const isPast = STAGE_ORDER.indexOf(st.key) < currentStageIdx;
+                          const isNext = STAGE_ORDER.indexOf(st.key) === currentStageIdx + 1;
+                          const isFuture = STAGE_ORDER.indexOf(st.key) > currentStageIdx + 1;
+
+                          return (
+                            <div
+                              key={st.key}
+                              onClick={async () => {
+                                if (isCurrent) return;
+                                if (isNext) {
+                                  if (st.key === "DRAFTER_HANDOFF" && !hasReviewSummary) {
+                                    setStageError("Review Note summary is required before handing off to Patent Drafter.");
+                                    return;
+                                  }
+                                  handleUpdateStage(st.key);
+                                } else if (isPast) {
+                                  const ok = await toast.confirm({
+                                    title: "Revert Lifecycle",
+                                    message: `Revert lifecycle back to "${st.shortName}"?`,
+                                    confirmText: "Revert",
+                                    danger: true,
+                                  });
+                                  if (ok) {
+                                    handleUpdateStage(st.key);
+                                  }
+                                } else {
+                                  setStageError(`Please complete stage "${STAGES_META[currentStageIdx + 1].shortName}" before unlocking this step.`);
+                                }
+                              }}
+                              className={`flex items-start gap-3 rounded-xl border p-4 transition-all ${
+                                isCurrent
+                                  ? "border-accent bg-accent/5 shadow-xs"
+                                  : isPast
+                                  ? "border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/50 cursor-pointer"
+                                  : isNext
+                                  ? "border-accent/40 bg-accent/5 hover:border-accent cursor-pointer"
+                                  : "border-line bg-canvas/60 opacity-75 cursor-not-allowed"
+                              }`}
+                            >
+                              {/* Stage Number / Status Icon */}
+                              <div
+                                className={`flex size-7 items-center justify-center rounded-full text-xs font-bold shrink-0 mt-0.5 ${
+                                  isCurrent
+                                    ? "bg-accent text-on-accent"
+                                    : isPast
+                                    ? "bg-emerald-600 text-white"
+                                    : isNext
+                                    ? "border-2 border-accent text-accent bg-transparent"
+                                    : "bg-line text-muted"
+                                }`}
+                              >
+                                {isPast ? (
+                                  <CheckCircle className="size-4" />
+                                ) : isFuture ? (
+                                  <Lock className="size-3.5 opacity-60" />
+                                ) : (
+                                  st.step
                                 )}
                               </div>
-                              <p className="text-[11px] text-muted mt-0.5">{st.desc}</p>
+
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className={`text-xs font-bold ${isCurrent ? "text-accent" : isPast ? "text-emerald-700 dark:text-emerald-400" : "text-ink"}`}>
+                                      {st.title}
+                                    </span>
+                                    <span className="text-[10px] text-muted hidden sm:inline">· {st.badge}</span>
+                                  </div>
+
+                                  {isCurrent ? (
+                                    <span className="rounded bg-accent px-2 py-0.5 text-[9px] font-bold text-on-accent uppercase">
+                                      Active Stage
+                                    </span>
+                                  ) : isPast ? (
+                                    <span className="rounded bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[9px] font-bold text-emerald-600">
+                                      Completed
+                                    </span>
+                                  ) : isNext ? (
+                                    <span className="rounded bg-accent/15 border border-accent/30 px-2 py-0.5 text-[9px] font-bold text-accent">
+                                      Ready to Advance
+                                    </span>
+                                  ) : (
+                                    <span className="rounded bg-line px-2 py-0.5 text-[9px] font-bold text-muted flex items-center gap-1">
+                                      <Lock className="size-2.5" />
+                                      Locked
+                                    </span>
+                                  )}
+                                </div>
+
+                                <p className="text-[11px] text-muted mt-1">{st.desc}</p>
+
+                                <div className="mt-2.5 flex items-center justify-between gap-2 text-[11px]">
+                                  <span className="font-semibold text-muted flex items-center gap-1">
+                                    {isPast && <CheckCircle2 className="size-3 text-emerald-600 inline" />}
+                                    {st.checkLabel}
+                                  </span>
+
+                                  {st.tabAction && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleTabChange(st.tabAction!);
+                                      }}
+                                      className="text-xs font-bold text-accent hover:underline flex items-center gap-0.5"
+                                    >
+                                      <span>View {st.tabLabel}</span>
+                                      <ArrowRight className="size-3" />
+                                    </button>
+                                  )}
+
+                                  {st.linkUrl && (isCurrent || isPast) && (
+                                    <a
+                                      href={st.linkUrl}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="text-xs font-bold text-accent hover:underline flex items-center gap-0.5"
+                                    >
+                                      <span>{st.linkLabel}</span>
+                                      <ExternalLink className="size-3" />
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
+
+                      {/* STAGE HISTORY AUDIT TRAIL */}
+                      {selectedProject.history && selectedProject.history.length > 0 ? (
+                        <div className="border-t border-line pt-4 space-y-2">
+                          <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+                            <History className="size-3.5" />
+                            <span>Milestone Transition Audit Trail</span>
+                          </h4>
+                          <ul className="space-y-2 pt-1">
+                            {[...selectedProject.history].reverse().map((h, i) => (
+                              <li key={i} className="flex items-start gap-2.5 text-xs text-muted">
+                                <div className="size-1.5 rounded-full bg-accent mt-1.5 shrink-0" />
+                                <div>
+                                  <span className="font-bold text-ink">
+                                    {h.to.replace(/_/g, " ")}
+                                  </span>
+                                  {h.from ? (
+                                    <span> (transitioned from {h.from.replace(/_/g, " ")})</span>
+                                  ) : (
+                                    <span> (matter initialized)</span>
+                                  )}
+                                  <span className="text-[10.5px] text-muted"> · by {h.by} · {new Date(h.at).toLocaleString()}</span>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+
+                      {/* DANGER ZONE: DELETE MATTER */}
+                      <div className="border-t border-line pt-4 flex items-center justify-between">
+                        <span className="text-xs text-muted">Permanently remove this research matter and all vault documents.</span>
+                        <button
+                          onClick={handleDeleteMatter}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-critical/30 px-3 py-1.5 text-xs font-semibold text-critical hover:bg-critical-soft transition"
+                        >
+                          <Trash2 className="size-3.5" /> Delete matter
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* TAB 5: FEATURE COMPARISON MATRIX */}
               {activeTab === "comparison" && (
@@ -1128,7 +1401,7 @@ function ResearchProjectsInner() {
                     </div>
                     <button
                       onClick={handleAddComparisonRow}
-                      className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:brightness-110 transition"
+                      className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-on-accent shadow-xs hover:brightness-110 transition"
                     >
                       <Plus className="size-3.5" />
                       Add Claim Element
@@ -1222,7 +1495,7 @@ function ResearchProjectsInner() {
           <div className="flex flex-1 items-center justify-center p-8 text-center text-muted">
             <div className="rounded-2xl border border-line bg-surface p-8 max-w-sm">
               <Folder className="size-10 mb-2 opacity-30 mx-auto" />
-              <p className="font-semibold text-ink text-xs">No Matter Selected</p>
+              <p className="font-semibold text-ink text-xs">{loadError ?? "No Matter Selected"}</p>
               <p className="text-[11px] text-muted mt-1">
                 Select or initialize a research matter from the left directory to view project storage, files, review notes, tracker, and feature comparisons.
               </p>
@@ -1258,7 +1531,7 @@ function ResearchProjectsInner() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleDownloadFile(previewFile)}
-                  className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:brightness-110 transition"
+                  className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-on-accent shadow-xs hover:brightness-110 transition"
                 >
                   <Download className="size-3.5" />
                   <span>Download</span>
@@ -1333,7 +1606,7 @@ function ResearchProjectsInner() {
                     </div>
                     <button
                       onClick={() => handleDownloadFile(previewFile)}
-                      className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-xs font-bold text-white shadow-md hover:brightness-110 transition"
+                      className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-xs font-bold text-on-accent shadow-md hover:brightness-110 transition"
                     >
                       <Download className="size-4" />
                       Download {previewFile.name}
@@ -1452,7 +1725,7 @@ function ResearchProjectsInner() {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-accent px-4 py-2 font-bold text-white shadow-sm hover:brightness-110"
+                  className="rounded-lg bg-accent px-4 py-2 font-bold text-on-accent shadow-sm hover:brightness-110"
                 >
                   Initialize Matter
                 </button>

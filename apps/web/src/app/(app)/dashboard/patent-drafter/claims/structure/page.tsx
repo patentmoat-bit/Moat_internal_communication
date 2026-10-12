@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { GitBranch, PlusCircle, AlertCircle, Trash2, Edit2, AlertTriangle, ArrowRight, Lock } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { toast } from "@/components/ui/toast";
 
 export default function ClaimTreePage() {
   const searchParams = useSearchParams();
@@ -87,7 +88,7 @@ export default function ClaimTreePage() {
       });
       await fetchClaims(inventionId!);
     } catch(e) {
-      alert("Failed to update claims.");
+      toast.error("Failed to update claims.");
     } finally {
       setActionLoading(false);
     }
@@ -107,17 +108,25 @@ export default function ClaimTreePage() {
     });
     
     saveClaimUpdate(claims);
+    toast.success(`Claim ${nextNum} added.`);
   };
 
-  const deleteClaim = (num: number) => {
+  const deleteClaim = async (num: number) => {
     if (!claimSet) return;
-    if (!confirm(`Are you sure you want to delete claim ${num}?`)) return;
+    const ok = await toast.confirm({
+      title: "Delete Claim",
+      message: `Are you sure you want to delete claim ${num}?`,
+      confirmText: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
     
     let claims = [...claimSet.claims];
     claims = claims.filter(c => c.number !== num);
     
     // Convert children to floating or update parents if needed (For simplicity, let's keep them and flag them as invalid)
     saveClaimUpdate(claims);
+    toast.success(`Claim ${num} deleted.`);
   };
 
   const validateClaims = (claims: any[]) => {
@@ -160,7 +169,7 @@ export default function ClaimTreePage() {
 
   if (!claimSet) {
     return (
-      <div className="bg-muted/10 border border-border/40 rounded-2xl p-12 text-center">
+      <div className="bg-sunken/10 border border-border/40 rounded-2xl p-12 text-center">
         <h2 className="text-2xl font-bold mb-2">No Claims Found</h2>
         <Button onClick={handleCreateClaimSet} className="mt-4"><PlusCircle className="w-5 h-5 mr-2" /> Create Claim Set</Button>
       </div>
@@ -240,7 +249,7 @@ export default function ClaimTreePage() {
         </Button>
       </div>
 
-      <div className="bg-muted/10 border border-border/40 rounded-2xl p-8 min-h-[500px]">
+      <div className="bg-sunken/10 border border-border/40 rounded-2xl p-8 min-h-[500px]">
         {Object.keys(validationErrors).length > 0 && (
           <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />

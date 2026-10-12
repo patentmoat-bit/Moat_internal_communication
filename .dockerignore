@@ -14,3 +14,5 @@ infra/compose/.env
 **/.env.local
 **/.DS_Store
 moat-main
+# runtime data written by the app (users, notifications, uploads): never baked into an image
+apps/web/data

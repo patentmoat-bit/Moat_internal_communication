@@ -5,6 +5,7 @@ import { Avatar, Badge, Button, EmptyState, Panel } from "@moat/ui";
 import { PageHeader } from "@/components/shell/page-header";
 import { InventionFilters } from "@/components/invention/invention-filters";
 import { serverApi } from "@/lib/server-api";
+import { listInventions } from "@/lib/inventionStore";
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { landingFor } from "@/components/shell/nav";
@@ -34,7 +35,10 @@ export default async function InventionsPage({
   if (params.mine === "1") query.set("mine", "true");
   const suffix = query.size ? `?${query}` : "";
 
-  const inventions = (await serverApi<InventionSummary[]>(`/inventions${suffix}`)) ?? [];
+  const remote = (await serverApi<InventionSummary[]>(`/inventions${suffix}`)) ?? [];
+  // Disclosures kept in this workspace (with their files) sit alongside any from the API.
+  const local = listInventions().filter((r) => !params.status || r.status.toLowerCase() === params.status);
+  const inventions = remote;
 
   return (
     <>
@@ -56,7 +60,34 @@ export default async function InventionsPage({
       <div className="px-6 py-5">
         <InventionFilters />
 
-        {inventions.length === 0 ? (
+        {local.length > 0 ? (
+          <Panel className="mt-4 overflow-hidden">
+            <ul>
+              {local.map((r, index) => (
+                <li key={r.id} className={index > 0 ? "border-t border-line" : undefined}>
+                  <Link href={`/inventions/${r.id}`} className="block px-4 py-3.5 transition-colors hover:bg-hover">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="numeric text-[11px] tracking-tight text-faint">{r.id}</span>
+                          <Badge tone="neutral">{r.status.replace(/_/g, " ").toLowerCase()}</Badge>
+                        </div>
+                        <h3 className="font-document mt-1 text-[15px] font-semibold leading-snug text-ink">{r.title}</h3>
+                        {r.summary ? <p className="measure mt-1 line-clamp-2 text-[12.5px] leading-relaxed text-muted">{r.summary}</p> : null}
+                        <p className="mt-2 text-[11px] text-faint">{r.owner} · updated {formatDate(r.updatedAt)}</p>
+                      </div>
+                      <span className="shrink-0 rounded-[var(--radius-xs)] bg-sunken px-2 py-1 text-[11.5px] text-muted">
+                        {r.fileCount} file{r.fileCount === 1 ? "" : "s"}
+                      </span>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        ) : null}
+
+        {local.length === 0 && inventions.length === 0 ? (
           <Panel className="mt-4">
             <EmptyState
               icon={<Lightbulb />}
@@ -74,7 +105,7 @@ export default async function InventionsPage({
               }
             />
           </Panel>
-        ) : (
+        ) : inventions.length === 0 ? null : (
           <Panel className="mt-4 overflow-hidden">
             <ul>
               {inventions.map((invention, index) => {

@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   UserPlus,
   Users,
+  LogOut,
 } from "lucide-react";
 import { cn, Avatar, Eyebrow } from "@moat/ui";
 import { ROLE_NAVIGATIONS, type NavItem } from "./nav";
@@ -200,6 +201,15 @@ function SidebarInner() {
             </div>
 
             <div className="border-t border-line/60 p-1">
+              <form method="post" action="/api/auth/microsoft/logout">
+                <button
+                  type="submit"
+                  className="flex w-full items-center gap-2 rounded-lg p-1.5 text-xs font-semibold text-muted hover:bg-hover hover:text-ink transition"
+                >
+                  <LogOut className="size-3.5" />
+                  <span>Sign out</span>
+                </button>
+              </form>
               <Link
                 href="/admin"
                 onClick={() => setUserMenuOpen(false)}

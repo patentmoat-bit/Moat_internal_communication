@@ -260,7 +260,7 @@ function ReportsRepositoryInner() {
             {activeTab === "repository" && (
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-accent/90 transition"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-3 py-1.5 text-xs font-bold text-on-accent shadow-xs hover:bg-accent/90 transition"
               >
                 <Plus className="size-3.5" />
                 New Report
@@ -283,7 +283,7 @@ function ReportsRepositoryInner() {
               onClick={() => handleTabChange("repository")}
               className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
                 activeTab === "repository"
-                  ? "bg-accent text-white shadow-xs"
+                  ? "bg-accent text-on-accent shadow-xs"
                   : "text-muted hover:bg-hover hover:text-ink"
               }`}
             >
@@ -298,7 +298,7 @@ function ReportsRepositoryInner() {
               onClick={() => handleTabChange("history")}
               className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
                 activeTab === "history"
-                  ? "bg-accent text-white shadow-xs"
+                  ? "bg-accent text-on-accent shadow-xs"
                   : "text-muted hover:bg-hover hover:text-ink"
               }`}
             >
@@ -434,7 +434,7 @@ function ReportsRepositoryInner() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => downloadReport("PDF")}
-                  className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-xs font-bold text-white shadow-sm hover:brightness-110"
+                  className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-xs font-bold text-on-accent shadow-sm hover:brightness-110"
                 >
                   <FileDown className="size-3.5" />
                   Download PDF

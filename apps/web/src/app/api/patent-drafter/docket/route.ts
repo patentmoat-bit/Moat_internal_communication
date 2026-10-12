@@ -4,7 +4,7 @@ import path from 'path';
 
 const DB_FILE = path.join(process.cwd(), 'data', 'docket.json');
 
-function getReminders() {
+function getReminders(): any[] {
   if (!fs.existsSync(DB_FILE)) return [];
   try { return JSON.parse(fs.readFileSync(DB_FILE, 'utf8')); } catch(e) { return []; }
 }
@@ -13,6 +13,13 @@ function saveReminders(rems: any[]) {
   const dir = path.dirname(DB_FILE);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(DB_FILE, JSON.stringify(rems, null, 2));
+}
+
+const ASG_FILE = path.join(process.cwd(), 'data', 'assignments.json');
+
+function getAssignments(): any[] {
+  if (!fs.existsSync(ASG_FILE)) return [];
+  try { return JSON.parse(fs.readFileSync(ASG_FILE, 'utf8')); } catch { return []; }
 }
 
 export async function GET(req: Request) {
@@ -25,7 +32,43 @@ export async function GET(req: Request) {
     allRems = allRems.filter(r => r.invention_id === inventionId);
   }
 
-  return NextResponse.json({ success: true, reminders: allRems });
+  const assignments = getAssignments();
+  const actionItems = assignments.flatMap((asg) => {
+    const list: any[] = [];
+    if (asg.status === "ASSIGNED") {
+      list.push({
+        id: `act-${asg.id}-accept`,
+        title: "Accept New Assignment",
+        description: `You have been assigned ${asg.title} (${asg.invention_id}). You must accept it to begin drafting.`,
+        priority: "High",
+        invention_id: asg.invention_id,
+        link: `/dashboard/patent-drafter/invention/details?id=${asg.invention_id}`,
+      });
+    }
+    if (asg.status === "REVISION_REQUIRED") {
+      list.push({
+        id: `act-${asg.id}-rev`,
+        title: "Address Reviewer Revisions",
+        description: `The Patent Analyst has requested revisions for ${asg.invention_id}.`,
+        priority: "Critical",
+        invention_id: asg.invention_id,
+        link: `/dashboard/patent-drafter/review/annotations?id=${asg.invention_id}`,
+      });
+    }
+    if (asg.status === "DRAFTING" || asg.status === "IN_PROGRESS") {
+      list.push({
+        id: `act-${asg.id}-draft`,
+        title: "Continue Drafting",
+        description: `Draft for ${asg.invention_id} is currently in progress. Finish claims and submit for review.`,
+        priority: "Medium",
+        invention_id: asg.invention_id,
+        link: `/dashboard/patent-drafter/claims/list?id=${asg.invention_id}`,
+      });
+    }
+    return list;
+  });
+
+  return NextResponse.json({ success: true, reminders: allRems, actionItems });
 }
 
 export async function POST(req: Request) {

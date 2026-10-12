@@ -49,6 +49,37 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
   const [editError, setEditError] = useState<string | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
 
+  // Assign Modal
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [assignDrafter, setAssignDrafter] = useState("");
+  const [assignInstructions, setAssignInstructions] = useState("");
+  const [isAssigning, setIsAssigning] = useState(false);
+
+  const handleAssignProject = async () => {
+    if (!item || !assignDrafter) return;
+    setIsAssigning(true);
+    try {
+      const res = await fetch("/api/patent-drafter/assignments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          docket_id: docketId,
+          drafter_id: assignDrafter,
+          instructions: assignInstructions,
+          title: item.title,
+        }),
+      });
+      if (res.ok) {
+        setActionNotice("Successfully assigned to patent drafter.");
+        setAssignModalOpen(false);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
   const fetchDetail = async () => {
     setLoading(true);
     try {
@@ -119,7 +150,7 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
     return (
       <div className="mx-auto w-full max-w-7xl px-4 py-16 flex items-center justify-center text-foreground font-sans">
         <div className="text-center space-y-3">
-          <div className="w-8 h-8 border-2 border-[#c9a84c] border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="w-8 h-8 border-2 border-accent-line border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-sm text-muted-foreground">Loading IP matter docket details...</p>
         </div>
       </div>
@@ -136,9 +167,9 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
           <ArrowLeft className="w-4 h-4" />
           Back to Docket Command Center
         </Link>
-        <div className="p-8 rounded-xl border border-border dark:border-[#c9a84c]/20 bg-card dark:bg-[#1a1a0e] text-center">
+        <div className="p-8 rounded-xl border border-border bg-card text-center">
           <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto mb-3" />
-          <h2 className="text-lg font-bold text-foreground dark:text-[#e8dfc8]">Docket Event Not Found</h2>
+          <h2 className="text-lg font-bold text-foreground ">Docket Event Not Found</h2>
           <p className="text-xs text-muted-foreground mt-1">
             The requested docket record ID does not exist or has been archived.
           </p>
@@ -150,10 +181,10 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
   return (
     <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8 space-y-8 min-h-screen pb-24 text-foreground font-sans">
       {/* Top Navigation */}
-      <div className="flex items-center justify-between border-b border-border dark:border-[#c9a84c]/20 pb-4">
+      <div className="flex items-center justify-between border-b border-border pb-4">
         <Link
           href="/dashboard/ceo/docket"
-          className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-foreground dark:hover:text-[#e8dfc8] transition-colors"
+          className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to IP Docket Command Center
@@ -164,9 +195,9 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
             setEditModalOpen(true);
             setEditError(null);
           }}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border dark:border-[#c9a84c]/30 text-foreground dark:text-[#e8dfc8] hover:bg-[#c9a84c]/10 text-xs font-bold transition-colors"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-foreground hover:bg-accent/10 text-xs font-bold transition-colors"
         >
-          <Edit3 className="w-3.5 h-3.5 text-[#9a751a] dark:text-[#c9a84c]" />
+          <Edit3 className="w-3.5 h-3.5 text-accent-text " />
           Edit Docket Deadline
         </button>
       </div>
@@ -192,7 +223,7 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
               <CheckSquare className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-xs font-bold text-foreground dark:text-[#e8dfc8]">
+              <div className="text-xs font-bold text-foreground ">
                 Executive Authorization Required for Statutory Filing
               </div>
               <p className="text-[11px] text-muted-foreground">
@@ -203,7 +234,7 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
 
           <Link
             href={`/dashboard/ceo/approvals/${item.approval_id || "app-2026-001"}`}
-            className="px-4 py-2 rounded-lg bg-[#175a74] hover:bg-[#114459] text-white text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 whitespace-nowrap transition-all"
+            className="px-4 py-2 rounded-lg bg-accent hover:bg-accent-hover text-on-accent text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 whitespace-nowrap transition-all"
           >
             <span>Review in CEO Approvals</span>
             <ChevronRight className="w-3.5 h-3.5" />
@@ -212,33 +243,33 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
       )}
 
       {/* Docket Header Card */}
-      <div className="p-6 rounded-2xl border border-border dark:border-[#c9a84c]/20 bg-card dark:bg-[#1a1a0e] shadow-sm space-y-4">
+      <div className="p-6 rounded-2xl border border-border bg-card shadow-sm space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-sm text-[10px] font-black uppercase tracking-wider bg-[#c9a84c]/10 text-[#9a751a] dark:text-[#c9a84c] border border-[#c9a84c]/30">
+              <span className="px-2.5 py-0.5 rounded-sm text-[10px] font-black uppercase tracking-wider bg-accent/10 text-accent-text border border-accent-line">
                 {item.event_type_label}
               </span>
-              <span className="px-2 py-0.5 rounded-sm text-[10px] font-black uppercase bg-muted/40 dark:bg-[#131309] text-muted-foreground border border-border dark:border-[#c9a84c]/20">
+              <span className="px-2 py-0.5 rounded-sm text-[10px] font-black uppercase bg-sunken/40 text-muted-foreground border border-border ">
                 {item.jurisdiction}
               </span>
-              <span className="px-2 py-0.5 rounded-sm text-[10px] font-black uppercase border border-border dark:border-[#c9a84c]/20 text-muted-foreground">
+              <span className="px-2 py-0.5 rounded-sm text-[10px] font-black uppercase border border-border text-muted-foreground">
                 Status: {item.status}
               </span>
               <span className="text-xs text-muted-foreground">•</span>
-              <span className="text-xs text-muted-foreground">Docket ID: <strong className="text-foreground dark:text-[#e8dfc8]">{item.id}</strong></span>
+              <span className="text-xs text-muted-foreground">Docket ID: <strong className="text-foreground ">{item.id}</strong></span>
             </div>
 
-            <h1 className="text-2xl md:text-3xl font-black text-foreground dark:text-[#e8dfc8] tracking-tight">
+            <h1 className="text-2xl md:text-3xl font-black text-foreground tracking-tight">
               {item.title}
             </h1>
             <p className="text-xs text-muted-foreground max-w-3xl leading-relaxed">
-              Matter: <strong className="text-foreground dark:text-[#e8dfc8]">{item.matter_name}</strong> • {item.description}
+              Matter: <strong className="text-foreground ">{item.matter_name}</strong> • {item.description}
             </p>
           </div>
 
           {/* Urgent Countdown Card */}
-          <div className="p-4 rounded-xl border border-border dark:border-[#c9a84c]/20 bg-muted/20 dark:bg-[#131309] text-center min-w-[160px]">
+          <div className="p-4 rounded-xl border border-border bg-sunken/20 text-center min-w-[160px]">
             <div className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Days to Deadline</div>
             <div className={`text-3xl font-black mt-0.5 ${
               item.urgency === "OVERDUE"
@@ -258,7 +289,7 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
         </div>
 
         {/* IP Matter Chain Progression */}
-        <div className="pt-4 border-t border-border dark:border-[#c9a84c]/10">
+        <div className="pt-4 border-t border-border ">
           <div className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-2">
             Integrated IP Matter Lifecycle Chain
           </div>
@@ -273,8 +304,8 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
                 <React.Fragment key={st}>
                   <div className={`px-3 py-1 rounded-sm text-[10px] font-black uppercase tracking-wider ${
                     isCurrent
-                      ? "bg-[#175a74] text-white shadow-xs"
-                      : "bg-muted/40 dark:bg-[#131309] text-muted-foreground border border-border dark:border-[#c9a84c]/15"
+                      ? "bg-accent text-on-accent shadow-xs"
+                      : "bg-sunken/40 text-muted-foreground border border-border "
                   }`}>
                     {st.replace(/_/g, " ")}
                   </div>
@@ -286,25 +317,25 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
         </div>
 
         {/* Detailed Metadata Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-border dark:border-[#c9a84c]/10 text-xs">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-border text-xs">
           <div>
             <span className="text-muted-foreground block text-[11px]">Official Statutory Deadline:</span>
             <span className="font-bold text-amber-500 text-sm">{item.official_deadline}</span>
           </div>
           <div>
             <span className="text-muted-foreground block text-[11px]">Internal Target Date:</span>
-            <span className="font-bold text-foreground dark:text-[#e8dfc8] text-sm">{item.internal_target_date || item.official_deadline}</span>
+            <span className="font-bold text-foreground text-sm">{item.internal_target_date || item.official_deadline}</span>
           </div>
           <div>
             <span className="text-muted-foreground block text-[11px]">Assigned Owner:</span>
             <div className="flex items-center justify-between w-full">
-              <span className="font-semibold text-foreground dark:text-[#e8dfc8]">{item.owner} ({item.responsible_team})</span>
+              <span className="font-semibold text-foreground ">{item.owner} ({item.responsible_team})</span>
               <button onClick={() => setAssignModalOpen(true)} className="ml-4 px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded text-xs font-bold transition-colors shadow-sm">Assign to Drafter</button>
             </div>
           </div>
           <div>
             <span className="text-muted-foreground block text-[11px]">Priority Rating:</span>
-            <span className="font-semibold text-foreground dark:text-[#e8dfc8]">{item.priority}</span>
+            <span className="font-semibold text-foreground ">{item.priority}</span>
           </div>
         </div>
       </div>
@@ -313,17 +344,17 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Prosecution Timeline & Notes (7 cols) */}
         <div className="lg:col-span-7 space-y-6">
-          <div className="p-5 rounded-2xl border border-border dark:border-[#c9a84c]/20 bg-card dark:bg-[#1a1a0e] shadow-sm space-y-4">
-            <h2 className="text-sm font-black text-foreground dark:text-[#e8dfc8] flex items-center gap-2 border-b border-border dark:border-[#c9a84c]/10 pb-3">
-              <Layers className="w-4 h-4 text-[#9a751a] dark:text-[#c9a84c]" />
+          <div className="p-5 rounded-2xl border border-border bg-card shadow-sm space-y-4">
+            <h2 className="text-sm font-black text-foreground flex items-center gap-2 border-b border-border pb-3">
+              <Layers className="w-4 h-4 text-accent-text " />
               Matter Prosecution & Action Timeline
             </h2>
 
             <div className="space-y-3">
-              <div className="relative pl-6 border-l border-border dark:border-[#c9a84c]/20 space-y-6">
+              <div className="relative pl-6 border-l border-border space-y-6">
                 <div className="relative">
                   <div className="absolute -left-[31px] top-0 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-background" />
-                  <div className="text-xs font-bold text-foreground dark:text-[#e8dfc8]">Priority Application Filed</div>
+                  <div className="text-xs font-bold text-foreground ">Priority Application Filed</div>
                   <div className="text-[11px] text-muted-foreground mt-0.5">
                     Original provisional filing registered with USPTO (Application: {item.application_number || "US18/942,109"}).
                   </div>
@@ -331,8 +362,8 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
                 </div>
 
                 <div className="relative">
-                  <div className="absolute -left-[31px] top-0 w-3.5 h-3.5 rounded-full bg-[#c9a84c] border-2 border-background" />
-                  <div className="text-xs font-bold text-[#9a751a] dark:text-[#c9a84c]">
+                  <div className="absolute -left-[31px] top-0 w-3.5 h-3.5 rounded-full bg-accent border-2 border-background" />
+                  <div className="text-xs font-bold text-accent-text ">
                     Active Docket Milestone: {item.title}
                   </div>
                   <div className="text-[11px] text-muted-foreground mt-0.5">
@@ -355,16 +386,16 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
             </div>
           </div>
 
-          <div className="p-5 rounded-2xl border border-border dark:border-[#c9a84c]/20 bg-card dark:bg-[#1a1a0e] shadow-sm space-y-3">
-            <h2 className="text-sm font-black text-foreground dark:text-[#e8dfc8] flex items-center gap-2 border-b border-border dark:border-[#c9a84c]/10 pb-3">
-              <FileText className="w-4 h-4 text-[#9a751a] dark:text-[#c9a84c]" />
+          <div className="p-5 rounded-2xl border border-border bg-card shadow-sm space-y-3">
+            <h2 className="text-sm font-black text-foreground flex items-center gap-2 border-b border-border pb-3">
+              <FileText className="w-4 h-4 text-accent-text " />
               Legal & Prosecution Notes ({item.notes?.length || 0})
             </h2>
 
             {item.notes && item.notes.length > 0 ? (
               <div className="space-y-2">
                 {item.notes.map((note, idx) => (
-                  <div key={idx} className="p-3 rounded-lg bg-muted/20 dark:bg-[#131309] border border-border dark:border-[#c9a84c]/15 text-xs text-muted-foreground leading-relaxed">
+                  <div key={idx} className="p-3 rounded-lg bg-sunken/20 border border-border text-xs text-muted-foreground leading-relaxed">
                     "{note}"
                   </div>
                 ))}
@@ -377,10 +408,10 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
 
         {/* Right Column: Date Audit History & Documents (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="p-5 rounded-2xl border border-border dark:border-[#c9a84c]/20 bg-card dark:bg-[#1a1a0e] shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-border dark:border-[#c9a84c]/10 pb-3">
-              <h2 className="text-sm font-black text-foreground dark:text-[#e8dfc8] flex items-center gap-2">
-                <History className="w-4 h-4 text-[#9a751a] dark:text-[#c9a84c]" />
+          <div className="p-5 rounded-2xl border border-border bg-card shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h2 className="text-sm font-black text-foreground flex items-center gap-2">
+                <History className="w-4 h-4 text-accent-text " />
                 Docket Date Modification Audit ({item.history.length})
               </h2>
               <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Immutable</span>
@@ -395,10 +426,10 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
                 {item.history.map((record) => (
                   <div
                     key={record.id}
-                    className="p-3 rounded-xl bg-muted/20 dark:bg-[#131309] border border-border dark:border-[#c9a84c]/15 text-xs space-y-1.5"
+                    className="p-3 rounded-xl bg-sunken/20 border border-border text-xs space-y-1.5"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="px-2 py-0.5 rounded-sm text-[10px] font-black uppercase bg-[#c9a84c]/10 text-[#9a751a] dark:text-[#c9a84c] border border-[#c9a84c]/20">
+                      <span className="px-2 py-0.5 rounded-sm text-[10px] font-black uppercase bg-accent/10 text-accent-text border border-accent-line">
                         {record.field_changed.replace(/_/g, " ")}
                       </span>
                       <span className="text-[10px] text-muted-foreground">
@@ -411,7 +442,7 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
                       <strong className="text-amber-500">{record.new_value}</strong>
                     </div>
 
-                    <div className="p-2 rounded bg-muted/40 dark:bg-[#1a1a0e] border border-border dark:border-[#c9a84c]/10 text-[11px] text-muted-foreground italic">
+                    <div className="p-2 rounded bg-sunken/40 border border-border text-[11px] text-muted-foreground italic">
                       "{record.reason}"
                     </div>
 
@@ -424,19 +455,19 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
             )}
           </div>
 
-          <div className="p-5 rounded-2xl border border-border dark:border-[#c9a84c]/20 bg-card dark:bg-[#1a1a0e] shadow-sm space-y-3">
-            <h2 className="text-sm font-black text-foreground dark:text-[#e8dfc8] flex items-center gap-2 border-b border-border dark:border-[#c9a84c]/10 pb-3">
-              <Paperclip className="w-4 h-4 text-[#9a751a] dark:text-[#c9a84c]" />
+          <div className="p-5 rounded-2xl border border-border bg-card shadow-sm space-y-3">
+            <h2 className="text-sm font-black text-foreground flex items-center gap-2 border-b border-border pb-3">
+              <Paperclip className="w-4 h-4 text-accent-text " />
               Matter Documents & Filing Package
             </h2>
 
             <div className="space-y-2">
-              <div className="p-3 rounded-xl bg-muted/20 dark:bg-[#131309] border border-border dark:border-[#c9a84c]/15 flex items-center justify-between text-xs">
+              <div className="p-3 rounded-xl bg-sunken/20 border border-border flex items-center justify-between text-xs">
                 <div className="space-y-0.5">
-                  <div className="font-bold text-foreground dark:text-[#e8dfc8]">{item.matter_name} - Patent Package.pdf</div>
+                  <div className="font-bold text-foreground ">{item.matter_name} - Patent Package.pdf</div>
                   <div className="text-[10px] text-muted-foreground">Statutory Filing Specification • Verified</div>
                 </div>
-                <button className="px-2.5 py-1 rounded-sm border border-border dark:border-[#c9a84c]/30 text-foreground dark:text-[#e8dfc8] text-[11px] font-bold">
+                <button className="px-2.5 py-1 rounded-sm border border-border text-foreground text-[11px] font-bold">
                   View
                 </button>
               </div>
@@ -459,7 +490,7 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
                 <label className="text-sm font-semibold">Patent Drafter</label>
                 <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={assignDrafter} onChange={e => setAssignDrafter(e.target.value)}>
                   <option value="">Select Drafter...</option>
-                  <option value="DRAFTER-01">Shenbagakumar (Patent Drafter)</option>
+                  <option value="DRAFTER-01">Patent Drafter (DRAFTER-01)</option>
                   <option value="DRAFTER-02">External Counsel</option>
                 </select>
               </div>
@@ -479,8 +510,8 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
                 </div>
               </div>
             </div>
-            <div className="p-4 bg-muted/30 border-t border-border/40 flex justify-end gap-3">
-              <button className="px-4 py-2 text-sm font-semibold text-muted-foreground hover:bg-muted rounded-md" onClick={() => setAssignModalOpen(false)}>Cancel</button>
+            <div className="p-4 bg-sunken/30 border-t border-border/40 flex justify-end gap-3">
+              <button className="px-4 py-2 text-sm font-semibold text-muted-foreground hover:bg-sunken rounded-md" onClick={() => setAssignModalOpen(false)}>Cancel</button>
               <button className="px-4 py-2 text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 rounded-md shadow-sm" onClick={handleAssignProject} disabled={isAssigning || !assignDrafter}>
                 {isAssigning ? 'Assigning...' : 'Confirm Assignment'}
               </button>
@@ -492,18 +523,18 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
       {/* Edit Date Modal */}
       {editModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-[#1a1a0e] border border-stone-200 dark:border-[#c9a84c]/30 p-6 space-y-4 shadow-2xl text-stone-900 dark:text-[#e8dfc8]">
-            <div className="flex items-center justify-between border-b border-stone-200 dark:border-[#c9a84c]/20 pb-3">
+          <div className="w-full max-w-md rounded-2xl bg-surface border border-stone-200 p-6 space-y-4 shadow-2xl text-stone-900 ">
+            <div className="flex items-center justify-between border-b border-stone-200 pb-3">
               <div>
-                <h3 className="text-sm font-black text-stone-900 dark:text-[#e8dfc8] flex items-center gap-2">
-                  <Edit3 className="w-4 h-4 text-[#9a751a] dark:text-[#c9a84c]" />
+                <h3 className="text-sm font-black text-stone-900 flex items-center gap-2">
+                  <Edit3 className="w-4 h-4 text-accent-text " />
                   Edit Docket Date
                 </h3>
-                <p className="text-xs text-stone-600 dark:text-[#e8dfc8]/70 mt-0.5">{item.matter_name}</p>
+                <p className="text-xs text-stone-600 mt-0.5">{item.matter_name}</p>
               </div>
               <button
                 onClick={() => setEditModalOpen(false)}
-                className="text-stone-400 hover:text-stone-700 dark:text-[#e8dfc8]/60 dark:hover:text-[#e8dfc8] p-1 rounded-md text-xs font-bold transition-colors"
+                className="text-stone-400 hover:text-stone-700 p-1 rounded-md text-xs font-bold transition-colors"
               >
                 ✕
               </button>
@@ -511,13 +542,13 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
 
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-stone-900 dark:text-[#e8dfc8] mb-1">
+                <label className="block text-xs font-bold text-stone-900 mb-1">
                   Target Date Field
                 </label>
                 <select
                   value={dateField}
                   onChange={(e) => setDateField(e.target.value as any)}
-                  className="w-full rounded-lg bg-stone-50 dark:bg-[#131309] border border-stone-300 dark:border-[#c9a84c]/30 p-2.5 text-xs text-stone-900 dark:text-[#e8dfc8] font-medium focus:outline-none focus:ring-2 focus:ring-[#c9a84c]/50 focus:border-[#c9a84c]"
+                  className="w-full rounded-lg bg-sunken border border-stone-300 p-2.5 text-xs text-stone-900 font-medium focus:outline-none focus:ring-2 focus:ring-accent-line focus:border-accent-line"
                 >
                   <option value="internal_target_date">Internal Target Date (Safest)</option>
                   <option value="official_deadline">Official Statutory Deadline (Authorized)</option>
@@ -526,19 +557,19 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-stone-900 dark:text-[#e8dfc8] mb-1">
+                <label className="block text-xs font-bold text-stone-900 mb-1">
                   New Date
                 </label>
                 <input
                   type="date"
                   value={newDateVal}
                   onChange={(e) => setNewDateVal(e.target.value)}
-                  className="w-full rounded-lg bg-stone-50 dark:bg-[#131309] border border-stone-300 dark:border-[#c9a84c]/30 p-2.5 text-xs text-stone-900 dark:text-[#e8dfc8] font-medium focus:outline-none focus:ring-2 focus:ring-[#c9a84c]/50 focus:border-[#c9a84c]"
+                  className="w-full rounded-lg bg-sunken border border-stone-300 p-2.5 text-xs text-stone-900 font-medium focus:outline-none focus:ring-2 focus:ring-accent-line focus:border-accent-line"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-stone-900 dark:text-[#e8dfc8] mb-1">
+                <label className="block text-xs font-bold text-stone-900 mb-1">
                   Reason for Date Change (Mandatory)
                 </label>
                 <textarea
@@ -546,7 +577,7 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
                   value={editReason}
                   onChange={(e) => setEditReason(e.target.value)}
                   placeholder="Official USPTO extension granted, statutory deadline adjusted, or internal acceleration..."
-                  className="w-full rounded-lg bg-stone-50 dark:bg-[#131309] border border-stone-300 dark:border-[#c9a84c]/30 p-2.5 text-xs text-stone-900 dark:text-[#e8dfc8] placeholder:text-stone-400 dark:placeholder:text-[#e8dfc8]/40 focus:outline-none focus:ring-2 focus:ring-[#c9a84c]/50 focus:border-[#c9a84c]"
+                  className="w-full rounded-lg bg-sunken border border-stone-300 p-2.5 text-xs text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-accent-line focus:border-accent-line"
                 />
               </div>
 
@@ -557,18 +588,18 @@ export default function CeoDocketDetailPage({ params }: PageProps) {
               )}
             </div>
 
-            <div className="flex justify-end gap-3 pt-3 border-t border-stone-200 dark:border-[#c9a84c]/20">
+            <div className="flex justify-end gap-3 pt-3 border-t border-stone-200 ">
               <button
                 onClick={() => setEditModalOpen(false)}
                 disabled={editSubmitting}
-                className="px-4 py-2 rounded-lg border border-stone-300 dark:border-[#c9a84c]/30 bg-white dark:bg-transparent text-stone-700 dark:text-[#e8dfc8] hover:bg-stone-100 dark:hover:bg-[#c9a84c]/10 text-xs font-bold transition-colors"
+                className="px-4 py-2 rounded-lg border border-stone-300 bg-surface dark:bg-transparent text-stone-700 hover:bg-stone-100 text-xs font-bold transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveDateEdit}
                 disabled={editSubmitting}
-                className="px-5 py-2 rounded-lg bg-[#175a74] hover:bg-[#114459] text-white text-xs font-black shadow-sm transition-all"
+                className="px-5 py-2 rounded-lg bg-accent hover:bg-accent-hover text-on-accent text-xs font-black shadow-sm transition-all"
               >
                 {editSubmitting ? "Saving..." : "Commit Change"}
               </button>

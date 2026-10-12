@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
+import { logActivity } from '@/lib/activityLog';
+import { actorName } from '@/lib/actingRole';
 import fs from 'fs';
 import path from 'path';
 
 const DB_FILE = path.join(process.cwd(), 'data', 'claims.json');
 
-function getClaimSets() {
+function getClaimSets(): any[] {
   if (!fs.existsSync(DB_FILE)) return [];
   try { return JSON.parse(fs.readFileSync(DB_FILE, 'utf8')); } catch(e) { return []; }
 }
@@ -48,7 +50,7 @@ export async function POST(req: Request) {
       status: 'DRAFTING',
       created_at: new Date().toISOString(),
       last_modified: new Date().toISOString(),
-      owner: 'Alice Drafter',
+      owner: (await actorName()),
       change_note: 'Initial draft',
       claims: body.claims || [],
       history: [],
@@ -59,18 +61,7 @@ export async function POST(req: Request) {
     saveClaimSets(claimSets);
     
     // Log Activity
-    try {
-      fetch('http://localhost:3000/api/patent-drafter/activity', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          actor: 'Alice Drafter',
-          action: 'CLAIM_SET_CREATED',
-          invention_id: body.invention_id,
-          details: 'Created new claim set for ' + body.invention_id
-        })
-      }).catch(()=>{});
-    } catch(e) {}
+    logActivity((await actorName()), 'CLAIM_SET_CREATED', body.invention_id, 'Created new claim set for ' + body.invention_id);
     
     return NextResponse.json({ success: true, claimSet: newClaimSet });
   } catch (error) {
@@ -114,14 +105,14 @@ export async function PUT(req: Request) {
       try {
         let action = 'CLAIMS_UPDATED';
         let details = 'Updated claims for ' + current.invention_id;
-        let actor = 'Alice Drafter';
+        let actor = (await actorName());
         
         if (status === 'SUBMITTED_FOR_REVIEW') {
           action = 'CLAIM_SET_SUBMITTED';
           details = 'Submitted Claim Set ' + current.id + ' for Analyst Review';
         } else if (status === 'REVISION_REQUIRED') {
           action = 'REVISION_REQUESTED';
-          actor = 'John Reviewer';
+          actor = (await actorName());
           details = 'Requested revision on Claim Set ' + current.id;
         } else if (version && version > current.version) {
           action = 'NEW_VERSION_SAVED';
@@ -133,17 +124,8 @@ export async function PUT(req: Request) {
           details = 'Added comment: "' + newComment.text.substring(0, 30) + '..."';
         }
 
-        fetch('http://localhost:3000/api/patent-drafter/activity', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            actor,
-            action,
-            invention_id: current.invention_id,
-            details
-          })
-        }).catch(()=>{});
-      } catch(e) {}
+        logActivity(actor, action, current.invention_id, details);
+      } catch (e) { /* logging must never fail the update */ }
 
       return NextResponse.json({ success: true, claimSet: current });
     }

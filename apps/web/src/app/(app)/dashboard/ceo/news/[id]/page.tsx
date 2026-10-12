@@ -180,9 +180,9 @@ Original Source: ${article.article_url}
   if (loading) {
     return (
       <div className="mx-auto w-full max-w-5xl space-y-8 pb-20 px-4 sm:px-6 lg:px-8 pt-8">
-        <Skeleton className="h-6 w-32 bg-muted dark:bg-white/5" />
-        <Skeleton className="h-10 w-3/4 bg-muted dark:bg-white/5" />
-        <Skeleton className="h-48 w-full bg-muted dark:bg-white/5" />
+        <Skeleton className="h-6 w-32 bg-sunken dark:bg-white/5" />
+        <Skeleton className="h-10 w-3/4 bg-sunken dark:bg-white/5" />
+        <Skeleton className="h-48 w-full bg-sunken dark:bg-white/5" />
       </div>
     );
   }
@@ -192,7 +192,7 @@ Original Source: ${article.article_url}
       <div className="mx-auto w-full max-w-5xl space-y-6 pb-20 px-4 sm:px-6 lg:px-8 pt-12">
         <Link
           href="/dashboard/ceo/news"
-          className="inline-flex items-center gap-2 text-xs font-bold text-amber-600 dark:text-[#c9a84c] hover:underline uppercase tracking-wider"
+          className="inline-flex items-center gap-2 text-xs font-bold text-amber-600 hover:underline uppercase tracking-wider"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Back to IP News & Intelligence
@@ -606,7 +606,7 @@ Original Source: ${article.article_url}
           href={article.article_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-white font-bold text-xs hover:brightness-110 transition shadow-xs"
+          className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-on-accent font-bold text-xs hover:brightness-110 transition shadow-xs"
         >
           <span>Open Full Source</span>
           <ExternalLink className="size-3.5" />

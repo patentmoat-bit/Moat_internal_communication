@@ -185,7 +185,7 @@ export default function StrategicIntelligenceCommandCenter() {
               variant="default"
               size="sm"
               onClick={() => handleExport("CSV")}
-              className="text-xs h-9 gap-1.5 bg-[#175a74] hover:bg-[#114459] text-white"
+              className="text-xs h-9 gap-1.5 bg-accent hover:bg-accent-hover text-on-accent"
             >
               <Download className="w-3.5 h-3.5" />
               Export Report (CSV)
@@ -246,8 +246,8 @@ export default function StrategicIntelligenceCommandCenter() {
             onClick={() => setActiveModule(type)}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
               activeModule === type
-                ? "bg-[#175a74] text-white shadow-sm"
-                : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-accent text-on-accent shadow-sm"
+                : "bg-sunken/40 text-muted-foreground hover:bg-sunken hover:text-foreground"
             }`}
           >
             <Icon className="w-3.5 h-3.5" />
@@ -279,7 +279,7 @@ export default function StrategicIntelligenceCommandCenter() {
               variant={impactFilter === lvl ? "default" : "outline"}
               size="sm"
               onClick={() => setImpactFilter(lvl)}
-              className={`text-xs h-8 px-2.5 ${impactFilter === lvl ? "bg-[#175a74] hover:bg-[#114459] text-white" : ""}`}
+              className={`text-xs h-8 px-2.5 ${impactFilter === lvl ? "bg-accent hover:bg-accent-hover text-on-accent" : ""}`}
             >
               {lvl}
             </Button>

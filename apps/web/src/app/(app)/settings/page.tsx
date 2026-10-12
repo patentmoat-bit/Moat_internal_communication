@@ -69,7 +69,7 @@ export default function SettingsPage() {
 
         <Link
           href="/admin"
-          className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:brightness-110 transition shrink-0"
+          className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-bold text-on-accent shadow-sm hover:brightness-110 transition shrink-0"
         >
           <Users className="size-4" />
           Open Admin Control <ArrowRight className="size-3.5" />
@@ -126,7 +126,7 @@ export default function SettingsPage() {
             <div className="pt-2">
               <button
                 type="submit"
-                className="rounded-lg bg-accent px-4 py-2 font-bold text-white shadow-sm hover:brightness-110 transition"
+                className="rounded-lg bg-accent px-4 py-2 font-bold text-on-accent shadow-sm hover:brightness-110 transition"
               >
                 Save Organization Settings
               </button>

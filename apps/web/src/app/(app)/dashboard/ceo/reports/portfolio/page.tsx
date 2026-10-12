@@ -38,31 +38,31 @@ export default function PortfolioReportsPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-8 pb-20 px-4 sm:px-6 lg:px-8">
-      <div className="pt-8 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-border dark:border-[#c9a84c]/20 pb-6">
+      <div className="pt-8 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-border pb-6">
         <div>
           <div className="flex items-center gap-3 mb-2">
             <Badge
               variant="outline"
-              className="border-[#c9a84c]/40 text-[#c9a84c] bg-[#c9a84c]/10 tracking-widest text-[10px] font-black uppercase px-2.5 py-0.5 rounded-sm"
+              className="border-accent-line text-accent-text bg-accent/10 tracking-widest text-[10px] font-black uppercase px-2.5 py-0.5 rounded-sm"
             >
               REPORTS
             </Badge>
           </div>
-          <h1 className="text-3xl font-black tracking-tight text-foreground dark:text-[#e8dfc8]">
+          <h1 className="text-3xl font-black tracking-tight text-foreground ">
             Portfolio Reports
           </h1>
         </div>
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-4 py-2 bg-[#175a74] text-white rounded-lg hover:bg-[#114459] text-sm font-bold">
+          <button className="flex items-center gap-2 px-4 py-2 bg-accent text-on-accent rounded-lg hover:bg-accent-hover text-sm font-bold">
             <Download className="w-4 h-4" /> Export CSV
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        <Card className="border-border dark:border-[#c9a84c]/20 bg-card dark:bg-[#1a1a0e]">
+        <Card className="border-border bg-card ">
           <CardHeader>
-            <CardTitle className="text-base font-bold text-foreground dark:text-[#e8dfc8]">
+            <CardTitle className="text-base font-bold text-foreground ">
               Portfolio Summary
             </CardTitle>
           </CardHeader>

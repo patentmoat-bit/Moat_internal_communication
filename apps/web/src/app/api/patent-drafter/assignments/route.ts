@@ -1,24 +1,16 @@
 import { NextResponse } from 'next/server';
+import { resolveActor } from '@/lib/actingRole';
+import { notify } from '@/lib/notifications';
 import fs from 'fs';
 import path from 'path';
 
 const DB_FILE = path.join(process.cwd(), 'data', 'assignments.json');
 
 // Initialize DB with default assignment if missing
-const defaultAssignments = [
-  {
-    id: "ASG-0042",
-    invention_id: "INN-0012",
-    title: "Smart Energy Management System",
-    assignee: "Alice Drafter",
-    status: "IN_PROGRESS",
-    due_date: "2025-06-30T00:00:00Z",
-    instructions: "Please draft a patent focusing on the machine learning thermostat routing.",
-    assigned_by: "John (Analyst)"
-  }
-];
+// A fresh deployment starts with no assignments; nothing is seeded.
+const defaultAssignments: any[] = [];
 
-function getAssignments() {
+function getAssignments(): any[] {
   if (!fs.existsSync(DB_FILE)) {
     saveAssignments(defaultAssignments);
     return defaultAssignments;
@@ -34,18 +26,33 @@ function saveAssignments(assignments: any[]) {
 
 export async function GET() {
   const assignments = getAssignments();
-  return NextResponse.json({ assignments });
+  return NextResponse.json({ success: true, assignments });
 }
 
 export async function POST(req: Request) {
   try {
+    const actor = await resolveActor();
+    if (!actor) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!actor.roles.some((r) => r === 'CEO' || r === 'PATENT_ANALYST' || r === 'ADMIN')) {
+      return NextResponse.json({ error: "Forbidden: only the CEO or an analyst can assign work." }, { status: 403 });
+    }
     const body = await req.json();
     let assignments = getAssignments();
-    
-    // Check if assignment already exists
-    if (!assignments.find(a => a.invention_id === body.invention_id)) {
-      assignments.push(body);
+
+    // CEO docket assignments carry docket_id rather than invention_id.
+    const key = body.invention_id ?? body.docket_id;
+    if (key && !assignments.find(a => (a.invention_id ?? a.docket_id) === key)) {
+      assignments.push({ ...body, assigned_by: actor.name, assigned_at: new Date().toISOString() });
       saveAssignments(assignments);
+      notify({
+        to: 'PATENT_DRAFTER',
+        title: 'New drafting assignment',
+        message: `${actor.name} assigned you ${body.title ?? key}${body.instructions ? `: ${body.instructions}` : ''}`,
+        sender: actor.name,
+        actionUrl: '/dashboard/patent-drafter/drafts/assigned',
+        kind: 'assignment',
+        priority: 'high',
+      });
     }
     
     return NextResponse.json({ success: true });

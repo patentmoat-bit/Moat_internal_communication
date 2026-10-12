@@ -12,7 +12,7 @@ import Link from "next/link";
 export function DraftList({ statusFilter, title, description }: { statusFilter: string[], title: string, description: string }) {
   const [drafts, setDrafts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const toast = (opts) => console.log('Toast:', opts);
+  const toast = (opts: any) => console.log('Toast:', opts);
 
   useEffect(() => {
     const fetchDrafts = async () => {
@@ -49,7 +49,7 @@ export function DraftList({ statusFilter, title, description }: { statusFilter: 
   };
   const item = {
     hidden: { opacity: 0, y: 15 },
-    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+    show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 24 } }
   };
 
   return (
@@ -81,7 +81,7 @@ export function DraftList({ statusFilter, title, description }: { statusFilter: 
                         <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20 font-bold uppercase tracking-wider text-[10px]">
                           {draft.status || "Draft"}
                         </Badge>
-                        <Badge variant="outline" className="bg-muted text-muted-foreground font-bold uppercase tracking-wider text-[10px]">
+                        <Badge variant="outline" className="bg-sunken text-muted-foreground font-bold uppercase tracking-wider text-[10px]">
                           v{draft.version || "1.0"}
                         </Badge>
                         <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
@@ -95,7 +95,7 @@ export function DraftList({ statusFilter, title, description }: { statusFilter: 
                       </h2>
                       
                       <div className="flex items-center gap-6 mt-4">
-                        <div className="flex items-center gap-2 text-xs font-medium text-foreground bg-muted/30 px-3 py-1.5 rounded-full border border-border/50">
+                        <div className="flex items-center gap-2 text-xs font-medium text-foreground bg-sunken/30 px-3 py-1.5 rounded-full border border-border/50">
                           <span className="text-muted-foreground">Type:</span> {draft.file_type || "Specification"}
                         </div>
                       </div>

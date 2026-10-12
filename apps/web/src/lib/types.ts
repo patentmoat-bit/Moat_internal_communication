@@ -42,6 +42,8 @@ export interface Session {
   roles: string[];
   permissions: string[];
   availableTenants: TenantRef[];
+  /** True when the person signed in with Microsoft (as opposed to the dev fallback). */
+  sso?: boolean;
 }
 
 export interface ConceptCoverage {

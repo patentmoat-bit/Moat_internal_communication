@@ -149,7 +149,7 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
     return (
       <div className="mx-auto w-full max-w-7xl px-4 py-16 flex items-center justify-center text-foreground font-sans">
         <div className="text-center space-y-3">
-          <div className="w-8 h-8 border-2 border-[#c9a84c] border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="w-8 h-8 border-2 border-accent-line border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-sm text-muted-foreground">Loading matter approval details...</p>
         </div>
       </div>
@@ -166,9 +166,9 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
           <ArrowLeft className="w-4 h-4" />
           Back to Approvals Queue
         </Link>
-        <div className="p-8 rounded-xl border border-border dark:border-[#c9a84c]/20 bg-card dark:bg-[#1a1a0e] text-center">
+        <div className="p-8 rounded-xl border border-border bg-card text-center">
           <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto mb-3" />
-          <h2 className="text-lg font-bold text-foreground dark:text-[#e8dfc8]">Approval Item Not Found</h2>
+          <h2 className="text-lg font-bold text-foreground ">Approval Item Not Found</h2>
           <p className="text-xs text-muted-foreground mt-1">
             The requested approval matter ID does not exist or has been removed.
           </p>
@@ -180,10 +180,10 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
   return (
     <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8 space-y-8 min-h-screen pb-32 text-foreground font-sans">
       {/* Breadcrumb & Navigation */}
-      <div className="flex items-center justify-between border-b border-border dark:border-[#c9a84c]/20 pb-4">
+      <div className="flex items-center justify-between border-b border-border pb-4">
         <Link
           href="/dashboard/ceo/approvals"
-          className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-foreground dark:hover:text-[#e8dfc8] transition-colors"
+          className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to CEO Approvals Queue
@@ -193,9 +193,9 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
           {item.connected_docket_id && (
             <Link
               href={`/dashboard/ceo/docket/${item.connected_docket_id}`}
-              className="px-3 py-1.5 rounded-lg text-xs font-bold border border-border dark:border-[#c9a84c]/30 text-foreground dark:text-[#e8dfc8] hover:bg-[#c9a84c]/10 transition-colors flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-lg text-xs font-bold border border-border text-foreground hover:bg-accent/10 transition-colors flex items-center gap-1.5"
             >
-              <Calendar className="w-3.5 h-3.5 text-[#9a751a] dark:text-[#c9a84c]" />
+              <Calendar className="w-3.5 h-3.5 text-accent-text " />
               Connected IP Docket Item
             </Link>
           )}
@@ -216,11 +216,11 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
       )}
 
       {/* Matter Header Banner */}
-      <div className="p-6 rounded-2xl border border-border dark:border-[#c9a84c]/20 bg-card dark:bg-[#1a1a0e] shadow-sm space-y-4">
+      <div className="p-6 rounded-2xl border border-border bg-card shadow-sm space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-sm text-[10px] font-black uppercase tracking-wider bg-[#c9a84c]/10 text-[#9a751a] dark:text-[#c9a84c] border border-[#c9a84c]/30">
+              <span className="px-2.5 py-0.5 rounded-sm text-[10px] font-black uppercase tracking-wider bg-accent/10 text-accent-text border border-accent-line">
                 {item.type}
               </span>
               <span className={`px-2.5 py-0.5 rounded-sm text-[10px] font-black uppercase ${
@@ -238,10 +238,10 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
                 {item.priority} Priority
               </span>
               <span className="text-xs text-muted-foreground">•</span>
-              <span className="text-xs text-muted-foreground">Matter Ref: <strong className="text-foreground dark:text-[#e8dfc8]">{item.matter_id}</strong></span>
+              <span className="text-xs text-muted-foreground">Matter Ref: <strong className="text-foreground ">{item.matter_id}</strong></span>
             </div>
 
-            <h1 className="text-2xl md:text-3xl font-black text-foreground dark:text-[#e8dfc8] tracking-tight">
+            <h1 className="text-2xl md:text-3xl font-black text-foreground tracking-tight">
               {item.name}
             </h1>
             <p className="text-xs text-muted-foreground max-w-3xl leading-relaxed">
@@ -251,23 +251,23 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
 
           {/* Quick Metrics */}
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-muted/20 dark:bg-[#131309] border border-border dark:border-[#c9a84c]/20 text-center min-w-[100px]">
+            <div className="p-3 rounded-xl bg-sunken/20 border border-border text-center min-w-[100px]">
               <div className="text-[10px] text-muted-foreground uppercase font-black tracking-wider">Novelty Score</div>
               <div className="text-lg font-black text-emerald-500 mt-0.5">
                 {item.novelty_score || 89}%
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-muted/20 dark:bg-[#131309] border border-border dark:border-[#c9a84c]/20 text-center min-w-[100px]">
+            <div className="p-3 rounded-xl bg-sunken/20 border border-border text-center min-w-[100px]">
               <div className="text-[10px] text-muted-foreground uppercase font-black tracking-wider">Risk Level</div>
-              <div className="text-lg font-black text-foreground dark:text-[#e8dfc8] mt-0.5">
+              <div className="text-lg font-black text-foreground mt-0.5">
                 {item.risk_level || "Low"}
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-muted/20 dark:bg-[#131309] border border-border dark:border-[#c9a84c]/20 text-center min-w-[110px]">
+            <div className="p-3 rounded-xl bg-sunken/20 border border-border text-center min-w-[110px]">
               <div className="text-[10px] text-muted-foreground uppercase font-black tracking-wider">Est. Filing Cost</div>
-              <div className="text-lg font-black text-[#9a751a] dark:text-[#c9a84c] mt-0.5">
+              <div className="text-lg font-black text-accent-text mt-0.5">
                 ${(item.cost_estimate || 14500).toLocaleString()}
               </div>
             </div>
@@ -275,7 +275,7 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
         </div>
 
         {/* Workflow Chain Visual */}
-        <div className="pt-4 border-t border-border dark:border-[#c9a84c]/15">
+        <div className="pt-4 border-t border-border ">
           <div className="text-[10px] font-black text-muted-foreground uppercase tracking-wider mb-2">
             Governance Decision Workflow
           </div>
@@ -290,8 +290,8 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
                 <React.Fragment key={st}>
                   <div className={`px-3 py-1 rounded-md font-bold text-[11px] ${
                     isCurrent
-                      ? "bg-[#175a74] text-white shadow-xs font-black"
-                      : "bg-muted/20 dark:bg-[#131309] text-muted-foreground border border-border dark:border-[#c9a84c]/20"
+                      ? "bg-accent text-on-accent shadow-xs font-black"
+                      : "bg-sunken/20 text-muted-foreground border border-border "
                   }`}>
                     {st.replace(/_/g, " ")}
                   </div>
@@ -303,18 +303,18 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
         </div>
 
         {/* Detailed Meta Tags */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-border dark:border-[#c9a84c]/15 text-xs">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-border text-xs">
           <div>
             <span className="text-muted-foreground block text-[11px] font-semibold">Owner / Lead:</span>
-            <span className="font-bold text-foreground dark:text-[#e8dfc8]">{item.owner}</span>
+            <span className="font-bold text-foreground ">{item.owner}</span>
           </div>
           <div>
             <span className="text-muted-foreground block text-[11px] font-semibold">Assigned Team:</span>
-            <span className="font-bold text-foreground dark:text-[#e8dfc8]">{item.assigned_team}</span>
+            <span className="font-bold text-foreground ">{item.assigned_team}</span>
           </div>
           <div>
             <span className="text-muted-foreground block text-[11px] font-semibold">Submitted Date:</span>
-            <span className="font-bold text-foreground dark:text-[#e8dfc8]">{item.submitted_date.split("T")[0]} ({item.submitted_by})</span>
+            <span className="font-bold text-foreground ">{item.submitted_date.split("T")[0]} ({item.submitted_by})</span>
           </div>
           <div>
             <span className="text-muted-foreground block text-[11px] font-semibold">Target Deadline:</span>
@@ -327,10 +327,10 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Document File Tree & Versions (5 cols) */}
         <div className="lg:col-span-5 space-y-4">
-          <div className="p-5 rounded-2xl border border-border dark:border-[#c9a84c]/20 bg-card dark:bg-[#1a1a0e] shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-border dark:border-[#c9a84c]/15 pb-3">
-              <h2 className="text-sm font-bold text-foreground dark:text-[#e8dfc8] flex items-center gap-2">
-                <FileText className="w-4 h-4 text-[#9a751a] dark:text-[#c9a84c]" />
+          <div className="p-5 rounded-2xl border border-border bg-card shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+                <FileText className="w-4 h-4 text-accent-text " />
                 Matter Documents & Deliverables ({item.documents.length})
               </h2>
               <span className="text-[11px] text-muted-foreground">Secure Storage</span>
@@ -345,21 +345,21 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
                     onClick={() => handleSelectDoc(doc)}
                     className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
                       isSelected
-                        ? "bg-[#c9a84c]/15 border-[#c9a84c] text-foreground dark:text-[#e8dfc8] shadow-xs"
-                        : "bg-muted/20 dark:bg-[#131309] border-border dark:border-[#c9a84c]/20 hover:border-[#c9a84c]/40 text-muted-foreground"
+                        ? "bg-accent/15 border-accent-line text-foreground shadow-xs"
+                        : "bg-sunken/20 border-border hover:border-accent-line text-muted-foreground"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#c9a84c]/20 text-[#9a751a] dark:text-[#c9a84c] border border-[#c9a84c]/30">
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-accent/20 text-accent-text border border-accent-line">
                             {doc.current_version}
                           </span>
-                          <span className="text-[11px] font-semibold text-foreground dark:text-[#e8dfc8]">
+                          <span className="text-[11px] font-semibold text-foreground ">
                             {doc.display_type}
                           </span>
                         </div>
-                        <div className="text-xs font-bold text-foreground dark:text-[#e8dfc8] line-clamp-1">
+                        <div className="text-xs font-bold text-foreground line-clamp-1">
                           {doc.name}
                         </div>
                         <div className="text-[10px] text-muted-foreground">
@@ -374,7 +374,7 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
                             setViewingVersionHistory(doc);
                           }}
                           title="View Version History"
-                          className="p-1.5 rounded-md hover:bg-[#c9a84c]/10 text-muted-foreground hover:text-[#9a751a] dark:hover:text-[#c9a84c] transition-colors"
+                          className="p-1.5 rounded-md hover:bg-accent/10 text-muted-foreground hover:text-accent-text transition-colors"
                         >
                           <History className="w-3.5 h-3.5" />
                         </button>
@@ -396,9 +396,9 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
           </div>
 
           {/* Audit History Timeline */}
-          <div className="p-5 rounded-2xl border border-border dark:border-[#c9a84c]/20 bg-card dark:bg-[#1a1a0e] shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-border dark:border-[#c9a84c]/15 pb-3">
-              <h2 className="text-sm font-bold text-foreground dark:text-[#e8dfc8] flex items-center gap-2">
+          <div className="p-5 rounded-2xl border border-border bg-card shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
                 <History className="w-4 h-4 text-emerald-500" />
                 Immutable Approval Audit Trail ({item.audit_history.length})
               </h2>
@@ -414,7 +414,7 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
                 {item.audit_history.map((record) => (
                   <div
                     key={record.id}
-                    className="p-3 rounded-lg bg-muted/20 dark:bg-[#131309] border border-border dark:border-[#c9a84c]/15 text-xs space-y-1.5"
+                    className="p-3 rounded-lg bg-sunken/20 border border-border text-xs space-y-1.5"
                   >
                     <div className="flex items-center justify-between">
                       <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
@@ -431,12 +431,12 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
                       </span>
                     </div>
 
-                    <div className="text-[11px] text-foreground dark:text-[#e8dfc8]">
+                    <div className="text-[11px] text-foreground ">
                       Decided by: <strong>{record.ceo_user}</strong> • Target Ver: {record.document_version}
                     </div>
 
                     {record.comment && (
-                      <div className="p-2 rounded bg-card dark:bg-[#0c0c05] border border-border dark:border-[#c9a84c]/20 text-[11px] text-foreground dark:text-[#e8dfc8] italic">
+                      <div className="p-2 rounded bg-card border border-border text-[11px] text-foreground italic">
                         "{record.comment}"
                       </div>
                     )}
@@ -449,28 +449,28 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
 
         {/* Right Column: Secure Document Viewer (7 cols) */}
         <div className="lg:col-span-7 space-y-4">
-          <div className="p-5 rounded-2xl border border-border dark:border-[#c9a84c]/20 bg-card dark:bg-[#1a1a0e] shadow-sm space-y-4 min-h-[580px] flex flex-col">
+          <div className="p-5 rounded-2xl border border-border bg-card shadow-sm space-y-4 min-h-[580px] flex flex-col">
             {/* Viewer Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border dark:border-[#c9a84c]/15 pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
               <div>
                 <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-black">
                   Active Document Preview
                 </div>
-                <h3 className="text-sm font-bold text-foreground dark:text-[#e8dfc8] flex items-center gap-2 mt-0.5">
-                  <FileText className="w-4 h-4 text-[#9a751a] dark:text-[#c9a84c]" />
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-2 mt-0.5">
+                  <FileText className="w-4 h-4 text-accent-text " />
                   {selectedDoc?.name || "Select a document to inspect"}
                 </h3>
               </div>
 
               {selectedDoc && (
                 <div className="flex items-center gap-2">
-                  <span className="px-2 py-1 rounded bg-muted/30 dark:bg-[#131309] text-[11px] font-bold text-muted-foreground border border-border dark:border-[#c9a84c]/20">
+                  <span className="px-2 py-1 rounded bg-sunken/30 text-[11px] font-bold text-muted-foreground border border-border ">
                     Version: {selectedDoc.current_version}
                   </span>
                   <a
                     href={`/api/ceo/approvals/${item.id}/documents/${selectedDoc.id}/download`}
                     download
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border dark:border-[#c9a84c]/30 text-foreground dark:text-[#e8dfc8] hover:bg-[#c9a84c]/10 text-xs font-bold transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-foreground hover:bg-accent/10 text-xs font-bold transition-colors"
                   >
                     <Download className="w-3.5 h-3.5" />
                     Download
@@ -481,14 +481,14 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
 
             {/* Document Details Strip */}
             {selectedDoc && (
-              <div className="grid grid-cols-3 gap-2 p-2.5 rounded-lg bg-muted/20 dark:bg-[#131309] border border-border dark:border-[#c9a84c]/20 text-[11px]">
+              <div className="grid grid-cols-3 gap-2 p-2.5 rounded-lg bg-sunken/20 border border-border text-[11px]">
                 <div>
                   <span className="text-muted-foreground">Type:</span>{" "}
-                  <span className="text-foreground dark:text-[#e8dfc8] font-bold">{selectedDoc.display_type}</span>
+                  <span className="text-foreground font-bold">{selectedDoc.display_type}</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Length:</span>{" "}
-                  <span className="text-foreground dark:text-[#e8dfc8] font-bold">{selectedDoc.word_count || "N/A"} w ({selectedDoc.pages_count || 1} pgs)</span>
+                  <span className="text-foreground font-bold">{selectedDoc.word_count || "N/A"} w ({selectedDoc.pages_count || 1} pgs)</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Storage:</span>{" "}
@@ -498,7 +498,7 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
             )}
 
             {/* Document Content View */}
-            <div className="flex-1 rounded-xl bg-muted/20 dark:bg-[#0c0c05] border border-border dark:border-[#c9a84c]/20 p-5 font-mono text-xs text-foreground dark:text-[#e8dfc8] overflow-y-auto whitespace-pre-wrap leading-relaxed shadow-inner">
+            <div className="flex-1 rounded-xl bg-sunken/20 border border-border p-5 font-mono text-xs text-foreground overflow-y-auto whitespace-pre-wrap leading-relaxed shadow-inner">
               {previewContent ? (
                 previewContent
               ) : (
@@ -512,14 +512,14 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
       </div>
 
       {/* Sticky Bottom Executive Decision Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 dark:bg-[#121208]/95 backdrop-blur-md border-t border-border dark:border-[#c9a84c]/20 p-4 shadow-2xl">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border p-4 shadow-2xl">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 px-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-[#c9a84c]/10 border border-[#c9a84c]/30 text-[#9a751a] dark:text-[#c9a84c]">
+            <div className="p-2 rounded-lg bg-accent/10 border border-accent-line text-accent-text ">
               <CheckSquare className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-xs font-bold text-foreground dark:text-[#e8dfc8]">CEO Executive Authorization Control</div>
+              <div className="text-xs font-bold text-foreground ">CEO Executive Authorization Control</div>
               <div className="text-[11px] text-muted-foreground">
                 Current Status: <span className="text-amber-500 font-bold">{item.status}</span> • Matter: {item.name}
               </div>
@@ -560,7 +560,7 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
                 setActionReason("");
                 setValidationError(null);
               }}
-              className="flex-1 sm:flex-initial px-6 py-2.5 rounded-lg bg-[#175a74] hover:bg-[#114459] text-white text-xs font-black shadow-lg shadow-[#175a74]/20 transition-all flex items-center justify-center gap-2"
+              className="flex-1 sm:flex-initial px-6 py-2.5 rounded-lg bg-accent hover:bg-accent-hover text-on-accent text-xs font-black shadow-lg shadow-[#175a74]/20 transition-all flex items-center justify-center gap-2"
             >
               <CheckCircle2 className="w-4 h-4" />
               Approve for Filing
@@ -572,9 +572,9 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
       {/* Decision Modal */}
       {decisionModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-[#1a1a0e] border border-stone-200 dark:border-[#c9a84c]/30 p-6 space-y-5 shadow-2xl text-stone-900 dark:text-[#e8dfc8]">
-            <div className="flex items-center justify-between border-b border-stone-200 dark:border-[#c9a84c]/20 pb-3">
-              <h3 className="text-base font-black text-stone-900 dark:text-[#e8dfc8] flex items-center gap-2">
+          <div className="w-full max-w-lg rounded-2xl bg-surface border border-stone-200 p-6 space-y-5 shadow-2xl text-stone-900 ">
+            <div className="flex items-center justify-between border-b border-stone-200 pb-3">
+              <h3 className="text-base font-black text-stone-900 flex items-center gap-2">
                 {decisionModal === "APPROVE" && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
                 {decisionModal === "REWORK" && <RotateCcw className="w-5 h-5 text-orange-500" />}
                 {decisionModal === "REJECT" && <XCircle className="w-5 h-5 text-rose-500" />}
@@ -586,16 +586,16 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
               </h3>
               <button
                 onClick={() => setDecisionModal(null)}
-                className="text-stone-400 hover:text-stone-700 dark:text-[#e8dfc8]/60 dark:hover:text-[#e8dfc8] p-1 rounded-md text-xs font-bold transition-colors"
+                className="text-stone-400 hover:text-stone-700 p-1 rounded-md text-xs font-bold transition-colors"
               >
                 ✕
               </button>
             </div>
 
             <div className="space-y-3">
-              <p className="text-xs text-stone-600 dark:text-[#e8dfc8]/70 leading-relaxed">
+              <p className="text-xs text-stone-600 leading-relaxed">
                 {decisionModal === "APPROVE" && (
-                  <>You are authorizing <strong className="text-stone-900 dark:text-[#e8dfc8]">{item.name}</strong> for statutory patent filing. The workflow engine will advance to final filing execution.</>
+                  <>You are authorizing <strong className="text-stone-900 ">{item.name}</strong> for statutory patent filing. The workflow engine will advance to final filing execution.</>
                 )}
                 {decisionModal === "REWORK" && (
                   <>Specify required changes, claim adjustments, or technical clarifications. The responsible drafting team will be immediately notified to publish a new version.</>
@@ -606,7 +606,7 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
               </p>
 
               <div>
-                <label className="block text-xs font-bold text-stone-900 dark:text-[#e8dfc8] mb-1">
+                <label className="block text-xs font-bold text-stone-900 mb-1">
                   {decisionModal === "APPROVE"
                     ? "CEO Comment (Optional)"
                     : "Reason / Specific Instructions (Mandatory)"}
@@ -622,7 +622,7 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
                       ? "Detail exact claim edits, prior art differences, or benchmark clarifications required..."
                       : "State strategic reason for matter rejection..."
                   }
-                  className="w-full rounded-xl bg-stone-50 dark:bg-[#131309] border border-stone-300 dark:border-[#c9a84c]/30 p-3 text-xs text-stone-900 dark:text-[#e8dfc8] placeholder:text-stone-400 dark:placeholder:text-[#e8dfc8]/40 focus:outline-none focus:ring-2 focus:ring-[#c9a84c]/50 focus:border-[#c9a84c]"
+                  className="w-full rounded-xl bg-sunken border border-stone-300 p-3 text-xs text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-accent-line focus:border-accent-line"
                 />
               </div>
 
@@ -633,11 +633,11 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
               )}
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-200 dark:border-[#c9a84c]/20">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-200 ">
               <button
                 onClick={() => setDecisionModal(null)}
                 disabled={submitting}
-                className="px-4 py-2 rounded-lg border border-stone-300 dark:border-[#c9a84c]/30 bg-white dark:bg-transparent text-stone-700 dark:text-[#e8dfc8] hover:bg-stone-100 dark:hover:bg-[#c9a84c]/10 text-xs font-bold transition-colors"
+                className="px-4 py-2 rounded-lg border border-stone-300 bg-surface dark:bg-transparent text-stone-700 hover:bg-stone-100 text-xs font-bold transition-colors"
               >
                 Cancel
               </button>
@@ -647,7 +647,7 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
                 disabled={submitting}
                 className={`px-5 py-2 rounded-lg text-xs font-black shadow-sm transition-all flex items-center gap-2 ${
                   decisionModal === "APPROVE"
-                    ? "bg-[#175a74] hover:bg-[#114459] text-white"
+                    ? "bg-accent hover:bg-accent-hover text-on-accent"
                     : decisionModal === "REWORK"
                     ? "bg-orange-600 hover:bg-orange-500 text-white"
                     : "bg-rose-600 hover:bg-rose-500 text-white"
@@ -663,18 +663,18 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
       {/* Version History Modal */}
       {viewingVersionHistory && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-[#1a1a0e] border border-stone-200 dark:border-[#c9a84c]/30 p-6 space-y-4 shadow-2xl text-stone-900 dark:text-[#e8dfc8]">
-            <div className="flex items-center justify-between border-b border-stone-200 dark:border-[#c9a84c]/20 pb-3">
+          <div className="w-full max-w-lg rounded-2xl bg-surface border border-stone-200 p-6 space-y-4 shadow-2xl text-stone-900 ">
+            <div className="flex items-center justify-between border-b border-stone-200 pb-3">
               <div>
-                <h3 className="text-sm font-black text-stone-900 dark:text-[#e8dfc8] flex items-center gap-2">
-                  <History className="w-4 h-4 text-[#9a751a] dark:text-[#c9a84c]" />
+                <h3 className="text-sm font-black text-stone-900 flex items-center gap-2">
+                  <History className="w-4 h-4 text-accent-text " />
                   Document Version History
                 </h3>
-                <p className="text-xs text-stone-600 dark:text-[#e8dfc8]/70 mt-0.5">{viewingVersionHistory.name}</p>
+                <p className="text-xs text-stone-600 mt-0.5">{viewingVersionHistory.name}</p>
               </div>
               <button
                 onClick={() => setViewingVersionHistory(null)}
-                className="text-stone-400 hover:text-stone-700 dark:text-[#e8dfc8]/60 dark:hover:text-[#e8dfc8] p-1 rounded-md text-xs font-bold transition-colors"
+                className="text-stone-400 hover:text-stone-700 p-1 rounded-md text-xs font-bold transition-colors"
               >
                 ✕
               </button>
@@ -686,15 +686,15 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
                   key={ver.version}
                   className={`p-3 rounded-xl border text-xs space-y-1 ${
                     ver.version === viewingVersionHistory.current_version
-                      ? "bg-[#c9a84c]/15 border-[#c9a84c] text-stone-900 dark:text-[#e8dfc8]"
-                      : "bg-stone-50 dark:bg-[#131309] border-stone-200 dark:border-[#c9a84c]/20 text-stone-600 dark:text-[#e8dfc8]/70"
+                      ? "bg-accent/15 border-accent-line text-stone-900 "
+                      : "bg-sunken border-stone-200 text-stone-600 "
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-black text-[#9a751a] dark:text-[#c9a84c]">{ver.version}</span>
+                    <span className="font-black text-accent-text ">{ver.version}</span>
                     <span className="text-[10px] text-stone-500 dark:text-muted-foreground">{ver.uploaded_at.split("T")[0]}</span>
                   </div>
-                  <div className="text-[11px] text-stone-900 dark:text-[#e8dfc8]">
+                  <div className="text-[11px] text-stone-900 ">
                     Uploaded by: <strong className="font-semibold">{ver.uploaded_by}</strong> ({ver.file_size || "1.5 MB"})
                   </div>
                   <div className="text-[11px] text-stone-500 dark:text-muted-foreground italic">
@@ -704,10 +704,10 @@ export default function CeoApprovalDetailPage({ params }: PageProps) {
               ))}
             </div>
 
-            <div className="flex justify-end pt-3 border-t border-stone-200 dark:border-[#c9a84c]/20">
+            <div className="flex justify-end pt-3 border-t border-stone-200 ">
               <button
                 onClick={() => setViewingVersionHistory(null)}
-                className="px-4 py-2 rounded-lg border border-stone-300 dark:border-[#c9a84c]/30 bg-white dark:bg-transparent text-stone-700 dark:text-[#e8dfc8] hover:bg-stone-100 dark:hover:bg-[#c9a84c]/10 text-xs font-bold transition-colors"
+                className="px-4 py-2 rounded-lg border border-stone-300 bg-surface dark:bg-transparent text-stone-700 hover:bg-stone-100 text-xs font-bold transition-colors"
               >
                 Close History
               </button>

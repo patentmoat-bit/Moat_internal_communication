@@ -94,8 +94,9 @@ export default function DrawingsPage() {
           title: "Drawing Enhancement Request",
           message: `${currentUser.name} requested design enhancements for drawing '${filename}' in project ${inventionId}.`,
           target_role: "DESIGN_TEAM",
+          kind: "design_request",
           sender: currentUser.name,
-          actionUrl: `/dashboard`
+          actionUrl: `/design`
         })
       });
       setSentFiles(prev => new Set(prev).add(docId));

@@ -28,3 +28,8 @@ export function useSession(): Session {
 export function usePermission(permission: string): boolean {
   return useSession().permissions.includes(permission);
 }
+
+/** The session if there is one; null outside the shell or for the dev fallback. */
+export function useOptionalSession(): Session | null {
+  return React.useContext(SessionContext);
+}

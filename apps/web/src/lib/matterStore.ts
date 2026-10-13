@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
-import { readJson, writeJson } from "./jsonStore";
+import { DATA_DIR, readJson, writeJson } from "./jsonStore";
 
 /** Analyst research matters (the "Research Projects" workspace), stored on the
  *  server so every role sees the same matter and stage changes reach people. */
@@ -30,7 +30,7 @@ export interface Matter {
 }
 
 const FILE = "matters.json";
-const DIR = path.join(process.cwd(), "data", "uploads", "matters");
+const DIR = path.join(DATA_DIR, "uploads", "matters");
 export const load = () => readJson<Matter[]>(FILE, []);
 export const save = (m: Matter[]) => writeJson(FILE, m);
 export const find = (id: string) => load().find((m) => m.id === id) ?? null;

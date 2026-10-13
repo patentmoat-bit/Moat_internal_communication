@@ -1,7 +1,12 @@
 import fs from "fs";
+import os from "os";
 import path from "path";
 
-const DATA_DIR = path.join(process.cwd(), "data");
+/** Where records and uploads live. Set DATA_DIR to point at a mounted volume. On Vercel the project
+ *  folder is read-only, so it falls back to the temp directory, which is writable but is NOT durable:
+ *  fine for a demo, never for real data. */
+export const DATA_DIR =
+  process.env.DATA_DIR || (process.env.VERCEL ? path.join(os.tmpdir(), "moat-data") : path.join(process.cwd(), "data"));
 
 export function readJson<T>(file: string, fallback: T): T {
   try {

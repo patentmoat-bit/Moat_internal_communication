@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
+import { DATA_DIR } from '@/lib/jsonStore';
 import fs from 'fs';
 import path from 'path';
 
-const DB_FILE = path.join(process.cwd(), 'data', 'docket.json');
+const DB_FILE = path.join(DATA_DIR, 'docket.json');
 
 function getReminders(): any[] {
   if (!fs.existsSync(DB_FILE)) return [];
@@ -15,7 +16,7 @@ function saveReminders(rems: any[]) {
   fs.writeFileSync(DB_FILE, JSON.stringify(rems, null, 2));
 }
 
-const ASG_FILE = path.join(process.cwd(), 'data', 'assignments.json');
+const ASG_FILE = path.join(DATA_DIR, 'assignments.json');
 
 function getAssignments(): any[] {
   if (!fs.existsSync(ASG_FILE)) return [];

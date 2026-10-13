@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
+import { DATA_DIR } from '@/lib/jsonStore';
 import { resolveActor } from '@/lib/actingRole';
 import { notify } from '@/lib/notifications';
 import fs from 'fs';
 import path from 'path';
 
-const DB_FILE = path.join(process.cwd(), 'data', 'assignments.json');
+const DB_FILE = path.join(DATA_DIR, 'assignments.json');
 
 // Initialize DB with default assignment if missing
 // A fresh deployment starts with no assignments; nothing is seeded.

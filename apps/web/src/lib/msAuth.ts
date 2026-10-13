@@ -1,6 +1,5 @@
 import crypto from "crypto";
-import fs from "fs";
-import path from "path";
+import { readJson, writeJson } from "./jsonStore";
 
 /** Microsoft Entra ID (Azure AD) authorization-code + PKCE flow, no SDK. */
 
@@ -14,13 +13,15 @@ function env(name: string): string {
   return v;
 }
 
+const REQUIRED = ["AZURE_TENANT_ID", "AZURE_CLIENT_ID", "MS_GRAPH_CLIENT_SECRET", "AUTH_SESSION_SECRET"] as const;
+
+/** Names (never values) of the settings that are missing or empty. */
+export function missingMsConfig(): string[] {
+  return REQUIRED.filter((name) => !process.env[name]?.trim());
+}
+
 export function msConfigured(): boolean {
-  return Boolean(
-    process.env.AZURE_TENANT_ID &&
-      process.env.AZURE_CLIENT_ID &&
-      process.env.MS_GRAPH_CLIENT_SECRET &&
-      process.env.AUTH_SESSION_SECRET,
-  );
+  return missingMsConfig().length === 0;
 }
 
 export function redirectUri(): string {
@@ -203,26 +204,26 @@ export interface SsoEvent {
   detail?: string;
 }
 
-const LOG_FILE = path.join(process.cwd(), "data", "sso-activity.json");
+const LOG_FILE = "sso-activity.json";
 const MAX_EVENTS = 5000;
 
 export function readSsoEvents(): SsoEvent[] {
-  try {
-    return JSON.parse(fs.readFileSync(LOG_FILE, "utf8")) as SsoEvent[];
-  } catch {
-    return [];
-  }
+  return readJson<SsoEvent[]>(LOG_FILE, []);
 }
 
+/** Recording a sign-in must never be the reason a sign-in fails. */
 export function logSsoEvent(e: Omit<SsoEvent, "id" | "timestamp">, req?: Request) {
-  const events = readSsoEvents();
-  events.unshift({
-    ...e,
-    id: crypto.randomUUID(),
-    timestamp: new Date().toISOString(),
-    ip: req?.headers.get("x-forwarded-for")?.split(",")[0]?.trim(),
-    userAgent: req?.headers.get("user-agent") ?? undefined,
-  });
-  fs.mkdirSync(path.dirname(LOG_FILE), { recursive: true });
-  fs.writeFileSync(LOG_FILE, JSON.stringify(events.slice(0, MAX_EVENTS), null, 2));
+  try {
+    const events = readSsoEvents();
+    events.unshift({
+      ...e,
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+      ip: req?.headers.get("x-forwarded-for")?.split(",")[0]?.trim(),
+      userAgent: req?.headers.get("user-agent") ?? undefined,
+    });
+    writeJson(LOG_FILE, events.slice(0, MAX_EVENTS));
+  } catch (err) {
+    console.error("logSsoEvent failed", err);
+  }
 }

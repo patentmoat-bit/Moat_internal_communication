@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
-import { readJson, writeJson } from "./jsonStore";
+import { DATA_DIR, readJson, writeJson } from "./jsonStore";
 
 /** Disclosures raised in the workspace, plus a unified view of every file
  *  attached to an invention, wherever it was originally stored. */
@@ -12,7 +12,7 @@ export const ALLOWED_EXT = [
   "pdf", "doc", "docx", "txt", "md", "rtf", "odt", "ppt", "pptx", "xls", "xlsx", "csv",
   "png", "jpg", "jpeg", "gif", "svg", "webp", "zip",
 ];
-const UPLOAD_DIR = path.join(process.cwd(), "data", "uploads");
+const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
 
 export interface StoredFile {
   id: string;

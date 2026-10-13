@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { FLOW_COOKIE, msConfigured, startFlow } from "@/lib/msAuth";
+import { FLOW_COOKIE, missingMsConfig, msConfigured, startFlow } from "@/lib/msAuth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   if (!msConfigured()) {
+    console.error(`Microsoft sign-in is not configured. Missing environment variables: ${missingMsConfig().join(", ")}`);
     return NextResponse.redirect(new URL("/login?error=sso_not_configured", req.url));
   }
   const { url, cookie } = startFlow();

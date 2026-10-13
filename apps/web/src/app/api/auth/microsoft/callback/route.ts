@@ -18,7 +18,7 @@ function cookieOf(req: Request, name: string) {
   return m ? decodeURIComponent(m[1]) : undefined;
 }
 
-export async function GET(req: Request) {
+async function handle(req: Request) {
   const url = new URL(req.url);
   const done = (to: string) => {
     const res = NextResponse.redirect(new URL(to, req.url));
@@ -26,6 +26,8 @@ export async function GET(req: Request) {
     return res;
   };
   const fail = (code: string, detail: string, email?: string) => {
+    // Visible in the host's runtime logs. Reasons only, never tokens or secrets.
+    console.error(`[microsoft-callback] ${code}: ${detail}`);
     logSsoEvent({ type: code === "sso_blocked" ? "login_blocked" : "login_failure", detail, email }, req);
     return done(`/login?error=${code}`);
   };
@@ -83,5 +85,17 @@ export async function GET(req: Request) {
     return message.startsWith("BLOCKED:")
       ? fail("sso_blocked", message.replace("BLOCKED: ", ""))
       : fail("sso_failed", message);
+  }
+}
+
+/** Whatever goes wrong, the person lands on the login page and the reason is logged. Never a bare 500. */
+export async function GET(req: Request) {
+  try {
+    return await handle(req);
+  } catch (err) {
+    console.error("[microsoft-callback] unexpected failure:", err instanceof Error ? `${err.name}: ${err.message}` : err);
+    const res = NextResponse.redirect(new URL("/login?error=sso_failed", req.url));
+    res.cookies.delete({ name: FLOW_COOKIE, path: "/api/auth/microsoft" });
+    return res;
   }
 }

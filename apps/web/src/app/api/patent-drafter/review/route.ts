@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
+import { DATA_DIR } from '@/lib/jsonStore';
 import { resolveActor } from '@/lib/actingRole';
 import { notify } from '@/lib/notifications';
 import { logActivity } from '@/lib/activityLog';
 import fs from 'fs';
 import path from 'path';
 
-const DB_FILE = path.join(process.cwd(), 'data', 'claims.json');
+const DB_FILE = path.join(DATA_DIR, 'claims.json');
 
 function getClaimSets(): any[] {
   if (!fs.existsSync(DB_FILE)) return [];

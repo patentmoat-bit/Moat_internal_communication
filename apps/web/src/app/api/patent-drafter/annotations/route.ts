@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
+import { DATA_DIR } from '@/lib/jsonStore';
 import { logActivity } from '@/lib/activityLog';
 import { actorName } from '@/lib/actingRole';
 import fs from 'fs';
 import path from 'path';
 
-const DB_FILE = path.join(process.cwd(), 'data', 'annotations.json');
+const DB_FILE = path.join(DATA_DIR, 'annotations.json');
 
 function getAnnotations(): any[] {
   if (!fs.existsSync(DB_FILE)) return [];

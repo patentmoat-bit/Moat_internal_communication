@@ -25,20 +25,20 @@ async function handle(req: Request) {
     res.cookies.delete({ name: FLOW_COOKIE, path: "/api/auth/microsoft" });
     return res;
   };
-  const fail = (code: string, detail: string, email?: string) => {
+  const fail = async (code: string, detail: string, email?: string) => {
     // Visible in the host's runtime logs. Reasons only, never tokens or secrets.
     console.error(`[microsoft-callback] ${code}: ${detail}`);
-    logSsoEvent({ type: code === "sso_blocked" ? "login_blocked" : "login_failure", detail, email }, req);
+    await logSsoEvent({ type: code === "sso_blocked" ? "login_blocked" : "login_failure", detail, email }, req);
     return done(`/login?error=${code}`);
   };
 
   const msError = url.searchParams.get("error");
-  if (msError) return fail("sso_denied", `${msError}: ${url.searchParams.get("error_description") ?? ""}`.slice(0, 300));
+  if (msError) return await fail("sso_denied", `${msError}: ${url.searchParams.get("error_description") ?? ""}`.slice(0, 300));
 
   const flow = readFlowCookie(cookieOf(req, FLOW_COOKIE));
   const code = url.searchParams.get("code");
   if (!flow || !code || url.searchParams.get("state") !== flow.state) {
-    return fail("sso_state", "Missing or mismatched state");
+    return await fail("sso_state", "Missing or mismatched state");
   }
 
   try {
@@ -48,12 +48,12 @@ async function handle(req: Request) {
     const identity = { oid: claims.oid, email, name };
 
     // Microsoft has proven who this is. Whether they may enter is the administrators' decision.
-    const { user, isNewRequest } = resolveUser(identity, { create: true });
-    if (!user) return fail("sso_failed", "Could not record the user", email);
+    const { user, isNewRequest } = await resolveUser(identity, { create: true });
+    if (!user) return await fail("sso_failed", "Could not record the user", email);
 
     if (user.status !== "approved") {
       if (isNewRequest) {
-        logSsoEvent({ type: "access_requested", email, name, oid: claims.oid }, req);
+        await logSsoEvent({ type: "access_requested", email, name, oid: claims.oid }, req);
         notify({
           to: "ADMIN",
           title: "New access request",
@@ -64,13 +64,13 @@ async function handle(req: Request) {
           priority: "high",
         });
       } else {
-        logSsoEvent({ type: user.status === "pending" ? "access_pending" : "access_denied", email, name, oid: claims.oid, detail: user.status }, req);
+        await logSsoEvent({ type: user.status === "pending" ? "access_pending" : "access_denied", email, name, oid: claims.oid, detail: user.status }, req);
       }
       return done(`/request-access?state=${user.status}`);
     }
 
     const session = createSessionCookie({ oid: claims.oid, name, email });
-    logSsoEvent({ type: "login_success", email, name, oid: claims.oid }, req);
+    await logSsoEvent({ type: "login_success", email, name, oid: claims.oid }, req);
     const res = done("/");
     res.cookies.set(SESSION_COOKIE, session.value, {
       httpOnly: true,

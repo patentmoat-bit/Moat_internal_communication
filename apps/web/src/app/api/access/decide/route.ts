@@ -17,10 +17,10 @@ export async function POST(req: Request) {
   if (b.oid === admin.id && (b.action === "suspend" || b.action === "reject" || b.isAdmin === false)) {
     return NextResponse.json({ error: "You can't remove your own administrator access." }, { status: 409 });
   }
-  const result = decide(admin.name, { oid: b.oid, action: b.action, role: b.role, isAdmin: b.isAdmin, reason: b.reason });
+  const result = await decide(admin.name, { oid: b.oid, action: b.action, role: b.role, isAdmin: b.isAdmin, reason: b.reason });
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
   const u = result.user;
   logActivity(admin.name, `ACCESS_${String(b.action).toUpperCase()}`, u.email, `${u.status}${u.role ? ` · ${u.role}` : ""}${u.isAdmin ? " · admin" : ""}`);
-  logSsoEvent({ type: u.status === "approved" ? "login_success" : "access_denied", email: u.email, name: u.name, oid: u.oid, detail: `${admin.name}: ${b.action}${u.role ? ` as ${u.role}` : ""}` });
+  await logSsoEvent({ type: u.status === "approved" ? "login_success" : "access_denied", email: u.email, name: u.name, oid: u.oid, detail: `${admin.name}: ${b.action}${u.role ? ` as ${u.role}` : ""}` });
   return NextResponse.json({ success: true, user: u });
 }

@@ -25,7 +25,7 @@ export async function getAuthenticatedUser(): Promise<AuthenticatedUser | null> 
     const cookieStore = await cookies();
     const ms = readSessionCookie(cookieStore.get(SESSION_COOKIE)?.value);
     if (ms) {
-      const { user } = resolveUser({ oid: ms.oid, email: ms.email, name: ms.name }, { create: false });
+      const { user } = await resolveUser({ oid: ms.oid, email: ms.email, name: ms.name }, { create: false });
       if (!user || user.status !== "approved") return null;
       return { id: user.oid, sub: user.oid, email: user.email, name: user.name, role: user.role ?? "ADMIN" };
     }

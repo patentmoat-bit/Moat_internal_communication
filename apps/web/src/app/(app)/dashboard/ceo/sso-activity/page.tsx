@@ -29,7 +29,7 @@ export default async function SsoActivityPage() {
   const user = await getAuthenticatedUser();
   if (user?.role !== "CEO") notFound();
 
-  const events = readSsoEvents();
+  const events = await readSsoEvents();
   const now = Date.now();
   const day = 24 * 60 * 60 * 1000;
   const last24 = events.filter((e) => now - Date.parse(e.timestamp) < day);

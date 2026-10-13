@@ -21,6 +21,8 @@ const TABS: { id: Status | "all"; label: string }[] = [
 
 export default function AccessPage() {
   const [users, setUsers] = React.useState<AppUser[] | null>(null);
+  const [durable, setDurable] = React.useState(true);
+  const [attempts, setAttempts] = React.useState<{ id: string; type: string; timestamp: string; email?: string; name?: string; detail?: string }[]>([]);
   const [tab, setTab] = React.useState<Status>("pending");
   const [error, setError] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState<string | null>(null);
@@ -29,7 +31,10 @@ export default function AccessPage() {
   const load = React.useCallback(async () => {
     const res = await fetch("/api/access/users").catch(() => null);
     if (!res?.ok) { setError((await res?.json().catch(() => null))?.error ?? "Could not load users."); return; }
-    setUsers((await res.json()).users);
+    const json = await res.json();
+    setUsers(json.users);
+    setDurable(json.durable !== false);
+    setAttempts(json.attempts ?? []);
   }, []);
   React.useEffect(() => { load(); const t = setInterval(load, 15000); return () => clearInterval(t); }, [load]);
 
@@ -67,6 +72,13 @@ export default function AccessPage() {
           People sign in with Microsoft first, so you always know who is asking. Nobody gets in until you approve them and choose their role. Only accounts from your organization can reach this list.
         </p>
       </header>
+
+      {!durable ? (
+        <p role="alert" className="rounded-[var(--radius-sm)] border border-caution/40 bg-caution-soft px-3 py-2.5 text-[13px] leading-relaxed text-ink">
+          <strong>This server forgets approvals.</strong> Its storage is temporary, so requests can vanish and approved people can be
+          bounced back to the login page. Connect a Redis store (set <code>KV_REST_API_URL</code> and <code>KV_REST_API_TOKEN</code>) to keep them.
+        </p>
+      ) : null}
 
       <div role="tablist" className="flex gap-1 border-b border-line">
         {TABS.map((t) => (
@@ -141,6 +153,29 @@ export default function AccessPage() {
           );
         })}
       </ul>
+
+      <section className="rounded-[var(--radius-md)] border border-line bg-surface p-4">
+        <h2 className="text-[13px] font-semibold text-ink">Recent sign-in attempts that did not get in</h2>
+        <p className="mt-0.5 text-[12px] text-muted">If someone says they signed in but is not listed above, look for them here. The reason is shown.</p>
+        {attempts.length === 0 ? (
+          <p className="mt-3 text-[12.5px] text-faint">None recorded.</p>
+        ) : (
+          <ul className="mt-3 divide-y divide-line text-[12.5px]">
+            {attempts.map((a) => (
+              <li key={a.id} className="flex flex-wrap items-baseline justify-between gap-2 py-2">
+                <span className="min-w-0">
+                  <span className="font-medium text-ink">{a.email ?? a.name ?? "unknown account"}</span>
+                  <span className="ml-2 rounded bg-sunken px-1.5 py-0.5 text-[11px] text-muted">
+                    {({ login_failure: "failed", login_blocked: "blocked", access_requested: "requested access", access_pending: "still pending", access_denied: "not granted" } as Record<string, string>)[a.type] ?? a.type}
+                  </span>
+                  {a.detail ? <span className="ml-2 text-faint">{a.detail}</span> : null}
+                </span>
+                <span className="text-faint">{new Date(a.timestamp).toLocaleString()}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

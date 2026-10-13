@@ -39,7 +39,7 @@ export async function getSession(): Promise<Session | null> {
   // falls through to it: someone Microsoft verified but an admin has not approved gets nothing.
   const ms = readSessionCookie((await cookies()).get(SESSION_COOKIE)?.value);
   if (ms) {
-    const { user } = resolveUser({ oid: ms.oid, email: ms.email, name: ms.name }, { create: false });
+    const { user } = await resolveUser({ oid: ms.oid, email: ms.email, name: ms.name }, { create: false });
     if (!user || user.status !== "approved") return null;
     return {
       user: { id: user.oid, name: user.name, email: user.email },

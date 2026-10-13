@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { readJson, writeJson } from "./jsonStore";
+import { loadJson, saveJson } from "./kv";
 
 /** Microsoft Entra ID (Azure AD) authorization-code + PKCE flow, no SDK. */
 
@@ -207,14 +207,14 @@ export interface SsoEvent {
 const LOG_FILE = "sso-activity.json";
 const MAX_EVENTS = 5000;
 
-export function readSsoEvents(): SsoEvent[] {
-  return readJson<SsoEvent[]>(LOG_FILE, []);
+export async function readSsoEvents(): Promise<SsoEvent[]> {
+  return loadJson<SsoEvent[]>(LOG_FILE, []);
 }
 
 /** Recording a sign-in must never be the reason a sign-in fails. */
-export function logSsoEvent(e: Omit<SsoEvent, "id" | "timestamp">, req?: Request) {
+export async function logSsoEvent(e: Omit<SsoEvent, "id" | "timestamp">, req?: Request) {
   try {
-    const events = readSsoEvents();
+    const events = await readSsoEvents();
     events.unshift({
       ...e,
       id: crypto.randomUUID(),
@@ -222,7 +222,7 @@ export function logSsoEvent(e: Omit<SsoEvent, "id" | "timestamp">, req?: Request
       ip: req?.headers.get("x-forwarded-for")?.split(",")[0]?.trim(),
       userAgent: req?.headers.get("user-agent") ?? undefined,
     });
-    writeJson(LOG_FILE, events.slice(0, MAX_EVENTS));
+    await saveJson(LOG_FILE, events.slice(0, MAX_EVENTS));
   } catch (err) {
     console.error("logSsoEvent failed", err);
   }

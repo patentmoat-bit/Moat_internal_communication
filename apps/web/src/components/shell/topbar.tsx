@@ -10,9 +10,11 @@ import { useActiveRole } from "@/components/auth/role-context";
 
 export function TopBar() {
   const [paletteOpen, setPaletteOpen] = React.useState(false);
+  const [mounted, setMounted] = React.useState(false);
   const { profile } = useActiveRole();
 
   React.useEffect(() => {
+    setMounted(true);
     function onKeyDown(event: KeyboardEvent) {
       if (event.key.toLowerCase() === "k" && (event.metaKey || event.ctrlKey)) {
         event.preventDefault();
@@ -41,8 +43,11 @@ export function TopBar() {
 
         {/* Center: Dedicated Role Portal Indicator */}
         <div className="flex items-center gap-2">
-          <span className="rounded-full bg-surface border border-line px-3 py-1 text-xs font-semibold text-muted shadow-2xs">
-            Role Portal: <strong className="text-ink">{profile.title}</strong> ({profile.name})
+          <span
+            suppressHydrationWarning
+            className="rounded-full bg-surface border border-line px-3 py-1 text-xs font-semibold text-muted shadow-2xs"
+          >
+            Role Portal: <strong suppressHydrationWarning className="text-ink">{mounted ? profile.title : (profile?.title || "Design Team")}</strong> ({mounted ? profile.name : (profile?.name || "MOAT Design Team")})
           </span>
         </div>
 

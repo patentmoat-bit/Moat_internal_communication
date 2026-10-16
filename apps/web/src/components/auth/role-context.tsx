@@ -25,6 +25,30 @@ export interface RoleProfile {
   color: string;
 }
 
+export function normalizeRole(role?: string | null): RoleType {
+  if (!role) return "CEO";
+  const r = role.toUpperCase().trim().replace(/[\s-]+/g, "_");
+  if (r === "DESIGN_TEAM" || r === "DESIGNER" || r === "DESIGN" || r === "DESIGNING_TEAM" || r === "DESIGN_LEAD") {
+    return "DESIGN_TEAM";
+  }
+  if (r === "PATENT_ANALYST" || r === "ANALYST") {
+    return "PATENT_ANALYST";
+  }
+  if (r === "PATENT_DRAFTER" || r === "DRAFTER") {
+    return "PATENT_DRAFTER";
+  }
+  if (r === "CEO" || r === "EXECUTIVE") {
+    return "CEO";
+  }
+  if (r === "FINANCE" || r === "FINANCE_MANAGER" || r === "FINANCE_CONTROLLER") {
+    return "FINANCE";
+  }
+  if (r === "ADMIN" || r === "ADMINISTRATOR" || r === "SYSTEM_ADMIN" || r === "SUPER_ADMIN") {
+    return "ADMIN";
+  }
+  return "CEO";
+}
+
 export const ROLE_CONFIGS: Record<RoleType, RoleProfile> = {
   ADMIN: {
     id: "ADMIN",
@@ -56,8 +80,8 @@ export const ROLE_CONFIGS: Record<RoleType, RoleProfile> = {
   },
   DESIGN_TEAM: {
     id: "DESIGN_TEAM",
-    title: "Design & Illustration Lead",
-    defaultRoute: "/design",
+    title: "Design Team",
+    defaultRoute: "/dashboard/design-team",
     description: "FIG 1..N patent drawings, margin compliance, and technical schematics.",
     color: "emerald",
   },
@@ -73,7 +97,67 @@ export const ROLE_CONFIGS: Record<RoleType, RoleProfile> = {
 // Backward-compatible alias for existing components
 export const ROLE_PROFILES = ROLE_CONFIGS;
 
+// Backward-compatible role string aliases
+(ROLE_CONFIGS as any)["Design Team"] = ROLE_CONFIGS.DESIGN_TEAM;
+(ROLE_CONFIGS as any)["designer"] = ROLE_CONFIGS.DESIGN_TEAM;
+(ROLE_CONFIGS as any)["DESIGN"] = ROLE_CONFIGS.DESIGN_TEAM;
+(ROLE_CONFIGS as any)["Design Lead"] = ROLE_CONFIGS.DESIGN_TEAM;
+(ROLE_CONFIGS as any)["Patent Analyst"] = ROLE_CONFIGS.PATENT_ANALYST;
+(ROLE_CONFIGS as any)["Patent Drafter"] = ROLE_CONFIGS.PATENT_DRAFTER;
+(ROLE_CONFIGS as any)["Administrator"] = ROLE_CONFIGS.ADMIN;
+(ROLE_CONFIGS as any)["Finance Controller"] = ROLE_CONFIGS.FINANCE;
+
 export const DEFAULT_USERS: PlatformUser[] = [
+  {
+    id: "usr-design",
+    name: "MOAT Design Team",
+    email: "design@moat.ai",
+    role: "DESIGN_TEAM",
+    department: "Patent Illustration & Drafting",
+    status: "ACTIVE",
+    createdAt: "2026-01-01",
+    avatarTone: "emerald",
+  },
+  {
+    id: "usr-drafter",
+    name: "Alice Drafter",
+    email: "drafter@moat.ai",
+    role: "PATENT_DRAFTER",
+    department: "Patent Specification Drafting",
+    status: "ACTIVE",
+    createdAt: "2026-01-01",
+    avatarTone: "blue",
+  },
+  {
+    id: "usr-analyst",
+    name: "Dr. Sarah Analyst",
+    email: "analyst@moat.ai",
+    role: "PATENT_ANALYST",
+    department: "Prior-Art & Novelty Analysis",
+    status: "ACTIVE",
+    createdAt: "2026-01-01",
+    avatarTone: "purple",
+  },
+  {
+    id: "usr-ceo",
+    name: "Marcus Vance",
+    email: "ceo@moat.ai",
+    role: "CEO",
+    department: "Executive Leadership",
+    status: "ACTIVE",
+    createdAt: "2026-01-01",
+    avatarTone: "amber",
+  },
+  {
+    id: "usr-finance",
+    name: "Elena Vance",
+    email: "finance@moat.ai",
+    role: "FINANCE",
+    department: "Finance & Fee Controller",
+    status: "ACTIVE",
+    createdAt: "2026-01-01",
+    avatarTone: "teal",
+  },
   {
     id: "usr-admin",
     name: "Organization Admin",
@@ -219,10 +303,11 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
   const currentUser = users.find((u) => u.id === currentUserId) || users[0] || DEFAULT_ADMIN;
   const currentRole = currentUser.role || "CEO";
 
-  const setRole = (role: RoleType) => {
-    const updatedUsers = users.map((u) => (u.id === currentUser.id ? { ...u, role } : u));
+  const setRole = (role: RoleType | string) => {
+    const normRole = normalizeRole(role);
+    const updatedUsers = users.map((u) => (u.id === currentUser.id ? { ...u, role: normRole } : u));
     saveUsers(updatedUsers);
-    const target = ROLE_CONFIGS[role]?.defaultRoute || "/portfolio";
+    const target = ROLE_CONFIGS[normRole]?.defaultRoute || "/dashboard/design-team";
     router.push(target);
   };
 
@@ -233,7 +318,8 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
       if (typeof window !== "undefined") {
         localStorage.setItem("moat_active_user_id", userId);
       }
-      const targetRoute = ROLE_CONFIGS[targetUser.role]?.defaultRoute || "/portfolio";
+      const normRole = normalizeRole(targetUser.role);
+      const targetRoute = ROLE_CONFIGS[normRole]?.defaultRoute || "/dashboard/design-team";
       router.push(targetRoute);
     }
   };
@@ -262,7 +348,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
 
   const deleteUser = (id: string) => {
     if (users.length <= 1) {
-      alert("Cannot delete the only remaining user in the organization.");
+      console.warn("Cannot delete the only remaining user in the organization.");
       return;
     }
     const updated = users.filter((u) => u.id !== id);

@@ -26,6 +26,13 @@ export interface ToastItem {
   duration: number;
 }
 
+export interface ToastObjectInput {
+  title?: string;
+  description?: string;
+  variant?: "default" | "destructive" | "success" | "warning";
+  duration?: number;
+}
+
 export interface ConfirmDialogOptions {
   title?: string;
   message: string;
@@ -84,8 +91,30 @@ function removeToast(id: string) {
   notifyToasts();
 }
 
+function callableToast(
+  input: string | ToastObjectInput,
+  options?: ToastOptions
+) {
+  if (typeof input === "string") {
+    return addToast("info", input, options);
+  }
+  const type: ToastType =
+    input.variant === "destructive"
+      ? "error"
+      : input.variant === "success"
+      ? "success"
+      : input.variant === "warning"
+      ? "warning"
+      : "info";
+
+  return addToast(type, input.description || input.title || "", {
+    title: input.title,
+    duration: input.duration ?? options?.duration,
+  });
+}
+
 /** Standalone toast API callable anywhere across client code */
-export const toast = {
+export const toast = Object.assign(callableToast, {
   success: (message: string, options?: ToastOptions) => addToast("success", message, options),
   error: (message: string, options?: ToastOptions) => addToast("error", message, options),
   warning: (message: string, options?: ToastOptions) => addToast("warning", message, options),
@@ -107,7 +136,7 @@ export const toast = {
       notifyConfirm();
     });
   },
-};
+});
 
 export function useToast() {
   return { toast, confirm: toast.confirm };
@@ -144,28 +173,16 @@ export function ToastProvider({ children }: { children?: React.ReactNode }) {
     };
   }, []);
 
-  // Handle ESC key for confirmation modal
-  React.useEffect(() => {
-    if (!confirmState) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        confirmState.resolve(false);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [confirmState]);
-
   return (
     <>
       {children}
 
-      {/* TOAST NOTIFICATIONS CONTAINER */}
+      {/* TOAST NOTIFICATION CONTAINER */}
       <div
         aria-live="polite"
-        className="fixed top-5 right-5 z-[9999] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none select-none px-4 sm:px-0"
+        className="pointer-events-none fixed top-4 right-4 z-[9999] flex w-full max-w-sm flex-col gap-2.5"
       >
-        <AnimatePresence>
+        <AnimatePresence mode="popLayout">
           {toasts.map((t) => {
             const Icon =
               t.type === "success"
@@ -178,12 +195,12 @@ export function ToastProvider({ children }: { children?: React.ReactNode }) {
 
             const borderClass =
               t.type === "success"
-                ? "border-emerald-500/40 bg-surface/95 text-emerald-950 dark:text-emerald-100 shadow-emerald-500/10"
+                ? "border-emerald-500/30 bg-surface/95"
                 : t.type === "error"
-                ? "border-rose-500/40 bg-surface/95 text-rose-950 dark:text-rose-100 shadow-rose-500/10"
+                ? "border-rose-500/30 bg-surface/95"
                 : t.type === "warning"
-                ? "border-amber-500/40 bg-surface/95 text-amber-950 dark:text-amber-100 shadow-amber-500/10"
-                : "border-sky-500/40 bg-surface/95 text-sky-950 dark:text-sky-100 shadow-sky-500/10";
+                ? "border-amber-500/30 bg-surface/95"
+                : "border-sky-500/30 bg-surface/95";
 
             const iconClass =
               t.type === "success"
@@ -225,7 +242,7 @@ export function ToastProvider({ children }: { children?: React.ReactNode }) {
         </AnimatePresence>
       </div>
 
-      {/* CONFIRMATION DIALOG MODAL (REPLACES BROWSER WINDOW.CONFIRM) */}
+      {/* CONFIRMATION DIALOG MODAL */}
       <AnimatePresence>
         {confirmState && (
           <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
@@ -286,3 +303,5 @@ export function ToastProvider({ children }: { children?: React.ReactNode }) {
     </>
   );
 }
+
+export const Toaster = ToastProvider;

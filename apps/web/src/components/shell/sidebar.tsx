@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { cn, Avatar, Eyebrow } from "@moat/ui";
 import { ROLE_NAVIGATIONS, type NavItem } from "./nav";
-import { useActiveRole, ROLE_CONFIGS, type RoleType } from "@/components/auth/role-context";
+import { useActiveRole, ROLE_CONFIGS, type RoleType, normalizeRole } from "@/components/auth/role-context";
 import { Logo } from "./logo";
 
 const ROLE_ICONS: Record<RoleType, React.ElementType> = {
@@ -100,8 +100,9 @@ function SidebarInner() {
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, []);
 
-  const currentNavGroups = ROLE_NAVIGATIONS[currentRole] || ROLE_NAVIGATIONS.ADMIN;
-  const ActiveRoleIcon = ROLE_ICONS[currentRole] || ShieldCheck;
+  const roleKey = normalizeRole(currentRole);
+  const currentNavGroups = ROLE_NAVIGATIONS[roleKey] || ROLE_NAVIGATIONS.DESIGN_TEAM;
+  const ActiveRoleIcon = ROLE_ICONS[roleKey] || ShieldCheck;
 
   return (
     <nav
@@ -128,7 +129,7 @@ function SidebarInner() {
             <div className="text-[10px] font-bold uppercase tracking-wider text-accent">
               Active Role Portal
             </div>
-            <div className="truncate text-xs font-bold text-ink">{profile.title}</div>
+            <div suppressHydrationWarning className="truncate text-xs font-bold text-ink">{profile.title}</div>
           </div>
         </div>
       </div>
@@ -229,10 +230,10 @@ function SidebarInner() {
         >
           <Avatar name={currentUser.name} size={24} />
           <div className="min-w-0 flex-1">
-            <div className="truncate text-[12px] font-bold leading-tight text-ink">
+            <div suppressHydrationWarning className="truncate text-[12px] font-bold leading-tight text-ink">
               {currentUser.name}
             </div>
-            <div className="truncate text-[10.5px] leading-tight text-muted">{profile.title}</div>
+            <div suppressHydrationWarning className="truncate text-[10.5px] leading-tight text-muted">{profile.title}</div>
           </div>
           <ChevronsUpDown className="size-3.5 text-faint shrink-0" />
         </button>

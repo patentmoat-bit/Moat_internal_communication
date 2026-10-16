@@ -1,0 +1,45 @@
+{
+  "PRJ-10023": {
+    "projectId": "PRJ-10023",
+    "inventionId": "",
+    "designTaskId": "",
+    "projectTitle": "Technical Patent Specification",
+    "inventionTitle": "",
+    "status": "IN_PROGRESS",
+    "assignedDesigner": "",
+    "assigneeRole": "designer",
+    "dueDate": "",
+    "problemStatement": "",
+    "proposedSolution": "",
+    "technicalOverview": "",
+    "technicalInformation": [],
+    "researchReferences": [],
+    "sourceDocuments": [],
+    "drawingInstructions": "Create USPTO compliant drawings according to 37 CFR § 1.84.",
+    "relatedClaims": [],
+    "figures": [
+      {
+        "id": "fig-1",
+        "figureNumber": 1,
+        "figureTitle": "Figure 1",
+        "description": "",
+        "elements": [],
+        "version": 1,
+        "lastSavedAt": "2026-10-16T11:17:09.423Z"
+      }
+    ],
+    "technicalDocuments": [
+      {
+        "id": "TD-001",
+        "title": "Technical Description",
+        "documentType": "Technical Description",
+        "version": 1,
+        "lastModified": "2026-10-16T11:17:09.423Z",
+        "author": "",
+        "content": "<p><br></p>"
+      }
+    ],
+    "projectDocuments": [],
+    "saveHistory": []
+  }
+}

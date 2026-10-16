@@ -407,7 +407,7 @@ export default function AdminControlPage() {
                 <option value="PATENT_ANALYST">Patent Analyst</option>
                 <option value="CEO">CEO / Executive</option>
                 <option value="PATENT_DRAFTER">Patent Drafter</option>
-                <option value="DESIGN_TEAM">Design Lead</option>
+                <option value="DESIGN_TEAM">Design Team</option>
                 <option value="FINANCE">Finance Controller</option>
               </select>
             </div>
@@ -558,7 +558,7 @@ export default function AdminControlPage() {
                   <th className="p-3.5 text-center">Patent Analyst</th>
                   <th className="p-3.5 text-center">CEO Executive</th>
                   <th className="p-3.5 text-center">Drafter</th>
-                  <th className="p-3.5 text-center">Design Lead</th>
+                  <th className="p-3.5 text-center">Design Team</th>
                   <th className="p-3.5 text-center">Finance</th>
                 </tr>
               </thead>
@@ -697,7 +697,7 @@ export default function AdminControlPage() {
                   <option value="PATENT_ANALYST">Patent Analyst (Prior Art & Search)</option>
                   <option value="CEO">CEO (Executive Approvals & Portfolio)</option>
                   <option value="PATENT_DRAFTER">Patent Drafter (Spec & Claims)</option>
-                  <option value="DESIGN_TEAM">Design Lead (FIG 1-N Drawings)</option>
+                  <option value="DESIGN_TEAM">Design Team (FIG 1-N Drawings)</option>
                   <option value="FINANCE">Finance Controller (USPTO Fees)</option>
                   <option value="ADMIN">Administrator (Full Access)</option>
                 </select>

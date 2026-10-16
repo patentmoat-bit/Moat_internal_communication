@@ -294,17 +294,44 @@ export const ROLE_NAVIGATIONS: Record<RoleType, NavGroup[]> = {
   ],
   DESIGN_TEAM: [
     {
-      label: "Design Suite",
+      label: "DASHBOARD",
       items: [
-        { href: "/design", label: "Design Workspace (FIG 1-N)", icon: PenTool },
-        { href: "/design", label: "Drawing Assets & Sheets", icon: FileSpreadsheet },
-        { href: "/trademarks", label: "Logo & Specimen Review", icon: Award },
+        { href: "/dashboard/design-team", label: "Overview", icon: LayoutDashboard },
       ],
     },
     {
-      label: "Workflow",
+      label: "DESIGN WORKSPACE",
       items: [
-        { href: "/inbox", label: "Drawing Requests & Revisions", icon: Inbox },
+        { href: "/dashboard/design-team/studio", label: "Patent Design Studio", icon: Sparkles },
+        { href: "/dashboard/design-team/workspace/my-designs", label: "My Designs", icon: PenTool },
+        { href: "/dashboard/design-team/workspace/assigned", label: "Assigned to Me", icon: Users },
+        { href: "/dashboard/design-team/workspace/in-progress", label: "In Progress", icon: Clock },
+        { href: "/dashboard/design-team/workspace/under-review", label: "Under Review", icon: Search },
+        { href: "/dashboard/design-team/workspace/completed", label: "Completed", icon: CheckCircle },
+      ],
+    },
+    {
+      label: "DESIGN MATERIALS",
+      items: [
+        { href: "/dashboard/design-team/materials/drawings", label: "Drawings", icon: ImageIcon },
+        { href: "/dashboard/design-team/materials/technical-docs", label: "Technical Documents", icon: FileText },
+        { href: "/dashboard/design-team/materials/reference-files", label: "Reference Files", icon: Folder },
+        { href: "/dashboard/design-team/materials/export-files", label: "Export Files", icon: UploadCloud },
+      ],
+    },
+    {
+      label: "DOCKET",
+      items: [
+        { href: "/dashboard/design-team/docket/deadlines", label: "Design Deadlines", icon: CalendarClock },
+        { href: "/dashboard/design-team/docket/reminders", label: "Reminders", icon: Clock },
+        { href: "/dashboard/design-team/docket/action-items", label: "Action Items", icon: Activity },
+      ],
+    },
+    {
+      label: "ACTIONS",
+      items: [
+        { href: "/inbox", label: "Command Inbox", icon: Inbox },
+        { href: "/dashboard/design-team/activity", label: "Activity History", icon: Activity },
       ],
     },
   ],
@@ -338,11 +365,15 @@ export function visibleTo(items: NavItem[], permissions?: string[]): NavItem[] {
 }
 
 export function landingFor(permissions?: string[]): string {
-  return "/search";
+  if (permissions && permissions.includes("drawing.read") && !permissions.includes("invention.read")) {
+    return "/dashboard/design-team";
+  }
+  return "/dashboard/design-team";
 }
 
-export function landingForRole(role: RoleType): string {
-  switch (role) {
+export function landingForRole(role: RoleType | string): string {
+  const r = (role || "").toUpperCase().replace(/[\s-]+/g, "_");
+  switch (r) {
     case "ADMIN":
       return "/admin";
     case "CEO":
@@ -352,11 +383,13 @@ export function landingForRole(role: RoleType): string {
     case "PATENT_DRAFTER":
       return "/drafts";
     case "DESIGN_TEAM":
-      return "/design";
+    case "DESIGNER":
+    case "DESIGN":
+    case "DESIGN_LEAD":
+      return "/dashboard/design-team";
     case "FINANCE":
       return "/payments";
     default:
-      return "/admin";
+      return "/dashboard/design-team";
   }
 }
-

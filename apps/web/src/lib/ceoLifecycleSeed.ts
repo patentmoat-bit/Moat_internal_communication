@@ -316,7 +316,17 @@ export const SEED_OPPORTUNITIES: OpportunityItem[] = [
 ];
 
 export function getInitialMatters(): CeoMatter[] {
-  return [];
+  if (typeof window === "undefined") return SEED_MATTERS;
+  try {
+    const stored = localStorage.getItem("moat_ceo_lifecycle_matters");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.error("Error reading matters from localStorage", e);
+  }
+  return SEED_MATTERS;
 }
 
 export function saveMatters(matters: CeoMatter[]) {
